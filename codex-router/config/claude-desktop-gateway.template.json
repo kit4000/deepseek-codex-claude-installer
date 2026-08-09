@@ -1,0 +1,22 @@
+{
+  "inferenceProvider": "gateway",
+  "inferenceCredentialKind": "static",
+  "inferenceGatewayBaseUrl": "https://api.deepseek.com/anthropic",
+  "inferenceGatewayApiKey": "<ENTER_PER_DEVICE_IN_CLAUDE_DESKTOP>",
+  "inferenceGatewayAuthScheme": "bearer",
+  "modelDiscoveryEnabled": false,
+  "inferenceModels": [
+    {
+      "name": "claude-opus-4-5",
+      "labelOverride": "DeepSeek V4 Pro (1M)",
+      "anthropicFamilyTier": "opus",
+      "isFamilyDefault": true
+    },
+    {
+      "name": "claude-haiku-4-5",
+      "labelOverride": "DeepSeek V4 Flash",
+      "anthropicFamilyTier": "haiku",
+      "isFamilyDefault": true
+    }
+  ]
+}

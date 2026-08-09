@@ -1,0 +1,63 @@
+{
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 10100
+  },
+  "native": {
+    "baseUrl": "https://chatgpt.com/backend-api/codex"
+  },
+  "routes": [
+    {
+      "namespace": "deepseek",
+      "name": "DeepSeek Official API",
+      "baseUrl": "https://api.deepseek.com",
+      "timeoutMs": 300000,
+      "suppressReasoningContent": true,
+      "stabilizeMessagePhase": true,
+      "auth": {
+        "mode": "bearer_keychain",
+        "service": "com.local.codex-native-model-router.deepseek",
+        "account": "api-key"
+      },
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "displayName": "DeepSeek V4 Flash (Official API)",
+          "description": "DeepSeek V4 Flash through the official stateless Responses API.",
+          "contextWindow": 1048576,
+          "defaultReasoningEffort": "high",
+          "supportsReasoningSummaries": false,
+          "reasoningEfforts": [
+            "low",
+            "high",
+            "max"
+          ],
+          "inputModalities": [
+            "text"
+          ]
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "displayName": "DeepSeek V4 Pro (Responses API pending)",
+          "description": "DeepSeek V4 Pro prepared for the official Responses API; upstream Codex support is not enabled yet.",
+          "contextWindow": 1048576,
+          "defaultReasoningEffort": "high",
+          "supportsReasoningSummaries": false,
+          "reasoningEfforts": [
+            "high",
+            "max"
+          ],
+          "inputModalities": [
+            "text"
+          ]
+        }
+      ]
+    }
+  ],
+  "configMigration": {
+    "profile": {
+      "name": "deepseek",
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  }
+}

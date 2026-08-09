@@ -1,0 +1,17 @@
+{
+  "name": "claude-hybrid",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Claude Desktop Hybrid: official Claude subscription and DeepSeek in one Code tab",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "install": "node scripts/install.mjs",
+    "verify": "node scripts/verify.mjs",
+    "update": "node scripts/update.mjs --apply",
+    "update:check": "node scripts/update.mjs --check",
+    "smoke": "node scripts/smoke.mjs",
+    "archive": "node scripts/create-archive.mjs",
+    "store-deepseek-key": "node scripts/store-deepseek-key.mjs"
+  }
+}
