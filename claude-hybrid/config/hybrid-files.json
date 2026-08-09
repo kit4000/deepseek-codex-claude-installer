@@ -1,0 +1,21 @@
+[
+  "README.md",
+  "package.json",
+  "config/claude-hybrid.json",
+  "config/hybrid-files.json",
+  "scripts/install.mjs",
+  "scripts/verify.mjs",
+  "scripts/update.mjs",
+  "scripts/smoke.mjs",
+  "scripts/store-deepseek-key.mjs",
+  "scripts/patch-app.mjs",
+  "scripts/create-archive.mjs",
+  "src/router.mjs",
+  "src/asar-repack.mjs",
+  "src/app-patch.mjs",
+  "src/app-layout.mjs",
+  "src/update-plan.mjs",
+  "test/app-layout.test.mjs",
+  "test/router.test.mjs",
+  "test/update-plan.test.mjs"
+]

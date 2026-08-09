@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "router": {
+    "host": "127.0.0.1",
+    "port": 10102
+  },
+  "native": {
+    "baseUrl": "https://api.anthropic.com"
+  },
+  "deepseek": {
+    "baseUrl": "https://api.deepseek.com/anthropic",
+    "keychain": {
+      "service": "com.local.codex-native-model-router.deepseek",
+      "account": "api-key"
+    },
+    "credentialHelper": "<home>/.local/bin/claude-desktop-credential-helper"
+  },
+  "models": {
+    "external": [
+      {
+        "id": "claude-opus-4-5-external-pro",
+        "aliases": [
+          "claude-opus-4-6"
+        ],
+        "target": "deepseek-v4-pro[1m]",
+        "displayName": "DeepSeek V4 Pro (1M)",
+        "tier": "opus"
+      },
+      {
+        "id": "claude-haiku-4-5-external-flash",
+        "aliases": [
+          "claude-sonnet-4-6"
+        ],
+        "target": "deepseek-v4-flash",
+        "displayName": "DeepSeek V4 Flash",
+        "tier": "haiku"
+      }
+    ],
+    "nativeFallback": [
+      {
+        "id": "claude-opus-4-5",
+        "displayName": "Claude Opus 4.5",
+        "tier": "opus"
+      },
+      {
+        "id": "claude-sonnet-4-5",
+        "displayName": "Claude Sonnet 4.5",
+        "tier": "sonnet"
+      },
+      {
+        "id": "claude-haiku-4-5",
+        "displayName": "Claude Haiku 4.5",
+        "tier": "haiku"
+      }
+    ]
+  },
+  "app": {
+    "patchVersion": "2026-08-09.1",
+    "source": "<home>/Applications/Claude Official.app",
+    "target": "/Applications/Claude.app",
+    "userDataDir": "<home>/Library/Application Support/Claude",
+    "routerBaseUrl": "http://127.0.0.1:10102",
+    "patchFile": "/.vite/build/index.chunk-Bc9P6O1g.js",
+    "patchFrom": "ANTHROPIC_BASE_URL:e.apiHost",
+    "modelLabelPatchFile": "/.vite/build/index.chunk-BKcsP2ti.js",
+    "modelLabelPatchFrom": "function $r(e){return Y=new a.WebContentsView(e),t.c(Y.webContents,t.n.CLAUDE_AI_WEB),Y.webContents.setMaxListeners(20),Y}"
+  },
+  "launchAgent": {
+    "label": "com.local.claude-hybrid-router",
+    "plistPath": "<home>/Library/LaunchAgents/com.local.claude-hybrid-router.plist",
+    "logDirectory": "<home>/Library/Logs/Claude Hybrid"
+  }
+}

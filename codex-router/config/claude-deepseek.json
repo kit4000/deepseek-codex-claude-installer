@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "provider": "DeepSeek Official Anthropic API",
+  "anthropicBaseUrl": "https://api.deepseek.com/anthropic",
+  "keychain": {
+    "service": "com.local.codex-native-model-router.deepseek",
+    "account": "api-key"
+  },
+  "defaultModel": "pro",
+  "models": {
+    "pro": {
+      "id": "deepseek-v4-pro[1m]",
+      "displayName": "DeepSeek V4 Pro (1M)"
+    },
+    "flash": {
+      "id": "deepseek-v4-flash",
+      "displayName": "DeepSeek V4 Flash"
+    }
+  },
+  "aliases": {
+    "opus": "pro",
+    "sonnet": "pro",
+    "haiku": "flash"
+  },
+  "subagentModel": "flash",
+  "effort": "max"
+}

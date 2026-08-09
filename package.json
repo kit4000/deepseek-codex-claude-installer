@@ -1,0 +1,25 @@
+{
+  "name": "deepseek-codex-claude-installer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reproducible macOS installer for Codex native/DeepSeek routing and Claude Hybrid 4.6 slots",
+  "scripts": {
+    "test": "node scripts/test.mjs",
+    "verify:bundle": "node scripts/verify-bundle.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "store-key": "node scripts/store-key.mjs",
+    "install": "node scripts/install.mjs",
+    "install:codex": "node scripts/install.mjs --codex-only",
+    "install:claude": "node scripts/install.mjs --claude-only",
+    "install:extensions": "node scripts/install-extensions.mjs",
+    "update:claude": "node scripts/update-claude.mjs --apply",
+    "update:claude:check": "node scripts/update-claude.mjs --check",
+    "verify": "node scripts/verify.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "archive": "node scripts/create-archive.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

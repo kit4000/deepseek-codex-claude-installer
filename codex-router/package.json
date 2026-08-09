@@ -1,0 +1,25 @@
+{
+  "name": "codex-native-model-router",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/router.mjs",
+    "catalog": "node scripts/generate-catalog.mjs",
+    "install": "node scripts/install.mjs",
+    "install:codex": "node scripts/install.mjs",
+    "install:claude": "node scripts/install-claude.mjs",
+    "install:claude-desktop": "node scripts/install-claude-desktop.mjs",
+    "handoff:preflight": "node scripts/preflight.mjs",
+    "handoff:install": "node scripts/install-handoff.mjs",
+    "handoff:verify": "node scripts/verify-installation.mjs",
+    "handoff:archive": "node scripts/create-handoff-archive.mjs",
+    "store-deepseek-key": "node scripts/store-deepseek-key.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:claude": "node scripts/claude-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
