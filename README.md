@@ -5,6 +5,8 @@ macOS上で次を共存させる配布用バンドルです。
 - Codex Desktop / CLI の純正GPTモデル、既存タスク、ChatGPT認証
 - CodexのDeepSeek V4 Flash / Pro経路
 - DeepSeekで作った暗号化コンパクションをGPTへ戻す際の安全な復号・要約変換
+- DeepSeek経路での remote compact、暗号化 function output 除去、Codex
+  `custom_tool_call` の `function_call` 正規化
 - 公式Claudeのアカウント・セッションと、Claude CodeタブのDeepSeek経路
 - ClaudeのFable 5 / Opus 4.8を残し、Opus 4.6だけをDeepSeek Pro、Sonnet 4.6だけをDeepSeek Flashとして使うモデル選択
 - 公式Claude更新後にHybridを安全に再構築するコマンドとCodexスキル

@@ -31,6 +31,13 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
   AES-256-GCM 暗号化します。次の DeepSeek ターンでは通常履歴へ戻し、GPT など
   native モデルへ切り替えたときもルーターが復号して平文の要約として転送するため、
   `invalid_encrypted_content` にならずに既存セッションを継続できます。
+- `/v1/responses/compact` は DeepSeek に無いため、通常の `/v1/responses` 要約ターンへ
+  マップし、SSE を Codex 用の単一 `compaction` 項目へ再構成します。
+- DeepSeek へ渡す前に、OpenAI 専用の `encrypted_content` / `agent_message` を除去し、
+  Codex の `custom_tool_call`・`local_shell_call` とその output を
+  `function_call` / `function_call_output` ペアへ正規化します。これにより
+  `Encrypted function output content could not be decrypted or decoded` と
+  `No tool call found for tool output with call_id ...` を防ぎます。
 - ChatGPT など別 provider が暗号化した `compaction` は復号・転送できないため、
   DeepSeek への切替時だけ除外し、切替後の通常メッセージから会話を継続します。
   native へ戻すときは ChatGPT 自身が検証できるためそのまま転送します。

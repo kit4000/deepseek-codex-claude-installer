@@ -6,9 +6,11 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
   adaptCompactionSse,
+  externalUpstreamPath,
   forwardRequestHeaders,
   forwardResponseHeaders,
   hasLocalCompaction,
+  isCompactEndpoint,
   isRemoteCompactionV2Request,
   rewriteRequestBody,
   selectRoute,
@@ -89,7 +91,15 @@ async function handleProxy(request, response, pathname) {
     return sendJson(response, 400, { error: { message: "Unknown model namespace" } });
   }
   const baseUrl = selection.kind === "native" ? config.native.baseUrl : selection.route.baseUrl;
-  const targetUrl = upstreamUrl(baseUrl, request.url);
+  const compactEndpoint = isCompactEndpoint(pathname);
+  // DeepSeek has no /responses/compact endpoint; map it onto /v1/responses and
+  // adapt the SSE into a single Codex compaction item after the call.
+  const upstreamPath = selection.kind === "external"
+    ? externalUpstreamPath(pathname)
+    : request.url;
+  const targetUrl = selection.kind === "external"
+    ? upstreamUrl(baseUrl, upstreamPath)
+    : upstreamUrl(baseUrl, request.url);
   const resolvedToken = selection.kind === "external" ? keychainToken(selection.route.auth) : undefined;
   if (selection.kind === "external" && selection.route.auth?.mode === "bearer_keychain" && !resolvedToken) {
     return sendJson(response, 503, {
@@ -106,7 +116,10 @@ async function handleProxy(request, response, pathname) {
   }
   let rewrittenBody;
   try {
-    rewrittenBody = rewriteRequestBody(parsedBody, selection, { compactionSecret });
+    rewrittenBody = rewriteRequestBody(parsedBody, selection, {
+      compactionSecret,
+      compactEndpoint,
+    });
   } catch (error) {
     return sendJson(response, error.statusCode ?? 400, {
       error: {
@@ -115,7 +128,7 @@ async function handleProxy(request, response, pathname) {
       },
     });
   }
-  const adaptCompaction = isRemoteCompactionV2Request(parsedBody, selection);
+  const adaptCompaction = isRemoteCompactionV2Request(parsedBody, selection, { compactEndpoint });
   const headers = forwardRequestHeaders(request.headers, selection, process.env, resolvedToken);
   headers.set("content-type", "application/json");
   const payload = JSON.stringify(rewrittenBody);
