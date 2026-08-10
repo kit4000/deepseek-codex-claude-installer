@@ -7,7 +7,8 @@ import {
 
 const LOCAL_COMPACTION_PREFIX = "codex-native-model-router:compaction:v1:";
 const SUMMARY_PREFIX = "Another language model started to solve this problem and produced a summary of its thinking process. You also have access to the state of the tools that were used by that language model. Use this to build on the work that has already been done and avoid duplicating work. Here is the summary produced by the other language model, use the information in this summary to assist with your own analysis:";
-const SUMMARIZATION_PROMPT = `You are performing a CONTEXT CHECKPOINT COMPACTION. Create a handoff summary for another LLM that will resume the task.
+const SUMMARIZATION_MARKER = "CONTEXT CHECKPOINT COMPACTION";
+const SUMMARIZATION_PROMPT = `You are performing a ${SUMMARIZATION_MARKER}. Create a handoff summary for another LLM that will resume the task.
 
 Include:
 - Current progress and key decisions made
@@ -100,9 +101,26 @@ export function openLocalCompaction(payload, secret) {
   }
 }
 
-export function isRemoteCompactionV2Request(body, selection) {
-  return selection.kind === "external"
-    && Array.isArray(body?.input)
+const EXTERNAL_SUPPORTED_INPUT_TYPES = new Set([
+  "message",
+  "function_call",
+  "function_call_output",
+  "custom_tool_call",
+  "custom_tool_call_output",
+  "local_shell_call",
+  "local_shell_call_output",
+  "reasoning",
+  "web_search_call",
+]);
+
+export function isCompactEndpoint(pathname) {
+  return typeof pathname === "string" && /\/responses\/compact\/?$/.test(pathname);
+}
+
+export function isRemoteCompactionV2Request(body, selection, options = {}) {
+  if (selection.kind !== "external") return false;
+  if (options.compactEndpoint) return true;
+  return Array.isArray(body?.input)
     && body.input.some((item) => item?.type === "compaction_trigger");
 }
 
@@ -130,27 +148,234 @@ function rewriteLocalCompactions(input, compactionSecret) {
   });
 }
 
-function rewriteExternalInput(input, compactionSecret) {
+function extractTextParts(content) {
+  if (typeof content === "string") {
+    const text = content.trim();
+    return text ? [{ type: "input_text", text }] : [];
+  }
+  if (!Array.isArray(content)) return [];
+  return content.flatMap((part) => {
+    if (!part || typeof part !== "object") return [];
+    // OpenAI-only ciphertext cannot be decrypted by DeepSeek or this router.
+    if (part.type === "encrypted_content") return [];
+    if (typeof part.text === "string" && part.text.length > 0) {
+      if (part.type === "output_text") return [{ type: "output_text", text: part.text }];
+      return [{ type: "input_text", text: part.text }];
+    }
+    if (part.type === "input_image" || part.type === "input_file") return [];
+    return [];
+  });
+}
+
+function contentToUserMessage(content, role = "user") {
+  const parts = extractTextParts(content)
+    .map((part) => ({ type: "input_text", text: part.text }));
+  if (parts.length === 0) return [];
+  return [{ type: "message", role, content: parts }];
+}
+
+function sanitizeFunctionCallOutput(item) {
+  if (typeof item.call_id !== "string" || item.call_id.length === 0) return [];
+
+  let output;
+  let derived = false;
+  if (typeof item.output === "string") {
+    // Preserve successful empty-string outputs; only drop unextractable shapes.
+    output = item.output;
+    derived = true;
+  } else if (Array.isArray(item.output)) {
+    const parts = extractTextParts(item.output);
+    if (parts.length === 0) return [];
+    output = parts.map((part) => part.text).join("\n");
+    derived = true;
+  } else if (item.output && typeof item.output === "object") {
+    if (item.output.type === "encrypted_content") return [];
+    if (typeof item.output.text === "string") {
+      output = item.output.text;
+      derived = true;
+    }
+  } else if (Array.isArray(item.content)) {
+    const parts = extractTextParts(item.content);
+    if (parts.length === 0) return [];
+    output = parts.map((part) => part.text).join("\n");
+    derived = true;
+  }
+
+  if (!derived) return [];
+  return [{
+    type: "function_call_output",
+    call_id: item.call_id,
+    output,
+  }];
+}
+
+function functionCallArguments(item) {
+  if (typeof item.arguments === "string" && item.arguments.length > 0) {
+    return item.arguments;
+  }
+  // Codex custom tools (apply_patch, exec, ...) use freeform `input`.
+  if (item.input != null) {
+    return JSON.stringify({ input: item.input });
+  }
+  if (item.action != null) {
+    return JSON.stringify({ action: item.action });
+  }
+  return "{}";
+}
+
+function sanitizeFunctionCall(item) {
+  if (typeof item.call_id !== "string" || item.call_id.length === 0) return [];
+  const name = typeof item.name === "string" && item.name.length > 0
+    ? item.name
+    : (item.type === "local_shell_call" ? "local_shell" : "tool");
+  return [{
+    type: "function_call",
+    call_id: item.call_id,
+    name,
+    arguments: functionCallArguments(item),
+  }];
+}
+
+function repairToolCallPairs(input) {
+  const callIds = new Set(
+    input
+      .filter((item) => item?.type === "function_call" && typeof item.call_id === "string")
+      .map((item) => item.call_id),
+  );
+  const repaired = [];
+  for (const item of input) {
+    if (item?.type === "function_call_output" && typeof item.call_id === "string") {
+      if (!callIds.has(item.call_id)) {
+        // DeepSeek rejects orphan outputs. Restore a stub call so history can continue.
+        repaired.push({
+          type: "function_call",
+          call_id: item.call_id,
+          name: "tool",
+          arguments: "{}",
+        });
+        callIds.add(item.call_id);
+      }
+    }
+    repaired.push(item);
+  }
+
+  const outputIds = new Set(
+    repaired
+      .filter((item) => item?.type === "function_call_output" && typeof item.call_id === "string")
+      .map((item) => item.call_id),
+  );
+  // Historical calls without outputs also 400; keep only trailing unanswered calls
+  // (the in-flight turn Codex is about to satisfy).
+  let lastNonCallIndex = repaired.length - 1;
+  while (lastNonCallIndex >= 0 && repaired[lastNonCallIndex]?.type === "function_call") {
+    lastNonCallIndex -= 1;
+  }
+  const trailingPending = new Set(
+    repaired.slice(lastNonCallIndex + 1).map((item) => item.call_id),
+  );
+  return repaired.flatMap((item) => {
+    if (item?.type !== "function_call") return [item];
+    if (outputIds.has(item.call_id) || trailingPending.has(item.call_id)) return [item];
+    return [
+      item,
+      {
+        type: "function_call_output",
+        call_id: item.call_id,
+        output: "(tool output unavailable)",
+      },
+    ];
+  });
+}
+
+function sanitizeExternalInputItem(item) {
+  if (!item || typeof item !== "object") return [];
+
+  if (item.type === "compaction_trigger") {
+    return [{
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: SUMMARIZATION_PROMPT }],
+    }];
+  }
+
+  if (item.type === "compaction") {
+    // Opaque ChatGPT/provider compactions cannot be forwarded to DeepSeek.
+    // Router-sealed ones are restored before this helper runs.
+    return [];
+  }
+
+  if (item.type === "agent_message") {
+    // DeepSeek ignores agent_message items. Deliver plaintext as a normal user message.
+    return contentToUserMessage(item.content, "user");
+  }
+
+  if (item.type === "message") {
+    const role = item.role ?? "user";
+    const content = extractTextParts(item.content).map((part) => {
+      if (role === "assistant" && part.type === "output_text") {
+        return { type: "output_text", text: part.text };
+      }
+      return { type: "input_text", text: part.text };
+    });
+    if (content.length === 0) return [];
+    return [{
+      type: "message",
+      role,
+      content,
+    }];
+  }
+
+  if (item.type === "function_call"
+    || item.type === "custom_tool_call"
+    || item.type === "local_shell_call") {
+    return sanitizeFunctionCall(item);
+  }
+
+  if (item.type === "function_call_output"
+    || item.type === "custom_tool_call_output"
+    || item.type === "local_shell_call_output") {
+    return sanitizeFunctionCallOutput(item);
+  }
+
+  if (item.type === "reasoning") {
+    // Ciphertext-only reasoning cannot be recovered; never forward an empty shell.
+    if (!Array.isArray(item.content)) return [];
+    const content = extractTextParts(item.content)
+      .map((part) => ({ type: "input_text", text: part.text }));
+    if (content.length === 0) return [];
+    return [{ type: "reasoning", content }];
+  }
+
+  if (item.type === "web_search_call") {
+    return [item];
+  }
+
+  if (!EXTERNAL_SUPPORTED_INPUT_TYPES.has(item.type)) {
+    // Drop Codex-only inter-agent / encrypted transport items that DeepSeek ignores.
+    return [];
+  }
+
+  return [item];
+}
+
+function rewriteExternalInput(input, compactionSecret, options = {}) {
   if (!Array.isArray(input)) return input;
   const withLocal = rewriteLocalCompactions(input, compactionSecret);
-  return withLocal.flatMap((item) => {
-    if (item?.type === "compaction_trigger") {
-      return [{
-        type: "message",
-        role: "user",
-        content: [{ type: "input_text", text: SUMMARIZATION_PROMPT }],
-      }];
-    }
-    if (item?.type === "compaction") {
-      // Compactions produced by ChatGPT or another provider are opaque to this
-      // router. They cannot be forwarded to DeepSeek or decrypted locally, so
-      // omit them and preserve the ordinary messages that follow the provider
-      // switch. Router-produced compactions were restored by
-      // rewriteLocalCompactions above.
-      return [];
-    }
-    return [item];
-  });
+  const rewritten = repairToolCallPairs(
+    withLocal.flatMap((item) => sanitizeExternalInputItem(item)),
+  );
+  if (options.ensureCompactionPrompt
+    && !rewritten.some((item) => item?.type === "message"
+      && Array.isArray(item.content)
+      && item.content.some((part) => typeof part?.text === "string"
+        && part.text.includes(SUMMARIZATION_MARKER)))) {
+    rewritten.push({
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: SUMMARIZATION_PROMPT }],
+    });
+  }
+  return rewritten;
 }
 
 export function rewriteRequestBody(body, selection, options = {}) {
@@ -166,8 +391,11 @@ export function rewriteRequestBody(body, selection, options = {}) {
   }
 
   rewritten.model = selection.upstreamModel;
-  rewritten.input = rewriteExternalInput(rewritten.input, options.compactionSecret);
-  if (isRemoteCompactionV2Request(body, selection)) {
+  const adaptCompaction = isRemoteCompactionV2Request(body, selection, options);
+  rewritten.input = rewriteExternalInput(rewritten.input, options.compactionSecret, {
+    ensureCompactionPrompt: adaptCompaction,
+  });
+  if (adaptCompaction) {
     // DeepSeek's Responses endpoint treats compaction_trigger as an ordinary
     // item. Force a text-only summary turn; its SSE is adapted after the call.
     rewritten.tools = [];
@@ -176,6 +404,12 @@ export function rewriteRequestBody(body, selection, options = {}) {
   // Local OpenAI-compatible servers commonly reject OpenAI billing-only fields.
   delete rewritten.service_tier;
   return rewritten;
+}
+
+export function externalUpstreamPath(pathname) {
+  // Pathname only; callers must reattach request.search when needed.
+  if (isCompactEndpoint(pathname)) return "/v1/responses";
+  return pathname.startsWith("/v1/") ? pathname : `/v1${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
 }
 
 function parseSseEvents(payload) {

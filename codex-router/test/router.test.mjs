@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   adaptCompactionSse,
+  externalUpstreamPath,
   forwardRequestHeaders,
   hasLocalCompaction,
+  isCompactEndpoint,
   isRemoteCompactionV2Request,
   mergeCatalog,
   openLocalCompaction,
@@ -80,6 +82,229 @@ test("converts DeepSeek compaction triggers into an explicit text-only summary t
   assert.match(rewritten.input.at(-1).content[0].text, /CONTEXT CHECKPOINT COMPACTION/);
   assert.deepEqual(rewritten.tools, []);
   assert.equal(rewritten.tool_choice, undefined);
+});
+
+test("maps /responses/compact onto a DeepSeek text-only summary turn", () => {
+  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  assert.equal(isCompactEndpoint("/v1/responses/compact"), true);
+  assert.equal(externalUpstreamPath("/v1/responses/compact"), "/v1/responses");
+  assert.equal(
+    upstreamUrl(
+      "https://api.deepseek.com",
+      `${externalUpstreamPath("/v1/responses/compact")}?beta=1`,
+    ),
+    "https://api.deepseek.com/responses?beta=1",
+  );
+  const body = {
+    model: "deepseek/deepseek-v4-flash",
+    input: [{
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Long session history." }],
+    }],
+    tools: [{ type: "function", name: "shell" }],
+    tool_choice: "auto",
+  };
+  assert.equal(isRemoteCompactionV2Request(body, selection, { compactEndpoint: true }), true);
+  const rewritten = rewriteRequestBody(body, selection, {
+    compactionSecret: "test-secret",
+    compactEndpoint: true,
+  });
+  assert.match(rewritten.input.at(-1).content[0].text, /CONTEXT CHECKPOINT COMPACTION/);
+  assert.deepEqual(rewritten.tools, []);
+  assert.equal(rewritten.tool_choice, undefined);
+});
+
+test("strips OpenAI encrypted function outputs and agent_message before DeepSeek", () => {
+  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const rewritten = rewriteRequestBody({
+    model: "deepseek/deepseek-v4-flash",
+    input: [
+      {
+        type: "agent_message",
+        author: "/root",
+        recipient: "/root/child",
+        content: [
+          { type: "input_text", text: "Message Type: NEW_TASK\nPayload:\n" },
+          { type: "encrypted_content", encrypted_content: "gAAAAA-ciphertext" },
+        ],
+      },
+      {
+        type: "function_call_output",
+        call_id: "call_1",
+        output: [
+          { type: "encrypted_content", encrypted_content: "gAAAAA-function-output" },
+        ],
+      },
+      {
+        type: "function_call_output",
+        call_id: "call_2",
+        output: [
+          { type: "input_text", text: "shell ok" },
+          { type: "encrypted_content", encrypted_content: "gAAAAA-drop-me" },
+        ],
+      },
+      {
+        type: "reasoning",
+        encrypted_content: "gAAAAA-reasoning",
+        content: [{ type: "input_text", text: "keep this thought" }],
+      },
+      {
+        type: "reasoning",
+        encrypted_content: "gAAAAA-reasoning-only",
+      },
+      {
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: "Assistant reply." }],
+      },
+      {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: "Continue." }],
+      },
+    ],
+  }, selection, { compactionSecret: "test-secret" });
+
+  assert.deepEqual(rewritten.input, [
+    {
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Message Type: NEW_TASK\nPayload:\n" }],
+    },
+    {
+      type: "function_call",
+      call_id: "call_2",
+      name: "tool",
+      arguments: "{}",
+    },
+    {
+      type: "function_call_output",
+      call_id: "call_2",
+      output: "shell ok",
+    },
+    {
+      type: "reasoning",
+      content: [{ type: "input_text", text: "keep this thought" }],
+    },
+    {
+      type: "message",
+      role: "assistant",
+      content: [{ type: "output_text", text: "Assistant reply." }],
+    },
+    {
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Continue." }],
+    },
+  ]);
+});
+
+test("maps Codex custom_tool_call pairs onto DeepSeek function_call pairs", () => {
+  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const rewritten = rewriteRequestBody({
+    model: "deepseek/deepseek-v4-flash",
+    input: [
+      {
+        type: "custom_tool_call",
+        call_id: "call_00_DB8EHUmSGOXfFxqBhzwe3014",
+        name: "apply_patch",
+        input: "*** Begin Patch\n*** End Patch\n",
+        status: "completed",
+      },
+      {
+        type: "custom_tool_call_output",
+        call_id: "call_00_DB8EHUmSGOXfFxqBhzwe3014",
+        output: "Exit code: 0\nSuccess.",
+      },
+    ],
+  }, selection, { compactionSecret: "test-secret" });
+
+  assert.deepEqual(rewritten.input, [
+    {
+      type: "function_call",
+      call_id: "call_00_DB8EHUmSGOXfFxqBhzwe3014",
+      name: "apply_patch",
+      arguments: JSON.stringify({ input: "*** Begin Patch\n*** End Patch\n" }),
+    },
+    {
+      type: "function_call_output",
+      call_id: "call_00_DB8EHUmSGOXfFxqBhzwe3014",
+      output: "Exit code: 0\nSuccess.",
+    },
+  ]);
+});
+
+test("maps local_shell_call pairs and repairs historical tool-call gaps", () => {
+  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const rewritten = rewriteRequestBody({
+    model: "deepseek/deepseek-v4-flash",
+    input: [
+      {
+        type: "local_shell_call",
+        call_id: "call_shell_1",
+        action: { command: ["ls"] },
+      },
+      {
+        type: "local_shell_call_output",
+        call_id: "call_shell_1",
+        output: "",
+      },
+      {
+        type: "function_call",
+        call_id: "call_hist",
+        name: "wait",
+        arguments: "{\"cell_id\":\"1\"}",
+      },
+      {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: "next" }],
+      },
+      {
+        type: "function_call",
+        call_id: "call_pending",
+        name: "wait",
+        arguments: "{\"cell_id\":\"2\"}",
+      },
+    ],
+  }, selection, { compactionSecret: "test-secret" });
+
+  assert.deepEqual(rewritten.input, [
+    {
+      type: "function_call",
+      call_id: "call_shell_1",
+      name: "local_shell",
+      arguments: JSON.stringify({ action: { command: ["ls"] } }),
+    },
+    {
+      type: "function_call_output",
+      call_id: "call_shell_1",
+      output: "",
+    },
+    {
+      type: "function_call",
+      call_id: "call_hist",
+      name: "wait",
+      arguments: "{\"cell_id\":\"1\"}",
+    },
+    {
+      type: "function_call_output",
+      call_id: "call_hist",
+      output: "(tool output unavailable)",
+    },
+    {
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "next" }],
+    },
+    {
+      type: "function_call",
+      call_id: "call_pending",
+      name: "wait",
+      arguments: "{\"cell_id\":\"2\"}",
+    },
+  ]);
 });
 
 test("encrypts local summaries and restores them as user context for DeepSeek", () => {

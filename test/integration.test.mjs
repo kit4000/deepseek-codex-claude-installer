@@ -15,6 +15,24 @@ test("native GPT restores only router-sealed compactions", async () => {
   assert.match(tests, /does not require a compaction secret for native requests without local compactions/);
 });
 
+test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () => {
+  const library = await readFile(resolve(codexRoot, "src/lib.mjs"), "utf8");
+  const router = await readFile(resolve(codexRoot, "src/router.mjs"), "utf8");
+  const tests = await readFile(resolve(codexRoot, "test/router.test.mjs"), "utf8");
+  const handoff = await readFile(resolve(projectRoot, "AGENT_HANDOFF.md"), "utf8");
+  assert.match(library, /function repairToolCallPairs/);
+  assert.match(library, /custom_tool_call/);
+  assert.match(library, /isCompactEndpoint/);
+  assert.match(library, /externalUpstreamPath/);
+  assert.match(router, /compactEndpoint/);
+  assert.match(router, /externalUpstreamPath\(pathname\)/);
+  assert.match(tests, /maps Codex custom_tool_call pairs onto DeepSeek function_call pairs/);
+  assert.match(tests, /strips OpenAI encrypted function outputs and agent_message before DeepSeek/);
+  assert.match(tests, /maps \/responses\/compact onto a DeepSeek text-only summary turn/);
+  assert.match(handoff, /No tool call found for tool output with call_id/);
+  assert.match(handoff, /Encrypted function output content could not be decrypted or decoded/);
+});
+
 test("Claude Hybrid uses only the 4.6 slots for DeepSeek", async () => {
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
   const aliases = config.models.external.flatMap((entry) => entry.aliases ?? []).sort();

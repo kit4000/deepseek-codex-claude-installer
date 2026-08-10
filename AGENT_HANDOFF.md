@@ -34,6 +34,22 @@ Keychain資格情報から導出した鍵でルーターが復号し、平文の
 これにより、DeepSeekからGPT-5.6 Solなどへ切り替えた際の
 `invalid_encrypted_content`／`Encrypted content could not be decrypted or parsed` を防ぎます。
 
+### DeepSeek経路の remote compact と tool call 正規化
+
+Codex Desktop が DeepSeek V4 Flash を使うとき、ルーターは次を行います。
+
+1. `/v1/responses/compact` を DeepSeek の通常 Responses 要約へマップし、結果を
+   ルーター密封の `compaction` へ戻す。
+2. OpenAI 専用の `encrypted_content` と平文のない `agent_message` を除去する。
+3. Codex の `custom_tool_call` / `custom_tool_call_output`（`apply_patch`、`exec` など）と
+   `local_shell_call` 系を、DeepSeek が受け付ける `function_call` /
+   `function_call_output` の整合したペアへ変換する。
+
+これにより次の実行時エラーを防ぎます。
+
+- `Error running remote compact task: ... Encrypted function output content could not be decrypted or decoded`
+- `No tool call found for tool output with call_id ...`
+
 ### Claude Hybridの成功構成
 
 - Codeタブが子プロセスへ渡す `ANTHROPIC_BASE_URL` だけを `127.0.0.1:10102` に変更。
