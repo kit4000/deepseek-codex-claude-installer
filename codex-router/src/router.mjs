@@ -94,11 +94,9 @@ async function handleProxy(request, response, pathname) {
   const compactEndpoint = isCompactEndpoint(pathname);
   // DeepSeek has no /responses/compact endpoint; map it onto /v1/responses and
   // adapt the SSE into a single Codex compaction item after the call.
-  const upstreamPath = selection.kind === "external"
-    ? externalUpstreamPath(pathname)
-    : request.url;
+  const incomingUrl = new URL(request.url, "http://127.0.0.1");
   const targetUrl = selection.kind === "external"
-    ? upstreamUrl(baseUrl, upstreamPath)
+    ? upstreamUrl(baseUrl, `${externalUpstreamPath(pathname)}${incomingUrl.search}`)
     : upstreamUrl(baseUrl, request.url);
   const resolvedToken = selection.kind === "external" ? keychainToken(selection.route.auth) : undefined;
   if (selection.kind === "external" && selection.route.auth?.mode === "bearer_keychain" && !resolvedToken) {

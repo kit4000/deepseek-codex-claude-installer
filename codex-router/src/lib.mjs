@@ -7,7 +7,8 @@ import {
 
 const LOCAL_COMPACTION_PREFIX = "codex-native-model-router:compaction:v1:";
 const SUMMARY_PREFIX = "Another language model started to solve this problem and produced a summary of its thinking process. You also have access to the state of the tools that were used by that language model. Use this to build on the work that has already been done and avoid duplicating work. Here is the summary produced by the other language model, use the information in this summary to assist with your own analysis:";
-const SUMMARIZATION_PROMPT = `You are performing a CONTEXT CHECKPOINT COMPACTION. Create a handoff summary for another LLM that will resume the task.
+const SUMMARIZATION_MARKER = "CONTEXT CHECKPOINT COMPACTION";
+const SUMMARIZATION_PROMPT = `You are performing a ${SUMMARIZATION_MARKER}. Create a handoff summary for another LLM that will resume the task.
 
 Include:
 - Current progress and key decisions made
@@ -174,20 +175,33 @@ function contentToUserMessage(content, role = "user") {
 }
 
 function sanitizeFunctionCallOutput(item) {
+  if (typeof item.call_id !== "string" || item.call_id.length === 0) return [];
+
   let output;
+  let derived = false;
   if (typeof item.output === "string") {
-    output = item.output.trim();
+    // Preserve successful empty-string outputs; only drop unextractable shapes.
+    output = item.output;
+    derived = true;
   } else if (Array.isArray(item.output)) {
-    output = extractTextParts(item.output).map((part) => part.text).join("\n").trim();
+    const parts = extractTextParts(item.output);
+    if (parts.length === 0) return [];
+    output = parts.map((part) => part.text).join("\n");
+    derived = true;
   } else if (item.output && typeof item.output === "object") {
     if (item.output.type === "encrypted_content") return [];
-    if (typeof item.output.text === "string") output = item.output.text.trim();
+    if (typeof item.output.text === "string") {
+      output = item.output.text;
+      derived = true;
+    }
   } else if (Array.isArray(item.content)) {
-    output = extractTextParts(item.content).map((part) => part.text).join("\n").trim();
+    const parts = extractTextParts(item.content);
+    if (parts.length === 0) return [];
+    output = parts.map((part) => part.text).join("\n");
+    derived = true;
   }
 
-  if (!output) return [];
-  if (typeof item.call_id !== "string" || item.call_id.length === 0) return [];
+  if (!derived) return [];
   return [{
     type: "function_call_output",
     call_id: item.call_id,
@@ -200,9 +214,6 @@ function functionCallArguments(item) {
     return item.arguments;
   }
   // Codex custom tools (apply_patch, exec, ...) use freeform `input`.
-  if (typeof item.input === "string") {
-    return JSON.stringify({ input: item.input });
-  }
   if (item.input != null) {
     return JSON.stringify({ input: item.input });
   }
@@ -262,7 +273,7 @@ function repairToolCallPairs(input) {
   const trailingPending = new Set(
     repaired.slice(lastNonCallIndex + 1).map((item) => item.call_id),
   );
-  return repaired.flatMap((item, index) => {
+  return repaired.flatMap((item) => {
     if (item?.type !== "function_call") return [item];
     if (outputIds.has(item.call_id) || trailingPending.has(item.call_id)) return [item];
     return [
@@ -299,12 +310,17 @@ function sanitizeExternalInputItem(item) {
   }
 
   if (item.type === "message") {
-    const content = extractTextParts(item.content)
-      .map((part) => ({ type: "input_text", text: part.text }));
+    const role = item.role ?? "user";
+    const content = extractTextParts(item.content).map((part) => {
+      if (role === "assistant" && part.type === "output_text") {
+        return { type: "output_text", text: part.text };
+      }
+      return { type: "input_text", text: part.text };
+    });
     if (content.length === 0) return [];
     return [{
       type: "message",
-      role: item.role ?? "user",
+      role,
       content,
     }];
   }
@@ -322,13 +338,12 @@ function sanitizeExternalInputItem(item) {
   }
 
   if (item.type === "reasoning") {
-    const content = Array.isArray(item.content)
-      ? extractTextParts(item.content).map((part) => ({ type: "input_text", text: part.text }))
-      : undefined;
-    if (content && content.length === 0) return [];
-    const cleaned = { type: "reasoning" };
-    if (content) cleaned.content = content;
-    return [cleaned];
+    // Ciphertext-only reasoning cannot be recovered; never forward an empty shell.
+    if (!Array.isArray(item.content)) return [];
+    const content = extractTextParts(item.content)
+      .map((part) => ({ type: "input_text", text: part.text }));
+    if (content.length === 0) return [];
+    return [{ type: "reasoning", content }];
   }
 
   if (item.type === "web_search_call") {
@@ -353,7 +368,7 @@ function rewriteExternalInput(input, compactionSecret, options = {}) {
     && !rewritten.some((item) => item?.type === "message"
       && Array.isArray(item.content)
       && item.content.some((part) => typeof part?.text === "string"
-        && part.text.includes("CONTEXT CHECKPOINT COMPACTION")))) {
+        && part.text.includes(SUMMARIZATION_MARKER)))) {
     rewritten.push({
       type: "message",
       role: "user",
@@ -392,6 +407,7 @@ export function rewriteRequestBody(body, selection, options = {}) {
 }
 
 export function externalUpstreamPath(pathname) {
+  // Pathname only; callers must reattach request.search when needed.
   if (isCompactEndpoint(pathname)) return "/v1/responses";
   return pathname.startsWith("/v1/") ? pathname : `/v1${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
 }
