@@ -148,6 +148,87 @@ function rewriteLocalCompactions(input, compactionSecret) {
   });
 }
 
+// OpenAI ciphertext is opaque (typically Fernet-like `gAAAA...`). MultiAgent V2
+// sometimes stores ordinary plaintext under type=encrypted_content; replaying
+// that makes remote compact / parent turns fail with decrypt-or-decode errors.
+export function isOpaqueEncryptedPayload(value) {
+  if (typeof value !== "string" || value.length === 0) return false;
+  if (value.startsWith(LOCAL_COMPACTION_PREFIX)) return true;
+  const compact = value.replace(/\s+/g, "");
+  // OpenAI/ChatGPT Fernet-like blobs always start with gAAAA.
+  if (compact.startsWith("gAAAA")) return true;
+  // Reject obvious prose / JSON / code even if long.
+  if (/[\s{}[\]'"<>]|Initial spawn|Message Type:|Please send|Exit code:/.test(value)) {
+    return false;
+  }
+  return compact.length >= 40 && /^[A-Za-z0-9_+\/=-]+$/.test(compact);
+}
+
+function plaintextFromEncryptedPart(part) {
+  if (!part || typeof part !== "object") return undefined;
+  if (part.type !== "encrypted_content") return undefined;
+  const blob = part.encrypted_content;
+  if (typeof blob !== "string" || blob.length === 0) return undefined;
+  if (isOpaqueEncryptedPayload(blob)) return undefined;
+  return blob;
+}
+
+function repairMalformedEncryptedParts(content) {
+  if (!Array.isArray(content)) return content;
+  return content.flatMap((part) => {
+    const plaintext = plaintextFromEncryptedPart(part);
+    if (typeof plaintext === "string") {
+      return [{ type: "input_text", text: plaintext }];
+    }
+    return [part];
+  });
+}
+
+function repairNativeInputItem(item) {
+  if (!item || typeof item !== "object") return [item];
+  const repaired = { ...item };
+
+  if (typeof repaired.encrypted_content === "string"
+    && !isOpaqueEncryptedPayload(repaired.encrypted_content)) {
+    const text = repaired.encrypted_content;
+    if (repaired.type === "compaction" || repaired.type === "reasoning") {
+      return [{
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text }],
+      }];
+    }
+    delete repaired.encrypted_content;
+  }
+
+  if (Array.isArray(repaired.content)) {
+    repaired.content = repairMalformedEncryptedParts(repaired.content);
+  }
+
+  if (Array.isArray(repaired.output)) {
+    repaired.output = repairMalformedEncryptedParts(repaired.output);
+    if ((repaired.type === "function_call_output" || repaired.type === "custom_tool_call_output")
+      && repaired.output.every((part) => part?.type !== "encrypted_content")) {
+      repaired.output = repaired.output
+        .map((part) => (typeof part?.text === "string" ? part.text : ""))
+        .join("\n");
+    }
+  } else if (repaired.output && typeof repaired.output === "object") {
+    const plaintext = plaintextFromEncryptedPart(repaired.output);
+    if (typeof plaintext === "string") {
+      repaired.output = plaintext;
+    }
+  }
+
+  // agent_message with only repaired plaintext is safer as a normal message for
+  // compact / non-collaboration turns that choke on malformed V2 payloads.
+  if (repaired.type === "agent_message") {
+    return contentToUserMessage(repaired.content, "user");
+  }
+
+  return [repaired];
+}
+
 function extractTextParts(content) {
   if (typeof content === "string") {
     const text = content.trim();
@@ -156,7 +237,11 @@ function extractTextParts(content) {
   if (!Array.isArray(content)) return [];
   return content.flatMap((part) => {
     if (!part || typeof part !== "object") return [];
-    // OpenAI-only ciphertext cannot be decrypted by DeepSeek or this router.
+    const plaintext = plaintextFromEncryptedPart(part);
+    if (typeof plaintext === "string") {
+      return [{ type: "input_text", text: plaintext }];
+    }
+    // Opaque OpenAI ciphertext cannot be decrypted by DeepSeek or this router.
     if (part.type === "encrypted_content") return [];
     if (typeof part.text === "string" && part.text.length > 0) {
       if (part.type === "output_text") return [{ type: "output_text", text: part.text }];
@@ -189,11 +274,20 @@ function sanitizeFunctionCallOutput(item) {
     output = parts.map((part) => part.text).join("\n");
     derived = true;
   } else if (item.output && typeof item.output === "object") {
-    if (item.output.type === "encrypted_content") return [];
-    if (typeof item.output.text === "string") {
+    const plaintext = plaintextFromEncryptedPart(item.output);
+    if (typeof plaintext === "string") {
+      output = plaintext;
+      derived = true;
+    } else if (item.output.type === "encrypted_content") {
+      return [];
+    } else if (typeof item.output.text === "string") {
       output = item.output.text;
       derived = true;
     }
+  } else if (typeof item.encrypted_content === "string"
+    && !isOpaqueEncryptedPayload(item.encrypted_content)) {
+    output = item.encrypted_content;
+    derived = true;
   } else if (Array.isArray(item.content)) {
     const parts = extractTextParts(item.content);
     if (parts.length === 0) return [];
@@ -384,9 +478,13 @@ export function rewriteRequestBody(body, selection, options = {}) {
   const rewritten = structuredClone(body);
   if (selection.kind !== "external") {
     // The native upstream cannot decrypt router-sealed summaries, so restore
-    // them to plaintext before forwarding. Compactions encrypted by ChatGPT
-    // itself stay untouched for the native backend to verify.
+    // them to plaintext before forwarding. Real ChatGPT ciphertext stays
+    // untouched; MultiAgent V2 plaintext-in-encrypted_content blobs are
+    // repaired so remote compact / parent turns do not 400.
     rewritten.input = rewriteLocalCompactions(rewritten.input, options.compactionSecret);
+    if (Array.isArray(rewritten.input)) {
+      rewritten.input = rewritten.input.flatMap((item) => repairNativeInputItem(item));
+    }
     return rewritten;
   }
 

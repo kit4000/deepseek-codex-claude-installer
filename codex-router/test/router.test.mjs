@@ -6,6 +6,7 @@ import {
   forwardRequestHeaders,
   hasLocalCompaction,
   isCompactEndpoint,
+  isOpaqueEncryptedPayload,
   isRemoteCompactionV2Request,
   mergeCatalog,
   openLocalCompaction,
@@ -235,6 +236,73 @@ test("maps Codex custom_tool_call pairs onto DeepSeek function_call pairs", () =
   ]);
 });
 
+test("repairs MultiAgent V2 plaintext stored as encrypted_content for native GPT", () => {
+  assert.equal(isOpaqueEncryptedPayload("gAAAAAabcdefghijklmnopqrstuvwxyz0123456789+/="), true);
+  assert.equal(
+    isOpaqueEncryptedPayload(
+      "Initial spawn message arrived without a task payload (only system instructions).",
+    ),
+    false,
+  );
+
+  const selection = selectRoute("gpt-5.6-sol", config);
+  const rewritten = rewriteRequestBody({
+    model: "gpt-5.6-sol",
+    input: [
+      {
+        type: "agent_message",
+        author: "/root/child",
+        recipient: "/root",
+        content: [
+          { type: "input_text", text: "Message Type: MESSAGE\nPayload:\n" },
+          {
+            type: "encrypted_content",
+            encrypted_content:
+              "Initial spawn message arrived without a task payload (only system instructions). Please send the concrete task/objective for this subagent so I can execute it.",
+          },
+        ],
+      },
+      {
+        type: "function_call_output",
+        call_id: "call_agent_1",
+        output: [{
+          type: "encrypted_content",
+          encrypted_content: "Subagent finished with status OK.",
+        }],
+      },
+      {
+        type: "reasoning",
+        encrypted_content: "gAAAAAabcdefghijklmnopqrstuvwxyz0123456789+/=",
+        content: [{ type: "input_text", text: "keep opaque reasoning ciphertext" }],
+      },
+    ],
+  }, selection, { compactionSecret: "test-secret" });
+
+  assert.deepEqual(rewritten.input, [
+    {
+      type: "message",
+      role: "user",
+      content: [
+        { type: "input_text", text: "Message Type: MESSAGE\nPayload:\n" },
+        {
+          type: "input_text",
+          text: "Initial spawn message arrived without a task payload (only system instructions). Please send the concrete task/objective for this subagent so I can execute it.",
+        },
+      ],
+    },
+    {
+      type: "function_call_output",
+      call_id: "call_agent_1",
+      output: "Subagent finished with status OK.",
+    },
+    {
+      type: "reasoning",
+      encrypted_content: "gAAAAAabcdefghijklmnopqrstuvwxyz0123456789+/=",
+      content: [{ type: "input_text", text: "keep opaque reasoning ciphertext" }],
+    },
+  ]);
+});
+
 test("maps local_shell_call pairs and repairs historical tool-call gaps", () => {
   const selection = selectRoute("deepseek/deepseek-v4-flash", config);
   const rewritten = rewriteRequestBody({
@@ -373,7 +441,10 @@ test("restores router-sealed summaries for native GPT requests", () => {
 
 test("keeps ChatGPT-encrypted compactions untouched for native GPT requests", () => {
   const selection = selectRoute("gpt-5.6-sol", config);
-  const opaque = { type: "compaction", encrypted_content: "opaque-openai-compaction" };
+  const opaque = {
+    type: "compaction",
+    encrypted_content: "gAAAAAabcdefghijklmnopqrstuvwxyz0123456789+/=",
+  };
   const rewritten = rewriteRequestBody({
     model: "gpt-5.6-sol",
     input: [opaque],

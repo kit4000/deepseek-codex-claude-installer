@@ -14,7 +14,7 @@
     "Main model selection and global subagent defaults"
   ],
   "files": {
-    "AGENT_HANDOFF.md": "d2d816e86176e94f957c815f041747eb51b2344efe0b65e12b59fad8c8e7f99f",
+    "AGENT_HANDOFF.md": "ad50871dbf67e72a7deff3b5a14c84fceb8e5bd790d82dfe16ee58dbc4787e2b",
     "CHANGE_SPEC-claude-app-layout-and-updates.md": "eaaa6b35462dc2f1051b9519477043296563e8b541eb92fda8502f5f5650982b",
     "README.md": "b155fa44ba1cab3b46f93797581d3c699a09f6230c1c0e1cdc5527384288873a",
     "claude-hybrid/README.md": "85b3ca8d12f8f81cd72195ca216a422be81fadd139536494cda4d45d093423ce",
@@ -37,7 +37,7 @@
     "claude-hybrid/test/router.test.mjs": "8593a2dcee968cbb08c86bd12981d187b48bb50060e6c38071cf09dc020aa04a",
     "claude-hybrid/test/update-plan.test.mjs": "e391c908031c5b90f4dfbddc064a9ffbd41e661ee0130a812e6bbb0b879ccc67",
     "codex-router/DEEPSEEK_HANDOFF.md": "bd3c57043a7fafe9a81686992b45e1c54ccd12c74ca15da378fd833c6c7cbbbd",
-    "codex-router/README.md": "7d0738339b5c1a449527b0b07b75457f6a25a4bbe82220c43e4c4cdcca3f0b7f",
+    "codex-router/README.md": "27b67b302536aed6752a82d4f5d8af1b29ffb1cd62ec622fb60f455597347d75",
     "codex-router/config/claude-deepseek.json": "2521ea4300b984b161db0d12971264b42f019a38a91273eb24067b3e96fa6c0d",
     "codex-router/config/claude-desktop-gateway.template.json": "77ecbd13bcefd2dab7e76ae26073b512d9e62fbd3177af6a3581e6edd6b5ede1",
     "codex-router/config/handoff-files.json": "77dab4eb8ed05c7cd5c09d87888dbe1ef0d68a0ef190dac2c62e0ff44e2106cc",
@@ -58,13 +58,13 @@
     "codex-router/src/claude-config.mjs": "717dbcc70c3f45eb61772d663382b3cd73f27f5bc6919a5dc62f6a5bc8ae7a16",
     "codex-router/src/claude-desktop-config.mjs": "1db019afa248854ddba07618de799c83cd85094e7925b8c25612c0355da1098b",
     "codex-router/src/handoff.mjs": "234b3d0243e35a620bd6b8de58656b2d183345ae807a5d070e82a5635f08f1d8",
-    "codex-router/src/lib.mjs": "030c0b32186117b416aeb0090cc0188c60f5c4c91606141019a1db8a4d164d0f",
+    "codex-router/src/lib.mjs": "58f42b44603465ae7a9ff953355c361e6b6d4d1ee850ab7db5ea1be9cff0ee66",
     "codex-router/src/router.mjs": "b0f95e26b60f69f3418b6419377139b7dacf9aa0d9d20afee3ef73c999c7fd3e",
     "codex-router/src/sse-filter.mjs": "be9412d965c045da8e7f965cc0a66f2841f1f50a95e5dc90420ef627036dc95f",
     "codex-router/test/claude-config.test.mjs": "89782762074445f2936eee8bd1f60e2a0bb8a0cc8ea46a176fb8b6186c5ddcf5",
     "codex-router/test/claude-desktop-config.test.mjs": "7d5e1e57cf4dc496e3fc482c22d973f235751177afc9ea763014b13f7e22faac",
     "codex-router/test/handoff.test.mjs": "4ecf3e39d0531dd65b1e72684ce6eb35fa3f02de58d7f956b0bae086287e24a4",
-    "codex-router/test/router.test.mjs": "44cbbb0eb0993d078cc776d52408ddc8c0150795f373dbfb3dc5d75edd3aef17",
+    "codex-router/test/router.test.mjs": "65d521d81dc787722bc45cdbfd4116d15ccdafa2d3c55a22384ebf5f4c5f75a1",
     "codex-router/test/sse-filter.test.mjs": "7aba6513892a617ca280f8b59816d945cf264dddd06fc821d0584dbeb3bdcbfe",
     "config/integrated-files.json": "d5c726cc7a7417228bf61320f6b65205e2e2aa1227793eb094b320bb0744d048",
     "package.json": "764f4a3dc70446d5df1faf413fb0a364a68f0856f552b5dc28f1125822982e82",
@@ -84,6 +84,6 @@
     "skills/deepseek-v4-delegation/SKILL.md": "26174fad50faa882844fab25b56361023906eb49b97c3417326e0f78236b9de4",
     "src/extensions.mjs": "3c43da37d8183051664cb9a730977e1ec831f3d4c751f15b053ad20933bea1aa",
     "test/extensions.test.mjs": "90d0ff4fa85a53be6735cc869b3f893ba0ed2b722e1439984e82e0e212632d25",
-    "test/integration.test.mjs": "89f5795e9c124886e4299dfd4c914fe733deee99ebd4f2edec479708cfbac37c"
+    "test/integration.test.mjs": "74b8103930f814df084f189452065c872771006278828abbde0d6167a6cfc8e9"
   }
 }

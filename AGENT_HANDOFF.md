@@ -50,6 +50,11 @@ Codex Desktop が DeepSeek V4 Flash を使うとき、ルーターは次を行�
 - `Error running remote compact task: ... Encrypted function output content could not be decrypted or decoded`
 - `No tool call found for tool output with call_id ...`
 
+加えて、MultiAgent V2 が `encrypted_content` に平文ステータス文を入れてしまった履歴では、
+native GPT（`gpt-5.6-sol` など）の remote compact / 親ターンも同じ復号エラーになります。
+ルーターは `gAAAA...` などの不透明な暗号文はそのまま残し、平文が誤って入った
+`encrypted_content` だけを `input_text`（または通常の user message）へ修復します。
+
 ### Claude Hybridの成功構成
 
 - Codeタブが子プロセスへ渡す `ANTHROPIC_BASE_URL` だけを `127.0.0.1:10102` に変更。
