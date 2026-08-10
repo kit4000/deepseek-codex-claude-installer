@@ -21,6 +21,8 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   const tests = await readFile(resolve(codexRoot, "test/router.test.mjs"), "utf8");
   const handoff = await readFile(resolve(projectRoot, "AGENT_HANDOFF.md"), "utf8");
   assert.match(library, /function repairToolCallPairs/);
+  assert.match(library, /function repairNativeInputItem/);
+  assert.match(library, /isOpaqueEncryptedPayload/);
   assert.match(library, /custom_tool_call/);
   assert.match(library, /isCompactEndpoint/);
   assert.match(library, /externalUpstreamPath/);
@@ -29,8 +31,10 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   assert.match(tests, /maps Codex custom_tool_call pairs onto DeepSeek function_call pairs/);
   assert.match(tests, /strips OpenAI encrypted function outputs and agent_message before DeepSeek/);
   assert.match(tests, /maps \/responses\/compact onto a DeepSeek text-only summary turn/);
+  assert.match(tests, /repairs MultiAgent V2 plaintext stored as encrypted_content for native GPT/);
   assert.match(handoff, /No tool call found for tool output with call_id/);
   assert.match(handoff, /Encrypted function output content could not be decrypted or decoded/);
+  assert.match(handoff, /MultiAgent V2/);
 });
 
 test("Claude Hybrid uses only the 4.6 slots for DeepSeek", async () => {

@@ -38,6 +38,8 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
   `function_call` / `function_call_output` ペアへ正規化します。これにより
   `Encrypted function output content could not be decrypted or decoded` と
   `No tool call found for tool output with call_id ...` を防ぎます。
+- native GPT 経路でも、MultiAgent V2 が `encrypted_content` に平文を入れた不正履歴を
+  検出し、`input_text` / user message へ修復します（本物の `gAAAA...` 暗号文は保持）。
 - ChatGPT など別 provider が暗号化した `compaction` は復号・転送できないため、
   DeepSeek への切替時だけ除外し、切替後の通常メッセージから会話を継続します。
   native へ戻すときは ChatGPT 自身が検証できるためそのまま転送します。
