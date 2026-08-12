@@ -2,7 +2,7 @@
 
 - 対象: DeepSeek Codex + Claude Hybrid 統合インストーラー
 - 作成日: 2026-08-09
-- 背景端末での実証済み構成: Claude Desktop `1.26832.0` / Hybrid patch `2026-08-09.1`
+- 背景端末での実証済み構成: Claude Desktop `1.28929.0` / Hybrid patch `2026-08-12.1`
 - 目的: ランチャーが純正を開いてしまう問題を解消し、公式更新と Hybrid 再構築の手順をインストーラー契約として固定する
 
 ---
@@ -251,10 +251,10 @@ UPDATE CONTRACT
 1.26832.0 で確認済みの例:
 
 ```text
-patchFile: /.vite/build/index.chunk-Bc9P6O1g.js
+patchFile: /.vite/build/index.chunk-KnwvxAXh.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-BKcsP2ti.js
-modelLabelPatchFrom: function $r(e){return Y=new a.WebContentsView(e),t.c(Y.webContents,t.n.CLAUDE_AI_WEB),Y.webContents.setMaxListeners(20),Y}
+modelLabelPatchFile: /.vite/build/index.chunk-CHjD_WiU.js
+modelLabelPatchFrom: function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}
 ```
 
 ---

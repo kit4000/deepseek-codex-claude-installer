@@ -15,10 +15,10 @@
   ],
   "files": {
     "AGENT_HANDOFF.md": "ad50871dbf67e72a7deff3b5a14c84fceb8e5bd790d82dfe16ee58dbc4787e2b",
-    "CHANGE_SPEC-claude-app-layout-and-updates.md": "eaaa6b35462dc2f1051b9519477043296563e8b541eb92fda8502f5f5650982b",
+    "CHANGE_SPEC-claude-app-layout-and-updates.md": "6f8183320915771ebb6a58e66adb7737f8ae6eb7d74f39d3d20afe2bb8890257",
     "README.md": "b155fa44ba1cab3b46f93797581d3c699a09f6230c1c0e1cdc5527384288873a",
     "claude-hybrid/README.md": "85b3ca8d12f8f81cd72195ca216a422be81fadd139536494cda4d45d093423ce",
-    "claude-hybrid/config/claude-hybrid.json": "bab05ba3657821ee1d723239fa2357e5cd24209bb083447e71af660032b21de1",
+    "claude-hybrid/config/claude-hybrid.json": "7dec2f59641d03b08cab94a7df58ea0f01c9099c877f7fc47db2e7b5c406baad",
     "claude-hybrid/config/hybrid-files.json": "7951c55a3421e838af9b22f9f13bcc8ba6bc76fb3448345aa8e980d591bc9648",
     "claude-hybrid/package.json": "41d67ebb4582c326c2ac3b7d8bf3d0a60c3e5e99327734c090452c4ec5974877",
     "claude-hybrid/scripts/create-archive.mjs": "c63e4999c7ebb5ab36a0cacf3e516ed996723c6a91c8bdd4c21e5e016aa9836b",
