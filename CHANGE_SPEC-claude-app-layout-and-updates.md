@@ -237,24 +237,73 @@ UPDATE CONTRACT
 
 ## 5. Claude 版が変わったときのインストーラー保守
 
+### 5.1 実証済みアップデートパターン（2026-08-12 / Claude 1.28929.0）
+
+Hybrid のアプリ内更新は使わない。次の順序だけが正式ルート。
+
+```bash
+# A. 最新公式 zip を取得
+curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
+# → currentRelease / releases[0].updateTo.url を使う
+
+# B. 展開・署名検証
+codesign --verify --deep --strict "/path/to/staged/Claude.app"
+spctl -a -vv "/path/to/staged/Claude.app"   # Notarized Developer ID を確認
+
+# C. Claude を完全終了（pgrep -x Claude が空）
+
+# D. 純正ソースをタイムスタンプ付きバックアップ後に置換
+mv "$HOME/Applications/Claude Official.app" \
+  "$HOME/Applications/Claude Official.app.before-<oldVersion>-<timestamp>"
+ditto "/path/to/staged/Claude.app" "$HOME/Applications/Claude Official.app"
+
+# E. Hybrid 再構築（永続インストーラー上の update-claude-hybrid）
+update-claude-hybrid --check
+# status=error かつアンカー不一致 → §5.2 で config 更新してから再 check
+# status=warning かつ rebuild available → 両アプリ終了後に apply
+update-claude-hybrid --apply
+prefer-claude-hybrid
+
+# F. 無課金検証は --apply 内で実行される。UI 確認だけ利用者が行う。
+```
+
+補足:
+
+- `prefer-claude-hybrid` は `# Managed by deepseek-codex-claude-installer.` マーカー付きで管理する。
+  マーカー無しの手動スクリプトがあると `--apply` が上書きを拒否して止まる。
+- Official は Launch Services から unregister し、日常起動は `/Applications/Claude.app` を優先する。
+- セッション・Keychain・`before-*` バックアップは削除しない。
+- 課金スモークは別承認がない限り実行しない。
+
+### 5.2 アンカー更新手順
+
 新バージョンで chunk 名や WebContentsView 変数が変わると `--apply` は安全に止まる。  
 その場合の作業:
 
-1. 新 Official の `app.asar` で次を exact 1 箇所検索する。
+1. 新 Official の `app.asar` を展開し、次を exact 1 箇所検索する。
    - `ANTHROPIC_BASE_URL:e.apiHost` → `patchFile` / `patchFrom`
    - `WebContentsView(e),t.c(<VAR>.webContents,t.n.CLAUDE_AI_WEB),<VAR>.webContents.setMaxListeners(20),<VAR>}`  
-     → `modelLabelPatchFile` / `modelLabelPatchFrom`
-2. `patchVersion` を上げる（例: `2026-08-09.1`）。
-3. テストと `verify:bundle` / archive を更新。
-4. 配布物を切り直す。
+     → `modelLabelPatchFile` / `modelLabelPatchFrom`（関数名・変数名は版ごとに変わる）
+2. `claude-hybrid/config/claude-hybrid.json` を更新し、`patchVersion` を上げる。
+3. repo / `~/Applications/deepseek-codex-claude-installer` の両方に反映する。
+4. `npm test` / `npm run verify:bundle` を通し、`--check` → `--apply` を再実行する。
+5. 配布物を切り直す。
 
-1.26832.0 で確認済みの例:
+### 5.3 確認済みアンカー履歴
+
+| Claude | patchVersion | patchFile | modelLabelPatchFile | modelLabel 変数 |
+|--------|--------------|-----------|---------------------|-----------------|
+| 1.26832.0 | 2026-08-09.1 | `index.chunk-Bc9P6O1g.js` | `index.chunk-BKcsP2ti.js` | `Y` |
+| 1.28929.0 | 2026-08-12.1 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
+
+現行（1.28929.0）:
 
 ```text
 patchFile: /.vite/build/index.chunk-KnwvxAXh.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
 modelLabelPatchFile: /.vite/build/index.chunk-CHjD_WiU.js
 modelLabelPatchFrom: function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}
+patchVersion: 2026-08-12.1
 ```
 
 ---
