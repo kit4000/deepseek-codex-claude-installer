@@ -57,15 +57,30 @@ Hybrid自身のアプリ内更新は使いません。Apple署名を検証した
 npm run update:check
 ```
 
-更新可能と表示されたら公式ClaudeとHybridを完全終了し、再構築します。
+Hybrid のアプリ内更新は使いません。公式が新しい版を出したら、先に純正ソースを入れ替えます。
 
 ```bash
-npm run update
+# 最新公式
+curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
+# zip 展開 → codesign --verify --deep --strict
+# 両アプリ終了後、Official をバックアップして置換
+mv "$HOME/Applications/Claude Official.app" \
+  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
+ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
+```
+
+その後、どのディレクトリからでも再構築できます。
+
+```bash
+update-claude-hybrid --check
+update-claude-hybrid --apply   # または: npm run update
+prefer-claude-hybrid
 ```
 
 公式署名、バージョン固有の2つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
+現行確認済みは Claude `1.28929.0` / patch `2026-08-12.1` です。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを

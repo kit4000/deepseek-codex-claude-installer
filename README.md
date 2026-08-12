@@ -32,18 +32,27 @@ npm run verify
 `/Applications/Claude.app` を開き、初回の `Claude Safe Storage` 確認で
 「常に許可」を選びます。
 
-Hybrid のアプリ内「更新」は使いません。公式更新時は、Apple署名を検証した純正アプリで
-`~/Applications/Claude Official.app` をタイムスタンプ付きバックアップ後に置換し、
-両アプリを終了してから、どのディレクトリからでも次を実行します。
+Hybrid のアプリ内「更新」は使いません。正式なアップデートパターンは次のとおりです。
 
 ```bash
+# 1) 公式最新を取得
+curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
+# 2) zip を展開し、codesign / 公証を確認
+# 3) 両アプリを完全終了
+# 4) Official をバックアップして置換
+mv "$HOME/Applications/Claude Official.app" \
+  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
+ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
+# 5) Hybrid 再構築
 update-claude-hybrid --check
 update-claude-hybrid --apply   # 両方のClaudeを完全終了してから
 prefer-claude-hybrid           # ランチャーが純正を選ぶ場合
 ```
 
-アンカー不一致時は停止が正常です。近似パッチせず、Claude版に対応する config、fixture、
-`patchVersion` を更新して配布物を再生成します。
+アンカー不一致時は停止が正常です。近似パッチせず、Official ASAR から
+`patchFile` / `modelLabelPatchFile` を取り直し、`patchVersion` を上げてから再実行します。
+現行確認済み: Claude `1.28929.0` / Hybrid patch `2026-08-12.1`。詳細は
+`CHANGE_SPEC-claude-app-layout-and-updates.md` §5。
 
 Codexには `claude-hybrid-update` と `deepseek-v4-delegation` の2スキルを導入します。
 再起動後、DeepSeekはメインのモデルピッカーで従来どおり選択できるほか、明示的な

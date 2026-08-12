@@ -73,15 +73,35 @@ UPDATE CONTRACT
 - Daily app: `/Applications/Claude.app` (= Hybrid, display name Claude)
 - Pristine source: `~/Applications/Claude Official.app` (Apple-signed, never ASAR-patched)
 - Do not use in-app updater on Hybrid
-- Update = replace Official source → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
-- On exact-anchor failure: stop; do not fuzzy-patch
+- Update = download official zip from RELEASES.json → replace Official source → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
+- On exact-anchor failure: stop; do not fuzzy-patch; update `claude-hybrid/config/claude-hybrid.json` anchors and `patchVersion` first
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
+
+#### 実証済み手順（Claude 1.28929.0 / patch 2026-08-12.1）
+
+1. `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json` から最新 zip URL を取得する。
+2. 展開した `Claude.app` を `codesign --verify --deep --strict` と公証（Developer ID）で確認する。
+3. 両アプリを完全終了する（`pgrep -x Claude` が空）。
+4. 既存の `~/Applications/Claude Official.app` を
+   `Claude Official.app.before-<version>-<timestamp>` へ退避し、新公式で置換する。
+5. `update-claude-hybrid --check` を実行する。
+6. アンカー不一致なら Official ASAR から
+   `ANTHROPIC_BASE_URL:e.apiHost` と `WebContentsView` / `CLAUDE_AI_WEB` の exact 1 箇所を取り直し、
+   `patchVersion` を上げてから再 check する（fuzzy patch 禁止）。
+7. `update-claude-hybrid --apply` → 無課金検証通過を確認する。
+8. `prefer-claude-hybrid` で Launch Services を Hybrid 優先へ戻す。
+9. `/Applications/Claude.app` を開き、Safe Storage「常に許可」、4.6 枠の DeepSeek 表示、
+   Fable 5 / Opus 4.8 の純正維持を確認する。
+
+`prefer-claude-hybrid` は `# Managed by deepseek-codex-claude-installer.` マーカー必須。
+マーカー無しだと `--apply` が上書き拒否で止まる。
 
 インストーラーは `update-claude-hybrid` コマンドと `claude-hybrid-update` スキルを導入します。
 `--check` は公式版とHybridのバージョン／ビルド／パッチ版、公式署名、厳密な2つのアンカーを
 読み取るだけです。`--apply` は両アプリが終了し、導入先ユーザーのKeychain資格情報がある場合
 だけ、公式版から新しいHybridを構築して無課金検証まで実行します。アンカー変更時は安全に
-停止し、近似パッチは行いません。
+停止し、近似パッチは行いません。詳細は
+`CHANGE_SPEC-claude-app-layout-and-updates.md` §5 を正本とする。
 
 ### DeepSeek V4の追加サブエージェント
 

@@ -54,9 +54,30 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   assert.match(handoff, /APIキーを推測・抽出・コピーしない/);
   assert.match(handoff, /純正実体は `~\/Applications\/Claude Official\.app`/);
   assert.match(handoff, /Do not use in-app updater on Hybrid/);
-  assert.match(handoff, /replace Official source.*update-claude-hybrid --apply.*prefer-claude-hybrid/s);
+  assert.match(handoff, /RELEASES\.json/);
+  assert.match(handoff, /replace Official source.*update-claude-hybrid --check.*update-claude-hybrid --apply.*prefer-claude-hybrid/s);
+  assert.match(handoff, /1\.28929\.0/);
+  assert.match(handoff, /2026-08-12\.1/);
   assert.match(handoff, /Fable 5 と Opus 4\.8/);
   assert.match(smoke, /--allow-billing/);
+});
+
+test("installer records the Claude official-to-hybrid update pattern", async () => {
+  const readme = await readFile(resolve(projectRoot, "README.md"), "utf8");
+  const changeSpec = await readFile(resolve(projectRoot, "CHANGE_SPEC-claude-app-layout-and-updates.md"), "utf8");
+  const skill = await readFile(resolve(projectRoot, "skills/claude-hybrid-update/SKILL.md"), "utf8");
+  const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
+  const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
+  assert.equal(config.app.patchVersion, "2026-08-12.1");
+  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-KnwvxAXh.js");
+  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-CHjD_WiU.js");
+  assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
+  assert.match(changeSpec, /実証済みアップデートパターン/);
+  assert.match(changeSpec, /1\.28929\.0/);
+  assert.match(skill, /Proven update pattern/);
+  assert.match(skill, /RELEASES\.json/);
+  assert.match(hybridReadme, /RELEASES\.json/);
+  assert.match(hybridReadme, /1\.28929\.0/);
 });
 
 test("installer exposes safe updater and optional DeepSeek delegation without replacing the picker", async () => {

@@ -55,15 +55,15 @@
     ]
   },
   "app": {
-    "patchVersion": "2026-08-09.1",
+    "patchVersion": "2026-08-12.1",
     "source": "<home>/Applications/Claude Official.app",
     "target": "/Applications/Claude.app",
     "userDataDir": "<home>/Library/Application Support/Claude",
     "routerBaseUrl": "http://127.0.0.1:10102",
-    "patchFile": "/.vite/build/index.chunk-Bc9P6O1g.js",
+    "patchFile": "/.vite/build/index.chunk-KnwvxAXh.js",
     "patchFrom": "ANTHROPIC_BASE_URL:e.apiHost",
-    "modelLabelPatchFile": "/.vite/build/index.chunk-BKcsP2ti.js",
-    "modelLabelPatchFrom": "function $r(e){return Y=new a.WebContentsView(e),t.c(Y.webContents,t.n.CLAUDE_AI_WEB),Y.webContents.setMaxListeners(20),Y}"
+    "modelLabelPatchFile": "/.vite/build/index.chunk-CHjD_WiU.js",
+    "modelLabelPatchFrom": "function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}"
   },
   "launchAgent": {
     "label": "com.local.claude-hybrid-router",
