@@ -43,8 +43,10 @@ console.log(JSON.stringify({
       "Open Claude from /Applications; this is the daily Hybrid app.",
       "Keep ~/Applications/Claude Official.app pristine and use it only as the update source.",
       "Approve the Claude Safe Storage Keychain prompt by choosing Always Allow.",
-      "Confirm that only the Sonnet 4.6 and Opus 4.6 slots show DeepSeek labels.",
+      "Confirm that Opus 4.6 / Sonnet 4.6 show DeepSeek and Opus 4.8 remains native Claude.",
     ] : []),
+    "Start a new Claude Code session for /cursor-grok-4-6, /cursor-composer-2-5, /gpt-5-6-sol, and /gpt-5-6-luna.",
+    "Run cursor-cli-delegate --check-auth and codex-cli-delegate --check-auth. Do not set OPENAI_API_KEY or CURSOR_API_KEY.",
     "Run npm run smoke -- --allow-billing only after explicit billing approval.",
   ],
 }, null, 2));

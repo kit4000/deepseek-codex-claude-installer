@@ -17,11 +17,15 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 - Never kill Claude processes. Ask the user to fully quit official Claude and Claude Hybrid when required.
 - Never fuzzy-patch a new Claude build. An exact-anchor failure is a stop condition.
 - Do not run the billable smoke test as part of an update unless the user separately approves billing.
-- Preserve Fable 5 and Opus 4.8 as native models. Only the Opus 4.6 and Sonnet 4.6 slots are relabeled/routed.
+- Preserve Fable 5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 as native models.
+- Relabel/route only Opus 4.6 and Sonnet 4.6 (DeepSeek).
+- Do not treat ChatGPT subscription as an OpenAI API picker slot.
+  GPT-5.6 Sol / Luna are `/gpt-5-6-sol` and `/gpt-5-6-luna` via the logged-in Codex CLI.
+- Keep `haiku` as DeepSeek Flash. Do not remap opus/sonnet aliases.
 
 ## Proven update pattern
 
-This is the formal end-to-end pattern verified on Claude `1.28929.0` / patch `2026-08-12.1`.
+This is the formal end-to-end pattern verified on Claude `1.28929.0` / patch `2026-08-18.3`.
 
 1. Read the public feed:
    `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json`
@@ -39,7 +43,7 @@ This is the formal end-to-end pattern verified on Claude `1.28929.0` / patch `20
 11. Ask the user to open `/Applications/Claude.app`, approve `Claude Safe Storage` with `Always Allow` if prompted, and confirm:
     - existing Code sessions are visible;
     - Fable 5 and Opus 4.8 remain native;
-    - DeepSeek Pro and Flash appear in the 4.6 slots.
+    - DeepSeek Pro/Flash appear in the 4.6 slots.
 
 ### Helper notes
 
@@ -68,7 +72,7 @@ When a Claude release changes either exact anchor:
 3. Find exactly one
    `function <name>(e){return <VAR>=new a.WebContentsView(e),t.c(<VAR>.webContents,t.n.CLAUDE_AI_WEB),<VAR>.webContents.setMaxListeners(20),<VAR>}`
    hit → `app.modelLabelPatchFile` / `app.modelLabelPatchFrom`.
-4. Bump `app.patchVersion` (example: `2026-08-12.1`).
+4. Bump `app.patchVersion` (example: `2026-08-18.3`).
 5. Update `CHANGE_SPEC-claude-app-layout-and-updates.md` history table, tests, and `INSTALLER_MANIFEST.json`.
 6. Rebuild Hybrid with `--check` / `--apply`. Never fuzzy-patch.
 
@@ -78,7 +82,7 @@ Current verified anchors for Claude `1.28929.0`:
 - `patchFrom`: `ANTHROPIC_BASE_URL:e.apiHost`
 - `modelLabelPatchFile`: `/.vite/build/index.chunk-CHjD_WiU.js`
 - `modelLabelPatchFrom`: `function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}`
-- `patchVersion`: `2026-08-12.1`
+- `patchVersion`: `2026-08-18.3`
 
 ## Recovery
 

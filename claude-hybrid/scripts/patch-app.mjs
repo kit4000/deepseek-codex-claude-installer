@@ -16,6 +16,7 @@ const result = await patchClaudeApp({
   sourceApp: process.env.CLAUDE_HYBRID_SOURCE ?? expandHome(config.app.source, home),
   targetApp: process.env.CLAUDE_HYBRID_TARGET ?? expandHome(config.app.target, home),
   routerBaseUrl: process.env.CLAUDE_HYBRID_ROUTER_URL ?? expandHome(config.app.routerBaseUrl, home),
+  routerSocketPath: process.env.CLAUDE_HYBRID_ROUTER_SOCKET ?? expandHome(config.router.socketPath, home),
   patchFile: config.app.patchFile,
   patchFrom: config.app.patchFrom,
   modelLabelPatchFile: config.app.modelLabelPatchFile,

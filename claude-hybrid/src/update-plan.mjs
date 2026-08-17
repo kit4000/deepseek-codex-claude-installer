@@ -65,6 +65,15 @@ export function decideClaudeHybridUpdate(state, mode = "check") {
       artifacts,
     };
   }
+  if (mode === "apply" && state.openaiRequired === true && state.openaiCredentialAvailable === false) {
+    return {
+      status: "error",
+      summary: "OpenAI credential is unavailable in this user's Keychain.",
+      root_cause_hint: "Credentials are never copied from another machine or included in the installer.",
+      next_actions: ["Remove OpenAI provider models from Claude Hybrid config; ChatGPT subscription is not an API key."],
+      artifacts,
+    };
+  }
   return {
     status: "warning",
     summary: metadataMigrationAvailable

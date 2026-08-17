@@ -2,6 +2,10 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+if (!process.argv.slice(2).includes("--allow-billing")) {
+  throw new Error("Billing smoke tests are disabled by default. Obtain explicit user approval, then rerun with --allow-billing.");
+}
+
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const home = process.env.HOME;
 const configPath = process.env.CLAUDE_HYBRID_CONFIG ?? resolve(projectRoot, "config/claude-hybrid.json");
@@ -47,7 +51,7 @@ await check("nativeRoute", async () => {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-opus-4-5",
+      model: "claude-opus-5",
       max_tokens: 8,
       messages: [{ role: "user", content: "ping" }],
     }),

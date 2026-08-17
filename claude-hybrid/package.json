@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Claude Desktop Hybrid: official Claude subscription and DeepSeek in one Code tab",
+  "description": "Claude Desktop Hybrid: official Claude subscription plus DeepSeek extra slots in one Code tab",
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "install": "node scripts/install.mjs",

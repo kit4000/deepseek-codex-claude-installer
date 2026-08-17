@@ -5,6 +5,8 @@
   "package.json",
   "config/integrated-files.json",
   "scripts/create-archive.mjs",
+  "scripts/cursor-cli-delegate.mjs",
+  "scripts/codex-cli-delegate.mjs",
   "scripts/install.mjs",
   "scripts/install-extensions.mjs",
   "scripts/lib.mjs",
@@ -17,8 +19,14 @@
   "scripts/verify-bundle.mjs",
   "scripts/verify-extensions.mjs",
   "skills/claude-hybrid-update/SKILL.md",
+  "skills/cursor-cli-delegation/SKILL.md",
+  "skills/chatgpt-codex-delegation/SKILL.md",
   "skills/deepseek-v4-delegation/SKILL.md",
+  "src/cursor-cli.mjs",
+  "src/codex-cli.mjs",
   "src/extensions.mjs",
+  "test/cursor-cli.test.mjs",
+  "test/codex-cli.test.mjs",
   "test/extensions.test.mjs",
   "test/integration.test.mjs"
 ]

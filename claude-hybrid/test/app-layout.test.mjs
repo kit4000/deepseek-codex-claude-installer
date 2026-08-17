@@ -4,7 +4,10 @@ import {
   decideClaudeAppLayout,
   renderPreferClaudeHybrid,
 } from "../src/app-layout.mjs";
-import { buildModelLabelPatch } from "../src/app-patch.mjs";
+import {
+  buildEnvironmentPatch,
+  buildModelLabelPatch,
+} from "../src/app-patch.mjs";
 
 const baseline = {
   defaultLayout: true,
@@ -98,9 +101,45 @@ test("model label patch derives the WebContentsView variable from each exact anc
   }
 });
 
+test("model label patch rewrites only the DeepSeek slots and leaves native names alone", () => {
+  const from = "function make(){return Z=new a.WebContentsView(e),t.c(Z.webContents,t.n.CLAUDE_AI_WEB),Z.webContents.setMaxListeners(20),Z}";
+  const patch = buildModelLabelPatch("/chunk.js", from);
+  assert.ok(patch.to.includes("Sonnet 4.6"));
+  assert.ok(patch.to.includes("DeepSeek V4 Flash"));
+  assert.ok(patch.to.includes("Opus 4.6"));
+  assert.ok(patch.to.includes("DeepSeek V4 Pro (1M)"));
+  assert.doesNotMatch(patch.to, /\["Opus 4\.8"/);
+  assert.doesNotMatch(patch.to, /GPT-5\.6 Sol/);
+  assert.doesNotMatch(patch.to, /\["Opus 4\.7"/);
+  assert.doesNotMatch(patch.to, /GPT-5\.6 Luna/);
+  assert.doesNotMatch(patch.to, /\["Fable 5"/);
+  assert.doesNotMatch(patch.to, /\["Opus 4\.5"/);
+  assert.doesNotMatch(patch.to, /\["Sonnet 4\.5"/);
+  assert.doesNotMatch(patch.to, /\["Opus 5"/);
+  assert.doesNotMatch(patch.to, /\["Sonnet 5"/);
+  assert.doesNotMatch(patch.to, /\["Haiku 4\.5"/);
+});
+
 test("model label patch rejects a non-exact anchor shape", () => {
   assert.throws(
     () => buildModelLabelPatch("/chunk.js", "function make(){return view}"),
     /unexpected shape/,
+  );
+});
+
+test("environment patch injects the unix socket alongside the loopback router", () => {
+  const patch = buildEnvironmentPatch({
+    routerBaseUrl: "http://127.0.0.1:10102",
+    routerSocketPath: "/tmp/claude-hybrid-router.sock",
+  });
+  assert.match(patch, /ANTHROPIC_BASE_URL:"http:\/\/127\.0\.0\.1:10102"/);
+  assert.match(patch, /ANTHROPIC_UNIX_SOCKET:"\/tmp\/claude-hybrid-router\.sock"/);
+  assert.match(patch, /ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"/);
+  assert.doesNotMatch(patch, /ANTHROPIC_CUSTOM_MODEL_OPTION/);
+  assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_OPUS_MODEL/);
+  assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_SONNET_MODEL/);
+  assert.throws(
+    () => buildEnvironmentPatch({ routerBaseUrl: "http://127.0.0.1:10102", routerSocketPath: "relative.sock" }),
+    /absolute path/,
   );
 });

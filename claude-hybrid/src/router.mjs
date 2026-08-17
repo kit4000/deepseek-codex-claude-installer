@@ -2,9 +2,19 @@
 
 import http from "node:http";
 import { execFile } from "node:child_process";
+import { chmod, mkdir, unlink } from "node:fs/promises";
+import { dirname } from "node:path";
 import { Readable } from "node:stream";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import {
+  anthropicToOpenAIChatCompletions,
+  createOpenAIToAnthropicStreamTranslator,
+  openaiChatToAnthropicMessage,
+  openaiErrorToAnthropic,
+  parseOpenAISseFrame,
+  splitSseFrames,
+} from "./openai-messages.mjs";
 
 const execFileAsync = promisify(execFile);
 const MAX_BODY_BYTES = 64 * 1024 * 1024;
@@ -19,17 +29,22 @@ function externalModelEntries(config) {
   return config?.models?.external ?? [];
 }
 
-export function isExternalModel(config, model) {
-  if (typeof model !== "string" || model.length === 0) return false;
-  if (externalModelEntries(config).some((entry) =>
-    entry.id === model || entry.aliases?.includes(model))) return true;
-  return model.startsWith("deepseek-");
-}
-
 export function externalModelFor(config, model) {
   if (typeof model !== "string") return undefined;
   return externalModelEntries(config).find((entry) =>
-    entry.id === model || entry.aliases?.includes(model));
+    entry.id === model || entry.aliases?.includes(model) || entry.target === model);
+}
+
+export function providerForModel(config, model) {
+  if (typeof model !== "string" || model.length === 0) return "native";
+  const entry = externalModelFor(config, model);
+  if (entry?.provider === "openai" || entry?.provider === "deepseek") return entry.provider;
+  if (entry) return "deepseek";
+  return "native";
+}
+
+export function isExternalModel(config, model) {
+  return providerForModel(config, model) !== "native";
 }
 
 function copyRequestHeaders(headers) {
@@ -91,8 +106,8 @@ function externalModelRecord(entry, index) {
     id: entry.id,
     display_name: entry.displayName ?? entry.id,
     created_at: `2026-01-01T00:00:00.000Z`,
-    owned_by: "deepseek",
-    ...(index === 0 ? { supports_1m: true } : {}),
+    owned_by: entry.provider ?? "deepseek",
+    ...(entry.target?.includes("[1m]") || entry.id?.includes("[1m]") ? { supports_1m: true } : {}),
   };
 }
 
@@ -132,13 +147,15 @@ async function collectModelList(config, incomingHeaders, fetchImpl) {
 }
 
 export function createCredentialReader(config, options = {}) {
-  const { execImpl = execFileAsync, now = Date.now } = options;
+  const { execImpl = execFileAsync, now = Date.now, provider = "deepseek" } = options;
+  const spec = provider === "openai" ? config.openai : config.deepseek;
+  const label = provider === "openai" ? "OpenAI" : "DeepSeek";
   let cached = { token: "", expiresAt: 0 };
-  return async function readDeepSeekKey() {
+  return async function readProviderKey() {
     if (cached.token && cached.expiresAt > now()) return cached.token;
-    const helper = config.deepseek?.credentialHelper;
+    const helper = spec?.credentialHelper;
     if (typeof helper !== "string" || helper.length === 0) {
-      throw new Error("DeepSeek credential helper is not configured");
+      throw new Error(`${label} credential helper is not configured`);
     }
     const { stdout } = await execImpl(helper, [], {
       encoding: "utf8",
@@ -146,10 +163,78 @@ export function createCredentialReader(config, options = {}) {
       maxBuffer: 64 * 1024,
     });
     const token = stdout.trim();
-    if (!token) throw new Error("DeepSeek credential helper returned an empty key");
+    if (!token) throw new Error(`${label} credential helper returned an empty key`);
     cached = { token, expiresAt: now() + CREDENTIAL_TTL_MS };
     return token;
   };
+}
+
+function rejectUpgrade(_request, socket) {
+  socket.end("HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\n\r\n");
+}
+
+function listenOn(server, ...args) {
+  return new Promise((resolveListen, rejectListen) => {
+    server.once("error", rejectListen);
+    server.listen(...args, () => {
+      server.off("error", rejectListen);
+      resolveListen(server.address());
+    });
+  });
+}
+
+async function closeServer(server) {
+  if (!server.listening) return;
+  await new Promise((resolveClose, rejectClose) => {
+    server.close((error) => (error ? rejectClose(error) : resolveClose()));
+  });
+}
+
+async function listenUnixSocket(server, socketPath) {
+  await mkdir(dirname(socketPath), { recursive: true });
+  try {
+    await unlink(socketPath);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  const address = await listenOn(server, socketPath);
+  await chmod(socketPath, 0o600);
+  return address;
+}
+
+export function requestUnix(socketPath, {
+  method = "GET",
+  path = "/",
+  headers = {},
+  body,
+  timeoutMs = 3000,
+} = {}) {
+  return new Promise((resolveRequest, rejectRequest) => {
+    const request = http.request({
+      socketPath,
+      path,
+      method,
+      headers,
+      timeout: timeoutMs,
+    }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => {
+        resolveRequest({
+          statusCode: response.statusCode,
+          headers: response.headers,
+          body: Buffer.concat(chunks),
+        });
+      });
+    });
+    request.on("error", rejectRequest);
+    request.on("timeout", () => {
+      request.destroy();
+      rejectRequest(new Error("unix socket request timed out"));
+    });
+    if (body === undefined) request.end();
+    else request.end(body);
+  });
 }
 
 function routeBodyPath(requestUrl) {
@@ -164,13 +249,56 @@ function routeBodyPath(requestUrl) {
   };
 }
 
+async function pipeOpenAIChatStream(upstream, response, requestModel) {
+  response.writeHead(200, {
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache",
+  });
+  const translator = createOpenAIToAnthropicStreamTranslator({
+    id: `msg_openai_${Date.now()}`,
+    model: requestModel,
+  });
+  for (const event of translator.start()) response.write(event);
+  if (!upstream.body) {
+    for (const event of translator.finish()) response.write(event);
+    response.end();
+    return;
+  }
+  const stream = Readable.fromWeb(upstream.body);
+  let buffer = "";
+  try {
+    for await (const chunk of stream) {
+      buffer += chunk.toString("utf8");
+      const split = splitSseFrames(buffer);
+      buffer = split.remaining;
+      for (const frame of split.frames) {
+        const parsedFrame = parseOpenAISseFrame(frame);
+        if (!parsedFrame) continue;
+        if (parsedFrame.done) {
+          for (const event of translator.finish()) response.write(event);
+          response.end();
+          return;
+        }
+        for (const event of translator.pushChunk(parsedFrame.chunk)) response.write(event);
+      }
+    }
+    for (const event of translator.finish()) response.write(event);
+    response.end();
+  } catch (error) {
+    stream.destroy();
+    if (!response.writableEnded) response.destroy(error);
+  }
+}
+
 export function createHybridRouter({
   config,
   fetchImpl = fetch,
   keychainReader,
+  openaiKeychainReader,
   logger = console,
 }) {
-  const readKey = keychainReader ?? createCredentialReader(config);
+  const readKey = keychainReader ?? createCredentialReader(config, { provider: "deepseek" });
+  const readOpenAIKey = openaiKeychainReader ?? createCredentialReader(config, { provider: "openai" });
 
   async function forward(request, response, route, body) {
     const baseUrl = route.external ? config.deepseek.baseUrl : config.native.baseUrl;
@@ -259,6 +387,11 @@ export function createHybridRouter({
       await forward(request, response, { external: false, pathname: "/v1/messages/count_tokens", search: "" }, body);
       return;
     }
+    if (providerForModel(config, parsed.model) === "openai") {
+      const estimate = Math.max(1, Math.ceil(body.toString("utf8").length / 4));
+      sendJson(response, 200, { input_tokens: estimate });
+      return;
+    }
 
     const target = targetUrl(config.deepseek.baseUrl, "/v1/messages/count_tokens", "");
     const headers = copyRequestHeaders(request.headers);
@@ -289,7 +422,45 @@ export function createHybridRouter({
     sendJson(response, 200, { input_tokens: estimate });
   }
 
-  const server = http.createServer(async (request, response) => {
+  async function handleOpenAIMessages(request, response, parsed, requestModel) {
+    if (!config.openai?.baseUrl) {
+      sendJson(response, 400, {
+        error: { message: "OpenAI provider is not configured", type: "invalid_request_error" },
+      });
+      return;
+    }
+    const entry = externalModelFor(config, requestModel);
+    const openaiBody = anthropicToOpenAIChatCompletions(parsed, entry?.target ?? requestModel);
+    const key = await readOpenAIKey();
+    const headers = new Headers({
+      authorization: `Bearer ${key}`,
+      "content-type": "application/json",
+    });
+    const abortController = new AbortController();
+    response.on("close", () => {
+      if (!response.writableEnded) abortController.abort();
+    });
+    const upstream = await fetchImpl(targetUrl(config.openai.baseUrl, "/chat/completions"), {
+      method: "POST",
+      headers,
+      body: JSON.stringify(openaiBody),
+      redirect: "error",
+      signal: abortController.signal,
+    });
+    logger.info?.(`claude-hybrid openai POST /v1/messages -> ${upstream.status}`);
+    if (!upstream.ok) {
+      const mapped = openaiErrorToAnthropic(upstream.status, await upstream.text());
+      sendJson(response, mapped.status, mapped.payload);
+      return;
+    }
+    if (openaiBody.stream) {
+      await pipeOpenAIChatStream(upstream, response, requestModel);
+      return;
+    }
+    sendJson(response, 200, openaiChatToAnthropicMessage(await upstream.json(), requestModel));
+  }
+
+  async function handleRequest(request, response) {
     try {
       if (request.method === "GET" && ["/", "/v1", "/healthz"].includes(request.url)) {
         sendJson(response, 200, {
@@ -298,7 +469,9 @@ export function createHybridRouter({
           routes: {
             native: config.native.baseUrl,
             deepseek: config.deepseek.baseUrl,
+            openai: config.openai?.baseUrl ?? null,
           },
+          socketPath: config.router.socketPath ?? null,
         });
         return;
       }
@@ -324,9 +497,13 @@ export function createHybridRouter({
           });
           return;
         }
-        const external = isExternalModel(config, parsed.model);
+        const provider = providerForModel(config, parsed.model);
+        if (provider === "openai") {
+          await handleOpenAIMessages(request, response, parsed, parsed.model);
+          return;
+        }
         let forwardBody = body;
-        if (external) {
+        if (provider === "deepseek") {
           const entry = externalModelFor(config, parsed.model);
           parsed.model = entry?.target ?? parsed.model;
           forwardBody = Buffer.from(JSON.stringify(parsed), "utf8");
@@ -334,7 +511,7 @@ export function createHybridRouter({
         await forward(
           request,
           response,
-          { external, pathname: route.pathname, search: route.search },
+          { external: provider === "deepseek", pathname: route.pathname, search: route.search },
           forwardBody,
         );
         return;
@@ -366,27 +543,33 @@ export function createHybridRouter({
         },
       });
     }
-  });
+  }
 
-  server.on("upgrade", (_request, socket) => {
-    socket.end("HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\n\r\n");
-  });
+  const server = http.createServer(handleRequest);
+  const unixServer = http.createServer(handleRequest);
+  server.on("upgrade", rejectUpgrade);
+  unixServer.on("upgrade", rejectUpgrade);
 
   return {
     server,
-    listen() {
-      return new Promise((resolveListen, rejectListen) => {
-        server.once("error", rejectListen);
-        server.listen(config.router.port, config.router.host, () => {
-          server.off("error", rejectListen);
-          resolveListen(server.address());
-        });
-      });
+    unixServer,
+    async listen() {
+      const tcp = await listenOn(server, config.router.port, config.router.host);
+      let unix = null;
+      const socketPath = config.router.socketPath;
+      if (typeof socketPath === "string" && socketPath.length > 0) {
+        try {
+          unix = await listenUnixSocket(unixServer, socketPath);
+        } catch (error) {
+          await closeServer(server);
+          throw error;
+        }
+      }
+      return { tcp, unix };
     },
-    close() {
-      return new Promise((resolveClose, rejectClose) => {
-        server.close((error) => (error ? rejectClose(error) : resolveClose()));
-      });
+    async close() {
+      await closeServer(unixServer);
+      await closeServer(server);
     },
   };
 }
@@ -398,7 +581,15 @@ if (fileURLToPath(import.meta.url) === process.argv[1]) {
   if (config.deepseek?.credentialHelper?.includes("<home>")) {
     config.deepseek.credentialHelper = config.deepseek.credentialHelper.replaceAll("<home>", process.env.HOME);
   }
+  if (config.openai?.credentialHelper?.includes("<home>")) {
+    config.openai.credentialHelper = config.openai.credentialHelper.replaceAll("<home>", process.env.HOME);
+  }
+  if (config.router?.socketPath?.includes("<home>")) {
+    config.router.socketPath = config.router.socketPath.replaceAll("<home>", process.env.HOME);
+  }
   const router = createHybridRouter({ config });
   const address = await router.listen();
-  console.log(`Claude Hybrid router listening on ${address.address}:${address.port}`);
+  const tcp = `${address.tcp.address}:${address.tcp.port}`;
+  const unix = address.unix ? ` and unix ${config.router.socketPath}` : "";
+  console.log(`Claude Hybrid router listening on ${tcp}${unix}`);
 }

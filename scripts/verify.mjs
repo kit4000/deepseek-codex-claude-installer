@@ -6,4 +6,4 @@ runNode(codexRoot, "scripts/verify-installation.mjs", [], {
 runNode(claudeRoot, "scripts/verify.mjs");
 runNode(projectRoot, "scripts/verify-extensions.mjs");
 
-console.log("Non-billable Codex, Claude Hybrid, updater-skill, and DeepSeek subagent verification completed.");
+console.log("Non-billable Codex, Claude Hybrid, updater-skill, DeepSeek subagent, Cursor CLI wrapper, and ChatGPT Codex CLI wrapper verification completed.");

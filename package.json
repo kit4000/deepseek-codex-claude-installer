@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Reproducible macOS installer for Codex native/DeepSeek routing and Claude Hybrid 4.6 slots",
+  "description": "Reproducible macOS installer for Codex native/DeepSeek routing and Claude Hybrid extra model slots",
   "scripts": {
     "test": "node scripts/test.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
@@ -13,6 +13,8 @@
     "install:codex": "node scripts/install.mjs --codex-only",
     "install:claude": "node scripts/install.mjs --claude-only",
     "install:extensions": "node scripts/install-extensions.mjs",
+    "cursor-cli": "node scripts/cursor-cli-delegate.mjs",
+    "codex-cli": "node scripts/codex-cli-delegate.mjs",
     "update:claude": "node scripts/update-claude.mjs --apply",
     "update:claude:check": "node scripts/update-claude.mjs --check",
     "verify": "node scripts/verify.mjs",

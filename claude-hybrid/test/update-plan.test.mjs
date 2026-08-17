@@ -16,6 +16,7 @@ const baseline = {
   environmentAnchorPresent: true,
   labelAnchorPresent: true,
   credentialAvailable: true,
+  openaiCredentialAvailable: true,
   claudeRunning: false,
   targetPatchCompatible: true,
 };
@@ -48,4 +49,11 @@ test("stops safely when exact anchors changed", () => {
 test("requires apps to be closed and a per-user credential before apply", () => {
   assert.equal(decideClaudeHybridUpdate({ ...baseline, sourceBuild: "124", claudeRunning: true }, "apply").status, "warning");
   assert.equal(decideClaudeHybridUpdate({ ...baseline, sourceBuild: "124", credentialAvailable: false }, "apply").status, "error");
+  assert.equal(decideClaudeHybridUpdate({ ...baseline, sourceBuild: "124", openaiCredentialAvailable: false }, "apply").status, "warning");
+  assert.equal(decideClaudeHybridUpdate({
+    ...baseline,
+    sourceBuild: "124",
+    openaiRequired: true,
+    openaiCredentialAvailable: false,
+  }, "apply").status, "error");
 });
