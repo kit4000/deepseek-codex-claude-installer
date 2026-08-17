@@ -63,7 +63,7 @@ try {
 
   const manifest = {
     formatVersion: 1,
-    purpose: "Codex native plus DeepSeek routing, callable DeepSeek V4 agent, and updateable Claude Hybrid 4.6-slot installation",
+    purpose: "Codex native plus DeepSeek routing, callable DeepSeek agents, Cursor CLI and ChatGPT Codex CLI subscription wrappers, and updateable Claude Hybrid extra-slot installation",
     keychain: {
       copied: false,
       service: "com.local.codex-native-model-router.deepseek",
@@ -73,7 +73,7 @@ try {
       "~/Applications/Claude Official.app contents and Apple signature",
       "/Applications/Claude.app daily Hybrid identity and disabled updater",
       "Codex and Claude session stores",
-      "Fable 5 and Opus 4.8 native model slots",
+      "Fable 5 and Opus 5 native model slots",
       "Main model selection and global subagent defaults",
     ],
     files: hashes,

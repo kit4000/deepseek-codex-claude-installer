@@ -6,6 +6,8 @@ run(process.execPath, ["--test"], { cwd: claudeRoot });
 run(process.execPath, [
   "--test",
   resolve(projectRoot, "test/extensions.test.mjs"),
+  resolve(projectRoot, "test/cursor-cli.test.mjs"),
+  resolve(projectRoot, "test/codex-cli.test.mjs"),
   resolve(projectRoot, "test/integration.test.mjs"),
 ], { cwd: projectRoot });
 

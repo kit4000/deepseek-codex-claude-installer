@@ -4,6 +4,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readAsarFile, readAsarHeader } from "../src/asar-repack.mjs";
 import { hasHybridMarker, inspectAppleSignature } from "../src/app-layout.mjs";
+import { environmentPatchEntries } from "../src/app-patch.mjs";
+import { requestUnix } from "../src/router.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const home = process.env.HOME;
@@ -14,6 +16,7 @@ const targetApp = process.env.CLAUDE_HYBRID_TARGET ?? expand(config.app.target);
 const sourceApp = process.env.CLAUDE_HYBRID_SOURCE ?? expand(config.app.source);
 const customLayout = Boolean(process.env.CLAUDE_HYBRID_SOURCE || process.env.CLAUDE_HYBRID_TARGET);
 const routerBaseUrl = process.env.CLAUDE_HYBRID_ROUTER_URL ?? expand(config.app.routerBaseUrl);
+const routerSocketPath = process.env.CLAUDE_HYBRID_ROUTER_SOCKET ?? expand(config.router.socketPath);
 const userDataDir = process.env.CLAUDE_HYBRID_USER_DATA_DIR ?? expand(config.app.userDataDir);
 
 function run(command, args, options = {}) {
@@ -51,17 +54,10 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
   };
 
   const patchedFile = await readAsarFile(asarPath, config.app.patchFile);
-  const requiredEnvironmentPatches = [
-    `ANTHROPIC_BASE_URL:${JSON.stringify(routerBaseUrl)}`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION:"deepseek-v4-pro[1m]"`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION_NAME:"DeepSeek V4 Pro (1M)"`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION:"DeepSeek official Anthropic-compatible API"`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking,context_management"`,
-    `ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"`,
-    `ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME:"DeepSeek V4 Flash"`,
-    `ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION:"DeepSeek official fast model"`,
-    `ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking"`,
-  ];
+  const requiredEnvironmentPatches = environmentPatchEntries({
+    routerBaseUrl,
+    routerSocketPath,
+  });
   report.checks.appPatch = {
     ok: Boolean(patchedFile && requiredEnvironmentPatches.every((value) => patchedFile.includes(value))),
   };
@@ -73,7 +69,9 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
       && uiPatch?.includes("Sonnet 4.6")
       && uiPatch?.includes("Opus 4.6")
       && uiPatch?.includes("DeepSeek V4 Flash")
-      && uiPatch?.includes("DeepSeek V4 Pro (1M)"),
+      && uiPatch?.includes("DeepSeek V4 Pro (1M)")
+      && !uiPatch?.includes("GPT-5.6 Luna")
+      && !uiPatch?.includes("GPT-5.6 Sol"),
     ),
   };
 
@@ -95,11 +93,29 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
   const healthResponse = await fetch(`http://127.0.0.1:${config.router.port}/healthz`, {
     signal: AbortSignal.timeout(1000),
   });
+  const health = healthResponse.ok ? await healthResponse.json() : undefined;
   report.checks.router = {
-    ok: healthResponse.ok,
+    ok: healthResponse.ok && health?.provider === "claude-hybrid",
     status: healthResponse.status,
-    body: healthResponse.ok ? await healthResponse.json() : undefined,
+    body: health,
   };
+
+  let unixHealth;
+  try {
+    const unixResult = await requestUnix(routerSocketPath, { path: "/healthz", timeoutMs: 1000 });
+    unixHealth = unixResult.statusCode === 200 ? JSON.parse(unixResult.body.toString("utf8")) : undefined;
+    report.checks.routerSocket = {
+      ok: unixResult.statusCode === 200 && unixHealth?.ok === true && unixHealth?.socketPath === routerSocketPath,
+      status: unixResult.statusCode,
+      socketPath: routerSocketPath,
+    };
+  } catch (error) {
+    report.checks.routerSocket = {
+      ok: false,
+      socketPath: routerSocketPath,
+      error: { name: error?.name, message: error?.message },
+    };
+  }
 
   const modelsResponse = await fetch(`http://127.0.0.1:${config.router.port}/v1/models`, {
     signal: AbortSignal.timeout(3000),

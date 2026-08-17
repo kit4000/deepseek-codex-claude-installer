@@ -2,7 +2,7 @@
 
 - 対象: DeepSeek Codex + Claude Hybrid 統合インストーラー
 - 作成日: 2026-08-09
-- 背景端末での実証済み構成: Claude Desktop `1.28929.0` / Hybrid patch `2026-08-12.1`
+- 背景端末での実証済み構成: Claude Desktop `1.28929.0` / Hybrid patch `2026-08-18.2`
 - 目的: ランチャーが純正を開いてしまう問題を解消し、公式更新と Hybrid 再構築の手順をインストーラー契約として固定する
 
 ---
@@ -88,6 +88,13 @@ open "$HOME/Applications/Claude Official.app"
 }
 ```
 
+ルーターは TCP `127.0.0.1:10102` に加え、
+`<home>/Library/Application Support/Claude Hybrid/router.sock` でも待ち受ける。
+Code 子プロセスには `ANTHROPIC_BASE_URL` と `ANTHROPIC_UNIX_SOCKET` の両方を渡す。
+Unix ソケットは Claude Code が Remote Control を first-party 扱いするための公式エスケープハッチで、
+DeepSeek 4.6 枠とリモートコントロールを同一アプリで共存させる。ChatGPT サブスクリプションは
+Claude.app のピッカー枠に載せない。
+
 旧デフォルト（廃止）:
 
 - source: `/Applications/Claude.app`
@@ -158,6 +165,28 @@ echo "Launch Services now prefers: $HYBRID"
 ```
 
 任意で `update-claude-official` のような薄いラッパーを追加してもよい（実体は §4.2）。
+
+### 3.7 ChatGPT / Cursor サブスクはピッカー枠ではなく CLI 委譲
+
+Claude.app のモデルピッカーに GPT-5.6 Sol / Luna を載せない。ChatGPT サブスクリプションは
+OpenAI API キーではない。`npm run install` の最後（`install-extensions`）が次を配置する。
+
+- コマンド: `codex-cli-delegate`、`gpt-5-6-sol`、`gpt-5-6-luna`
+- Claude Code スラッシュコマンド / エージェント: `/gpt-5-6-sol`、`/gpt-5-6-luna`
+- スキル: `chatgpt-codex-delegation`
+- 認証: `codex login`（ChatGPT）。`OPENAI_API_KEY` は外す
+
+Cursor Grok 4.6 / Composer 2.5 も同じパターンで `cursor-cli-delegate` に委譲する。
+以前の Hybrid API エージェント（`model: "gpt-5.6-sol"` 等）は CLI ラッパーへ置き換えてよい。
+
+### 3.8 配布の正本は GitHub
+
+外部エージェントにはリポジトリ URL だけを渡す。
+
+https://github.com/kit4000/deepseek-codex-claude-installer
+
+clone 先は永続ディレクトリ（推奨: `~/Applications/deepseek-codex-claude-installer`）。
+`/tmp` 禁止。導入後も削除しない。手順の正本はルートの `AGENT_HANDOFF.md`。
 
 ---
 
@@ -295,16 +324,25 @@ prefer-claude-hybrid
 |--------|--------------|-----------|---------------------|-----------------|
 | 1.26832.0 | 2026-08-09.1 | `index.chunk-Bc9P6O1g.js` | `index.chunk-BKcsP2ti.js` | `Y` |
 | 1.28929.0 | 2026-08-12.1 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
+| 1.28929.0 | 2026-08-17.1 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
+| 1.28929.0 | 2026-08-17.2 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
+| 1.28929.0 | 2026-08-18.1 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
+| 1.28929.0 | 2026-08-18.2 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 
-現行（1.28929.0）:
+現行（1.28929.0 / 2026-08-18.2）:
 
 ```text
 patchFile: /.vite/build/index.chunk-KnwvxAXh.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
 modelLabelPatchFile: /.vite/build/index.chunk-CHjD_WiU.js
 modelLabelPatchFrom: function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}
-patchVersion: 2026-08-12.1
+patchVersion: 2026-08-18.2
 ```
+
+2026-08-18.2 はアンカー位置は変えず、Remote Control 用 `ANTHROPIC_UNIX_SOCKET` を入れたまま、
+ChatGPT サブスクリプションを OpenAI API の借り枠として解釈しない。GPT-5.6 Sol / Luna は
+`/gpt-5-6-sol` / `/gpt-5-6-luna` がログイン済み Codex CLI に委譲する。Opus/Sonnet 4.6 は DeepSeek。
+Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5 / Opus 4.5 / Sonnet 4.5 / Opus 4.7 は純正。
 
 ---
 
@@ -320,6 +358,9 @@ patchVersion: 2026-08-12.1
 - [ ] `prefer-claude-hybrid` が導入されている
 - [ ] 旧「Claude Hybrid.app を開く」系の誘導文言が残っていない
 - [ ] アンカー失敗時に fuzzy patch せず停止するテストが残っている
+- [ ] `npm run install` が `/gpt-5-6-sol` / `/gpt-5-6-luna` を ChatGPT サブスクの Codex CLI 委譲として配置する
+- [ ] ChatGPT サブスクを OpenAI API のピッカー枠として解釈しない
+- [ ] GitHub URL だけ渡せば `AGENT_HANDOFF.md` から導入できる
 
 ---
 

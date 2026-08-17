@@ -1,7 +1,12 @@
 # Claude Hybrid
 
+統合インストーラーの正本は
+https://github.com/kit4000/deepseek-codex-claude-installer
+です。このディレクトリ単体ではなく、リポジトリルートの `AGENT_HANDOFF.md` に従って導入します。
+
 Claude Desktop の **Code タブだけ** をローカルルーターに向け、公式サブスクリプション
 （OAuth）と DeepSeek 公式 API を同じ画面・同じセッションで切り替えます。
+ChatGPT サブスクリプションは Codex 側の認証として扱い、Claude.app のピッカー枠には載せません。
 
 - Chat / Cowork タブと OAuth の設定は変更しません。
 - `~/Library/Application Support/Claude` をそのまま共有するため、公式 Claude で作った
@@ -15,11 +20,12 @@ Claude Desktop の **Code タブだけ** をローカルルーターに向け、
 ### `/Applications/Claude.app`（Hybrid）
 
 - 公式 `Claude.app` のコピー。自動更新は `DISABLE_AUTOUPDATER=1` で無効化。
-- Code タブが Claude Code 子プロセスへ渡す `ANTHROPIC_BASE_URL` だけを
-  `http://127.0.0.1:10102` に書き換え。
+- Code タブが Claude Code 子プロセスへ渡す `ANTHROPIC_BASE_URL` を
+  `http://127.0.0.1:10102` に書き換え、同じ子プロセスへ `ANTHROPIC_UNIX_SOCKET` も渡す。
+  Unix ソケットは Remote Control を first-party 扱いしたまま、推論だけローカルルーターへ向ける。
 - Code タブのWebピッカーで Sonnet 4.6 を DeepSeek V4 Flash、Opus 4.6 を
-  DeepSeek V4 Pro (1M) と表示し、選択時はルーターが対応するDeepSeekモデルへ
-  振り分けます。Fable 5 / Opus 4.8 と、純正の Opus 5 / Sonnet 5 / Haiku 4.5
+  DeepSeek V4 Pro (1M) と表示し、選択時はルーターが対応する外部モデルへ振り分けます。
+  Fable 5 / Opus 4.8 / Opus 5 と、純正の Sonnet 5 / Haiku 4.5 / Opus 4.5 / Sonnet 4.5
   はそのまま残ります。
 - `CLAUDE_USER_DATA_DIR` を `~/Library/Application Support/Claude` に固定し、
   以前の 3P 設定（`Claude-3p`）に引きずられず公式アカウント・セッションを共有。
@@ -28,14 +34,14 @@ Claude Desktop の **Code タブだけ** をローカルルーターに向け、
 
 ### ローカルルーター（LaunchAgent: com.local.claude-hybrid-router）
 
-- ポート `127.0.0.1:10102`。
-- 通常モデル（`claude-*`）は `api.anthropic.com` へ OAuth のまま転送。
-- 外部モデルは DeepSeek 公式 Anthropic 互換 API へ送信し、モデル名を変換:
-  - `claude-opus-4-5-external-pro` → `deepseek-v4-pro[1m]`
-  - `claude-haiku-4-5-external-flash` → `deepseek-v4-flash`
-- DeepSeek キーはファイルへ保存せず、macOS キーチェーン
-  `com.local.codex-native-model-router.deepseek` から credential helper 経由で読み出し。
-- `/v1/models` は公式一覧に DeepSeek エントリを追加して返却。
+- ポート `127.0.0.1:10102` と Unix ソケット
+  `<home>/Library/Application Support/Claude Hybrid/router.sock`。
+- 通常モデル（`claude-*` のうち借りていない ID）は `api.anthropic.com` へ OAuth のまま転送。
+- 外部モデル:
+  - `claude-opus-4-6` → `deepseek-v4-pro[1m]`（DeepSeek 公式 Anthropic 互換）
+  - `claude-sonnet-4-6` → `deepseek-v4-flash`
+- APIキーはファイルへ保存せず、macOS キーチェーンから credential helper 経由で読み出し。
+- `/v1/models` は公式一覧に外部エントリを追加して返却。
 - 上流の `content-encoding` は fetch が展開済みボディを渡すため除去して転送。
 
 ## インストール
@@ -80,7 +86,7 @@ prefer-claude-hybrid
 公式署名、バージョン固有の2つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
-現行確認済みは Claude `1.28929.0` / patch `2026-08-12.1` です。
+現行確認済みは Claude `1.28929.0` / patch `2026-08-18.2` です。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを
@@ -95,7 +101,14 @@ Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検
 入力し「常に許可」を選んでください（再署名後の一度きりの確認です）。
 
 Code タブのモデルピッカーには、よく使うモデル（Fable / Opus / Sonnet / Haiku）と
-「他のモデル」の DeepSeek V4 Pro (1M) / DeepSeek V4 Flash が並びます。
+借り枠の DeepSeek V4 Pro / Flash が並びます。
+Claude Code のサブエージェントとしては `deepseek-v4-flash`、`deepseek-v4-pro`
+を名前で呼べます。`model: "haiku"` は DeepSeek Flash です。
+Cursor Grok 4.6 と Composer 2.5 はピッカー枠ではなく、`/cursor-grok-4-6` と
+`/cursor-composer-2-5` がログイン済み Cursor CLI に委譲します。GPT-5.6 Sol / Luna も
+ピッカー枠ではなく、`/gpt-5-6-sol` と `/gpt-5-6-luna` がログイン済み Codex CLI
+（ChatGPT サブスク）に委譲します。配置は統合インストーラーの `npm run install`
+（最後の `install-extensions`）です。
 
 ## 検証
 
@@ -103,6 +116,8 @@ Code タブのモデルピッカーには、よく使うモデル（Fable / Opus
 
 - asar ヘッダー整合性ハッシュが Info.plist と一致
 - `ANTHROPIC_BASE_URL` パッチが適用済み
+- `ANTHROPIC_UNIX_SOCKET` パッチが適用済み
+- ルーターの Unix ソケットが応答する
 - DeepSeek のカスタムモデル環境変数が適用済み
 - WebピッカーのDeepSeek表示名パッチとルーターaliasが適用済み
 - codesign 検証

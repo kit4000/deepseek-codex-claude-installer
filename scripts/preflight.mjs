@@ -44,7 +44,7 @@ runNode(codexRoot, "scripts/preflight.mjs", [], {
 
 await check("integrated bundle path", async () => {
   if (projectRoot.startsWith("/tmp/") || projectRoot.startsWith("/private/tmp/")) {
-    throw new Error("Move the extracted bundle to a permanent directory before installation");
+    throw new Error("Clone or move the installer to a permanent directory before installation; /tmp is not allowed");
   }
   return projectRoot;
 });
@@ -74,16 +74,31 @@ await check("Claude version-specific patch anchors", async () => {
   return "both exact anchors are present";
 });
 
-await check("Claude 4.6 slot contract", async () => {
+await check("Claude extra slot contract", async () => {
   const aliases = claudeConfig.models.external.flatMap((entry) => entry.aliases ?? []).sort();
-  if (JSON.stringify(aliases) !== JSON.stringify(["claude-opus-4-6", "claude-sonnet-4-6"])) {
+  const expected = [
+    "claude-haiku-4-5-external-flash",
+    "claude-opus-4-5-external-pro",
+    "claude-opus-4-6",
+    "claude-sonnet-4-6",
+  ];
+  if (JSON.stringify(aliases) !== JSON.stringify(expected)) {
     throw new Error(`Unexpected external aliases: ${aliases.join(", ")}`);
   }
-  const patchSource = await readFile(resolve(claudeRoot, "src/app-patch.mjs"), "utf8");
-  if (/Fable 5[^\n]*(?:DeepSeek|labels\.set)|Opus 4\.8[^\n]*(?:DeepSeek|labels\.set)/.test(patchSource)) {
-    throw new Error("Fable 5 or Opus 4.8 is targeted by the label patch");
+  if (claudeConfig.models.external.some((entry) => entry.provider === "openai")) {
+    throw new Error("Claude Hybrid picker must not route ChatGPT subscription models through the OpenAI API");
   }
-  return "only Opus 4.6 and Sonnet 4.6 are assigned to DeepSeek";
+  const { MODEL_LABEL_REWRITES } = await import(pathToFileURL(resolve(claudeRoot, "src/app-patch.mjs")));
+  const fromLabels = MODEL_LABEL_REWRITES.map(([from]) => from);
+  for (const forbidden of ["Fable 5", "Opus 5", "Sonnet 5", "Haiku 4.5", "Opus 4.5", "Sonnet 4.5", "Opus 4.8", "Opus 4.7"]) {
+    if (fromLabels.includes(forbidden)) {
+      throw new Error(`${forbidden} is targeted by the label patch`);
+    }
+  }
+  if (!fromLabels.includes("Opus 4.6") || !fromLabels.includes("Sonnet 4.6")) {
+    throw new Error("DeepSeek label rewrites must target Opus 4.6 and Sonnet 4.6");
+  }
+  return "4.6 DeepSeek only; Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku stay native";
 });
 
 await check("Claude app layout", async () => {

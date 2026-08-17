@@ -2,7 +2,8 @@
   "version": 1,
   "router": {
     "host": "127.0.0.1",
-    "port": 10102
+    "port": 10102,
+    "socketPath": "<home>/Library/Application Support/Claude Hybrid/router.sock"
   },
   "native": {
     "baseUrl": "https://api.anthropic.com"
@@ -15,36 +16,53 @@
     },
     "credentialHelper": "<home>/.local/bin/claude-desktop-credential-helper"
   },
+  "openai": {
+    "baseUrl": "https://api.openai.com/v1",
+    "keychain": {
+      "service": "com.local.claude-hybrid.openai",
+      "account": "api-key"
+    },
+    "credentialHelper": "<home>/.local/bin/claude-hybrid-openai-credential-helper"
+  },
   "models": {
     "external": [
       {
-        "id": "claude-opus-4-5-external-pro",
+        "id": "deepseek-v4-pro[1m]",
         "aliases": [
-          "claude-opus-4-6"
+          "claude-opus-4-6",
+          "claude-opus-4-5-external-pro"
         ],
         "target": "deepseek-v4-pro[1m]",
         "displayName": "DeepSeek V4 Pro (1M)",
+        "provider": "deepseek",
         "tier": "opus"
       },
       {
-        "id": "claude-haiku-4-5-external-flash",
+        "id": "deepseek-v4-flash",
         "aliases": [
-          "claude-sonnet-4-6"
+          "claude-sonnet-4-6",
+          "claude-haiku-4-5-external-flash"
         ],
         "target": "deepseek-v4-flash",
         "displayName": "DeepSeek V4 Flash",
+        "provider": "deepseek",
         "tier": "haiku"
       }
     ],
     "nativeFallback": [
       {
-        "id": "claude-opus-4-5",
-        "displayName": "Claude Opus 4.5",
+        "id": "claude-opus-4-8",
+        "displayName": "Claude Opus 4.8",
         "tier": "opus"
       },
       {
-        "id": "claude-sonnet-4-5",
-        "displayName": "Claude Sonnet 4.5",
+        "id": "claude-opus-5",
+        "displayName": "Claude Opus 5",
+        "tier": "opus"
+      },
+      {
+        "id": "claude-sonnet-5",
+        "displayName": "Claude Sonnet 5",
         "tier": "sonnet"
       },
       {
@@ -55,7 +73,7 @@
     ]
   },
   "app": {
-    "patchVersion": "2026-08-12.1",
+    "patchVersion": "2026-08-18.2",
     "source": "<home>/Applications/Claude Official.app",
     "target": "/Applications/Claude.app",
     "userDataDir": "<home>/Library/Application Support/Claude",

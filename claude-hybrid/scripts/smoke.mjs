@@ -47,7 +47,7 @@ await check("nativeRoute", async () => {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-opus-4-5",
+      model: "claude-opus-5",
       max_tokens: 8,
       messages: [{ role: "user", content: "ping" }],
     }),

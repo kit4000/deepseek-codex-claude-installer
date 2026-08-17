@@ -14,8 +14,38 @@ function run(command, args, options = {}) {
   return result;
 }
 
+export const MODEL_LABEL_REWRITES = [
+  ["Sonnet 4.6", "DeepSeek V4 Flash"],
+  ["Opus 4.6", "DeepSeek V4 Pro (1M)"],
+];
+
+export function environmentPatchEntries({ routerBaseUrl, routerSocketPath }) {
+  if (typeof routerBaseUrl !== "string" || routerBaseUrl.length === 0) {
+    throw new Error("routerBaseUrl is required");
+  }
+  if (typeof routerSocketPath !== "string" || !routerSocketPath.startsWith("/")) {
+    throw new Error("routerSocketPath must be an absolute path");
+  }
+  return [
+    `ANTHROPIC_BASE_URL:${JSON.stringify(routerBaseUrl)}`,
+    `ANTHROPIC_UNIX_SOCKET:${JSON.stringify(routerSocketPath)}`,
+    `ANTHROPIC_CUSTOM_MODEL_OPTION:"deepseek-v4-pro[1m]"`,
+    `ANTHROPIC_CUSTOM_MODEL_OPTION_NAME:"DeepSeek V4 Pro (1M)"`,
+    `ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION:"DeepSeek official Anthropic-compatible API"`,
+    `ANTHROPIC_CUSTOM_MODEL_OPTION_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking,context_management"`,
+    `ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"`,
+    `ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME:"DeepSeek V4 Flash"`,
+    `ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION:"DeepSeek official fast model"`,
+    `ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking"`,
+  ];
+}
+
+export function buildEnvironmentPatch(options) {
+  return environmentPatchEntries(options).join(",");
+}
+
 export function buildModelLabelPatch(file, from) {
-  const script = `(()=>{if(globalThis.__CLAUDE_HYBRID_MODEL_LABELS__)return;globalThis.__CLAUDE_HYBRID_MODEL_LABELS__=!0;const labels=new Map([["Sonnet 4.6","DeepSeek V4 Flash"],["Opus 4.6","DeepSeek V4 Pro (1M)"]]);const rewriteText=node=>{const current=node.nodeValue??"",trimmed=current.trim(),replacement=labels.get(trimmed);if(replacement)node.nodeValue=current.replace(trimmed,replacement)};const rewrite=root=>{if(!root)return;if(root.nodeType===Node.TEXT_NODE){rewriteText(root);return}const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);for(let node=walker.nextNode();node;node=walker.nextNode())rewriteText(node)};const start=()=>{rewrite(document.body);new MutationObserver(records=>{for(const record of records){if(record.type==="characterData")rewriteText(record.target);for(const node of record.addedNodes)rewrite(node)}}).observe(document.body,{subtree:!0,childList:!0,characterData:!0})};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start,{once:!0}):start()})()`;
+  const script = `(()=>{if(globalThis.__CLAUDE_HYBRID_MODEL_LABELS__)return;globalThis.__CLAUDE_HYBRID_MODEL_LABELS__=!0;const labels=new Map(${JSON.stringify(MODEL_LABEL_REWRITES)});const rewriteText=node=>{const current=node.nodeValue??"",trimmed=current.trim(),replacement=labels.get(trimmed);if(replacement)node.nodeValue=current.replace(trimmed,replacement)};const rewrite=root=>{if(!root)return;if(root.nodeType===Node.TEXT_NODE){rewriteText(root);return}const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);for(let node=walker.nextNode();node;node=walker.nextNode())rewriteText(node)};const start=()=>{rewrite(document.body);new MutationObserver(records=>{for(const record of records){if(record.type==="characterData")rewriteText(record.target);for(const node of record.addedNodes)rewrite(node)}}).observe(document.body,{subtree:!0,childList:!0,characterData:!0})};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start,{once:!0}):start()})()`;
   const match = from.match(/,([A-Za-z_$][\w$]*)\}$/);
   if (!match) {
     throw new Error("Claude web view patch anchor has an unexpected shape");
@@ -112,6 +142,7 @@ export async function patchClaudeApp({
   sourceApp,
   targetApp,
   routerBaseUrl,
+  routerSocketPath,
   patchFile,
   patchFrom,
   modelLabelPatchFile,
@@ -140,17 +171,7 @@ export async function patchClaudeApp({
     run("/bin/cp", ["-cRp", sourceApp, stageApp]);
 
     const stageAsar = join(stageApp, "Contents/Resources/app.asar");
-    const environmentPatch = [
-      `ANTHROPIC_BASE_URL:${JSON.stringify(routerBaseUrl)}`,
-      `ANTHROPIC_CUSTOM_MODEL_OPTION:"deepseek-v4-pro[1m]"`,
-      `ANTHROPIC_CUSTOM_MODEL_OPTION_NAME:"DeepSeek V4 Pro (1M)"`,
-      `ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION:"DeepSeek official Anthropic-compatible API"`,
-      `ANTHROPIC_CUSTOM_MODEL_OPTION_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking,context_management"`,
-      `ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"`,
-      `ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME:"DeepSeek V4 Flash"`,
-      `ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION:"DeepSeek official fast model"`,
-      `ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking"`,
-    ].join(",");
+    const environmentPatch = buildEnvironmentPatch({ routerBaseUrl, routerSocketPath });
     const patches = [
       {
         file: patchFile,

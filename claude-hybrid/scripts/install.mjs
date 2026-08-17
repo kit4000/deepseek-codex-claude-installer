@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { patchClaudeApp } from "../src/app-patch.mjs";
 import { readAsarFile, readAsarHeader } from "../src/asar-repack.mjs";
+import { requestUnix } from "../src/router.mjs";
 import {
   PREFER_HELPER_MARKER,
   hasHybridMarker,
@@ -33,8 +34,10 @@ const logDirectory = expand(config.launchAgent.logDirectory);
 const routerPath = join(managedDir, "router.mjs");
 const runtimeConfigPath = join(managedDir, "config.json");
 const helperPath = expand(config.deepseek.credentialHelper);
+const openaiHelperPath = expand(config.openai.credentialHelper);
 const preferHelperPath = `${home}/.local/bin/prefer-claude-hybrid`;
 const routerBaseUrl = expand(config.app.routerBaseUrl);
+const routerSocketPath = expand(config.router.socketPath);
 const domain = `gui/${process.getuid()}`;
 const label = config.launchAgent.label;
 
@@ -51,8 +54,8 @@ function run(command, args, options = {}) {
   return result;
 }
 
-function renderCredentialHelper(config) {
-  const { service, account } = config.deepseek.keychain;
+function renderCredentialHelper(keychain) {
+  const { service, account } = keychain;
   const quote = (value) => `'${String(value).replaceAll("'", `'\\''`)}'`;
   return [
     "#!/bin/sh",
@@ -110,6 +113,20 @@ async function waitForHealth(port, attempts = 40) {
   throw new Error("Claude Hybrid router did not become healthy");
 }
 
+async function waitForUnix(socketPath, attempts = 40) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const result = await requestUnix(socketPath, { path: "/healthz", timeoutMs: 500 });
+      if (result.statusCode === 200) {
+        const health = JSON.parse(result.body.toString("utf8"));
+        if (health?.ok === true && health.provider === "claude-hybrid") return;
+      }
+    } catch {}
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
+  }
+  throw new Error("Claude Hybrid router unix socket did not become healthy");
+}
+
 const keyResult = run("/usr/bin/security", [
   "find-generic-password",
   "-s", config.deepseek.keychain.service,
@@ -118,6 +135,18 @@ const keyResult = run("/usr/bin/security", [
 ], { timeout: 5000 });
 if (keyResult.status !== 0 || !keyResult.stdout?.trim()) {
   throw new Error("DeepSeek API key is missing from macOS Keychain; run npm run store-deepseek-key first");
+}
+const openaiRequired = (config.models?.external ?? []).some((entry) => entry.provider === "openai");
+if (openaiRequired) {
+  const openaiKeyResult = run("/usr/bin/security", [
+    "find-generic-password",
+    "-s", config.openai.keychain.service,
+    "-a", config.openai.keychain.account,
+    "-w",
+  ], { timeout: 5000 });
+  if (openaiKeyResult.status !== 0 || !openaiKeyResult.stdout?.trim()) {
+    throw new Error("OpenAI API key is missing from macOS Keychain; run npm run store-openai-key first");
+  }
 }
 
 const running = run("/usr/bin/pgrep", ["-x", "Claude"]);
@@ -136,6 +165,18 @@ const helperIsManaged =
   || existingHelper.includes("# Managed by deepseek-handoff.");
 if (existingHelper && !helperIsManaged) {
   throw new Error(`Refusing to overwrite an unmanaged executable: ${helperPath}`);
+}
+
+let existingOpenAIHelper = "";
+if (openaiRequired) {
+  try {
+    existingOpenAIHelper = await readFile(openaiHelperPath, "utf8");
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  if (existingOpenAIHelper && !existingOpenAIHelper.includes("# Managed by claude-hybrid.")) {
+    throw new Error(`Refusing to overwrite an unmanaged executable: ${openaiHelperPath}`);
+  }
 }
 
 const existingPreferHelper = await readManagedHelper(preferHelperPath);
@@ -164,22 +205,34 @@ const layout = await prepareClaudeAppLayout({ sourceApp, targetApp, home });
 await mkdir(managedDir, { recursive: true });
 await mkdir(logDirectory, { recursive: true });
 
-await writeFile(join(managedDir, "router.mjs"), await readFile(resolve(projectRoot, "src/router.mjs"), "utf8"), { mode: 0o700 });
+for (const moduleName of ["router.mjs", "openai-messages.mjs"]) {
+  await writeFile(join(managedDir, moduleName), await readFile(resolve(projectRoot, "src", moduleName), "utf8"), { mode: 0o700 });
+}
 
 const runtimeConfig = structuredClone(config);
 runtimeConfig.app.target = targetApp;
 runtimeConfig.app.source = sourceApp;
 runtimeConfig.app.routerBaseUrl = routerBaseUrl;
+runtimeConfig.router.socketPath = routerSocketPath;
 runtimeConfig.deepseek.credentialHelper = helperPath;
+runtimeConfig.openai.credentialHelper = openaiHelperPath;
 runtimeConfig.launchAgent.plistPath = plistPath;
 runtimeConfig.launchAgent.logDirectory = logDirectory;
 await writeFile(runtimeConfigPath, JSON.stringify(runtimeConfig, null, 2), { mode: 0o600 });
 
 await mkdir(dirname(helperPath), { recursive: true });
 const helperTemporaryPath = `${helperPath}.tmp-${process.pid}`;
-await writeFile(helperTemporaryPath, renderCredentialHelper(config), { mode: 0o700 });
+await writeFile(helperTemporaryPath, renderCredentialHelper(config.deepseek.keychain), { mode: 0o700 });
 await rename(helperTemporaryPath, helperPath);
 await chmod(helperPath, 0o700);
+
+if (openaiRequired) {
+  await mkdir(dirname(openaiHelperPath), { recursive: true });
+  const openaiHelperTemporaryPath = `${openaiHelperPath}.tmp-${process.pid}`;
+  await writeFile(openaiHelperTemporaryPath, renderCredentialHelper(config.openai.keychain), { mode: 0o700 });
+  await rename(openaiHelperTemporaryPath, openaiHelperPath);
+  await chmod(openaiHelperPath, 0o700);
+}
 
 await mkdir(dirname(preferHelperPath), { recursive: true });
 const preferTemporaryPath = `${preferHelperPath}.tmp-${process.pid}`;
@@ -202,12 +255,14 @@ if (bootstrap.status !== 0) {
 }
 run("launchctl", ["kickstart", "-k", `${domain}/${label}`], { stdio: "ignore" });
 await waitForHealth(config.router.port);
+await waitForUnix(routerSocketPath);
 
 console.log("Claude Hybrid router is healthy; building the app copy.");
 const patchResult = await patchClaudeApp({
   sourceApp,
   targetApp,
   routerBaseUrl,
+  routerSocketPath,
   patchFile: config.app.patchFile,
   patchFrom: config.app.patchFrom,
   modelLabelPatchFile: config.app.modelLabelPatchFile,
@@ -229,12 +284,17 @@ console.log(JSON.stringify({
   managedDir,
   runtimeConfigPath,
   helperPath,
+  openaiHelperPath,
   preferHelperPath,
   plistPath,
   routerPort: config.router.port,
   routerBaseUrl,
+  routerSocketPath,
   patch: patchResult,
   launchServices,
-  keychain: config.deepseek.keychain,
+  keychain: {
+    deepseek: config.deepseek.keychain,
+    openai: config.openai.keychain,
+  },
   note: "Open Claude from /Applications. It is the daily Hybrid app; keep Claude Official.app only as the pristine update source.",
 }, null, 2));

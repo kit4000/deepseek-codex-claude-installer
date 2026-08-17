@@ -44,6 +44,7 @@ function inspectInstalledCompatibility() {
     "modelLabelPatch",
     "codesign",
     "router",
+    "routerSocket",
     "modelList",
     "launchAgent",
     "userDataDir",
@@ -92,6 +93,12 @@ async function inspectState() {
     "-a", config.deepseek.keychain.account,
     "-w",
   ], { stdio: "ignore", timeout: 5000 });
+  const openaiCredential = run("/usr/bin/security", [
+    "find-generic-password",
+    "-s", config.openai.keychain.service,
+    "-a", config.openai.keychain.account,
+    "-w",
+  ], { stdio: "ignore", timeout: 5000 });
   const running = run("/usr/bin/pgrep", ["-x", "Claude"]);
   return {
     sourceApp,
@@ -107,6 +114,8 @@ async function inspectState() {
     environmentAnchorPresent,
     labelAnchorPresent,
     credentialAvailable: credential.status === 0,
+    openaiCredentialAvailable: openaiCredential.status === 0,
+    openaiRequired: (config.models?.external ?? []).some((entry) => entry.provider === "openai"),
     claudeRunning: running.status === 0,
     targetPatchCompatible: targetExists ? inspectInstalledCompatibility() : false,
   };
@@ -151,7 +160,9 @@ try {
           : "Claude Hybrid was rebuilt from the signed official app and passed verification.",
       next_actions: [
         "Open Claude from /Applications and approve the Claude Safe Storage prompt if macOS shows it.",
-        "Confirm Fable 5 and Opus 4.8 remain native and both DeepSeek 4.6 slots are visible.",
+        "Confirm Fable 5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 remain native.",
+        "Confirm Opus 4.6 / Sonnet 4.6 show DeepSeek.",
+        "Start a Code session and confirm it appears in claude.ai/code or the mobile app.",
       ],
       artifacts: { sourceApp, targetApp, expectedPatchVersion: config.app.patchVersion, migration, launchServices },
     }, null, 2));
