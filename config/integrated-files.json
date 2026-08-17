@@ -13,7 +13,6 @@
   "scripts/preflight.mjs",
   "scripts/smoke.mjs",
   "scripts/store-key.mjs",
-  "scripts/store-openai-key.mjs",
   "scripts/test.mjs",
   "scripts/update-claude.mjs",
   "scripts/verify.mjs",

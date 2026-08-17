@@ -59,7 +59,11 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
     routerSocketPath,
   });
   report.checks.appPatch = {
-    ok: Boolean(patchedFile && requiredEnvironmentPatches.every((value) => patchedFile.includes(value))),
+    ok: Boolean(
+      patchedFile
+      && requiredEnvironmentPatches.every((value) => patchedFile.includes(value))
+      && !patchedFile.includes("ANTHROPIC_CUSTOM_MODEL_OPTION")
+    ),
   };
 
   const uiPatch = await readAsarFile(asarPath, config.app.modelLabelPatchFile);

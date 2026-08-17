@@ -103,10 +103,7 @@ export function parseCursorCliAuth(stdout) {
   try {
     parsed = JSON.parse(text);
   } catch {
-    if (/not authenticated|logged out|unauthenticated/i.test(text) || !/authenticated|logged in/i.test(text)) {
-      throw new Error("Cursor CLI is not authenticated; run agent login");
-    }
-    return { isAuthenticated: true };
+    throw new Error("Cursor CLI is not authenticated; run agent login");
   }
   const isAuthenticated = parsed.isAuthenticated === true || parsed.status === "authenticated";
   if (!isAuthenticated) throw new Error("Cursor CLI is not authenticated; run agent login");
@@ -229,16 +226,17 @@ export function renderCursorCliClaudeAgent(entry) {
     "",
     "You are a wrapper, not the implementation model.",
     "",
-    "Do not solve the assigned task yourself. Run exactly one command and return its output:",
+    "Do not solve the assigned task yourself. Copy the assigned task text from this conversation",
+    "into the quoted prompt. Do not leave the prompt empty and do not expand $TASK or $ARGUMENTS.",
     "",
     "```bash",
-    `"$HOME/.local/bin/${model.commandName}" --workspace "$PWD" -- "$TASK"`,
+    `"$HOME/.local/bin/${model.commandName}" --workspace "$PWD" -- "ASSIGNED_TASK_TEXT"`,
     "```",
     "",
     "If that wrapper is missing, use:",
     "",
     "```bash",
-    `"$HOME/.local/bin/cursor-cli-delegate" --model ${model.alias} --workspace "$PWD" -- "$TASK"`,
+    `"$HOME/.local/bin/cursor-cli-delegate" --model ${model.alias} --workspace "$PWD" -- "ASSIGNED_TASK_TEXT"`,
     "```",
     "",
     "- The child is billed to the user's Cursor subscription through `agent login`.",

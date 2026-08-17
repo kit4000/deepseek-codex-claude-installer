@@ -8,7 +8,6 @@
   "scripts/update.mjs",
   "scripts/smoke.mjs",
   "scripts/store-deepseek-key.mjs",
-  "scripts/store-openai-key.mjs",
   "scripts/patch-app.mjs",
   "scripts/create-archive.mjs",
   "src/router.mjs",

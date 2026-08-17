@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { createHybridRouter, isExternalModel, requestUnix } from "../src/router.mjs";
+import { createHybridRouter, isExternalModel, providerForModel, requestUnix } from "../src/router.mjs";
 
 const config = {
   router: { host: "127.0.0.1", port: 0 },
@@ -77,7 +77,26 @@ test("isExternalModel recognizes configured aliases and raw provider ids", () =>
   assert.equal(isExternalModel(config, "claude-opus-5"), false);
   assert.equal(isExternalModel(config, "claude-sonnet-5"), false);
   assert.equal(isExternalModel(config, "claude-haiku-4-5"), false);
+  assert.equal(isExternalModel(config, "gpt-unlisted"), false);
+  assert.equal(isExternalModel(config, "deepseek-unlisted"), false);
   assert.equal(isExternalModel(config, undefined), false);
+});
+
+test("unlisted gpt and deepseek ids stay native unless configured", () => {
+  assert.equal(providerForModel(config, "gpt-5.6-sol"), "openai");
+  assert.equal(providerForModel(config, "deepseek-v4-flash"), "deepseek");
+  assert.equal(providerForModel(config, "gpt-unlisted"), "native");
+  assert.equal(providerForModel(config, "deepseek-unlisted"), "native");
+  const productionLike = {
+    ...config,
+    openai: undefined,
+    models: {
+      ...config.models,
+      external: config.models.external.filter((entry) => entry.provider !== "openai"),
+    },
+  };
+  assert.equal(providerForModel(productionLike, "gpt-5.6-sol"), "native");
+  assert.equal(providerForModel(productionLike, "claude-opus-4-8"), "native");
 });
 
 test("model list combines native discovery with external models", async () => {

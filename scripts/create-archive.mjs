@@ -73,7 +73,7 @@ try {
       "~/Applications/Claude Official.app contents and Apple signature",
       "/Applications/Claude.app daily Hybrid identity and disabled updater",
       "Codex and Claude session stores",
-      "Fable 5 and Opus 5 native model slots",
+      "Fable 5, Opus 4.8, and Opus 5 native model slots",
       "Main model selection and global subagent defaults",
     ],
     files: hashes,

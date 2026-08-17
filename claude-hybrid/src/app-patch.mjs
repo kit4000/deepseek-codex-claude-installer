@@ -29,10 +29,6 @@ export function environmentPatchEntries({ routerBaseUrl, routerSocketPath }) {
   return [
     `ANTHROPIC_BASE_URL:${JSON.stringify(routerBaseUrl)}`,
     `ANTHROPIC_UNIX_SOCKET:${JSON.stringify(routerSocketPath)}`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION:"deepseek-v4-pro[1m]"`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION_NAME:"DeepSeek V4 Pro (1M)"`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION:"DeepSeek official Anthropic-compatible API"`,
-    `ANTHROPIC_CUSTOM_MODEL_OPTION_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking,context_management"`,
     `ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"`,
     `ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME:"DeepSeek V4 Flash"`,
     `ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION:"DeepSeek official fast model"`,

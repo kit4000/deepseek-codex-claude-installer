@@ -134,8 +134,8 @@ test("environment patch injects the unix socket alongside the loopback router", 
   });
   assert.match(patch, /ANTHROPIC_BASE_URL:"http:\/\/127\.0\.0\.1:10102"/);
   assert.match(patch, /ANTHROPIC_UNIX_SOCKET:"\/tmp\/claude-hybrid-router\.sock"/);
-  assert.match(patch, /ANTHROPIC_CUSTOM_MODEL_OPTION:"deepseek-v4-pro\[1m]"/);
   assert.match(patch, /ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"/);
+  assert.doesNotMatch(patch, /ANTHROPIC_CUSTOM_MODEL_OPTION/);
   assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_OPUS_MODEL/);
   assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_SONNET_MODEL/);
   assert.throws(

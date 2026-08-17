@@ -85,7 +85,7 @@ await check("Claude extra slot contract", async () => {
   if (JSON.stringify(aliases) !== JSON.stringify(expected)) {
     throw new Error(`Unexpected external aliases: ${aliases.join(", ")}`);
   }
-  if (claudeConfig.models.external.some((entry) => entry.provider === "openai")) {
+  if (claudeConfig.models.external.some((entry) => entry.provider === "openai") || claudeConfig.openai) {
     throw new Error("Claude Hybrid picker must not route ChatGPT subscription models through the OpenAI API");
   }
   const { MODEL_LABEL_REWRITES } = await import(pathToFileURL(resolve(claudeRoot, "src/app-patch.mjs")));

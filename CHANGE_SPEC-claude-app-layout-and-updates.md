@@ -2,7 +2,7 @@
 
 - 対象: DeepSeek Codex + Claude Hybrid 統合インストーラー
 - 作成日: 2026-08-09
-- 背景端末での実証済み構成: Claude Desktop `1.28929.0` / Hybrid patch `2026-08-18.2`
+- 背景端末での実証済み構成: Claude Desktop `1.28929.0` / Hybrid patch `2026-08-18.3`
 - 目的: ランチャーが純正を開いてしまう問題を解消し、公式更新と Hybrid 再構築の手順をインストーラー契約として固定する
 
 ---
@@ -328,21 +328,24 @@ prefer-claude-hybrid
 | 1.28929.0 | 2026-08-17.2 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 | 1.28929.0 | 2026-08-18.1 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 | 1.28929.0 | 2026-08-18.2 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
+| 1.28929.0 | 2026-08-18.3 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 
-現行（1.28929.0 / 2026-08-18.2）:
+現行（1.28929.0 / 2026-08-18.3）:
 
 ```text
 patchFile: /.vite/build/index.chunk-KnwvxAXh.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
 modelLabelPatchFile: /.vite/build/index.chunk-CHjD_WiU.js
 modelLabelPatchFrom: function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}
-patchVersion: 2026-08-18.2
+patchVersion: 2026-08-18.3
 ```
 
-2026-08-18.2 はアンカー位置は変えず、Remote Control 用 `ANTHROPIC_UNIX_SOCKET` を入れたまま、
-ChatGPT サブスクリプションを OpenAI API の借り枠として解釈しない。GPT-5.6 Sol / Luna は
-`/gpt-5-6-sol` / `/gpt-5-6-luna` がログイン済み Codex CLI に委譲する。Opus/Sonnet 4.6 は DeepSeek。
-Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5 / Opus 4.5 / Sonnet 4.5 / Opus 4.7 は純正。
+2026-08-18.3 はアンカー位置は変えず、Remote Control 用 `ANTHROPIC_UNIX_SOCKET` を残したまま
+`ANTHROPIC_CUSTOM_MODEL_OPTION` を外す。ピッカーは Opus/Sonnet 4.6 の DeepSeek だけ。
+`haiku` エイリアスは引き続き DeepSeek Flash。ChatGPT サブスクリプションを OpenAI API の
+借り枠として解釈しない。GPT-5.6 Sol / Luna は `/gpt-5-6-sol` / `/gpt-5-6-luna` が
+ログイン済み Codex CLI に委譲する。Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5 /
+Opus 4.5 / Sonnet 4.5 / Opus 4.7 は純正。
 
 ---
 

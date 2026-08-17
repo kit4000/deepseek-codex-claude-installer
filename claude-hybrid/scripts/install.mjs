@@ -34,7 +34,9 @@ const logDirectory = expand(config.launchAgent.logDirectory);
 const routerPath = join(managedDir, "router.mjs");
 const runtimeConfigPath = join(managedDir, "config.json");
 const helperPath = expand(config.deepseek.credentialHelper);
-const openaiHelperPath = expand(config.openai.credentialHelper);
+const openaiHelperPath = config.openai?.credentialHelper
+  ? expand(config.openai.credentialHelper)
+  : undefined;
 const preferHelperPath = `${home}/.local/bin/prefer-claude-hybrid`;
 const routerBaseUrl = expand(config.app.routerBaseUrl);
 const routerSocketPath = expand(config.router.socketPath);
@@ -138,6 +140,9 @@ if (keyResult.status !== 0 || !keyResult.stdout?.trim()) {
 }
 const openaiRequired = (config.models?.external ?? []).some((entry) => entry.provider === "openai");
 if (openaiRequired) {
+  if (!config.openai?.keychain?.service || !config.openai?.keychain?.account || !openaiHelperPath) {
+    throw new Error("OpenAI provider models are configured but no OpenAI keychain exists; remove those models instead of storing an API key");
+  }
   const openaiKeyResult = run("/usr/bin/security", [
     "find-generic-password",
     "-s", config.openai.keychain.service,
@@ -145,7 +150,7 @@ if (openaiRequired) {
     "-w",
   ], { timeout: 5000 });
   if (openaiKeyResult.status !== 0 || !openaiKeyResult.stdout?.trim()) {
-    throw new Error("OpenAI API key is missing from macOS Keychain; run npm run store-openai-key first");
+    throw new Error("OpenAI provider models are configured but no OpenAI keychain credential exists; remove those models instead of storing an API key");
   }
 }
 
@@ -215,7 +220,12 @@ runtimeConfig.app.source = sourceApp;
 runtimeConfig.app.routerBaseUrl = routerBaseUrl;
 runtimeConfig.router.socketPath = routerSocketPath;
 runtimeConfig.deepseek.credentialHelper = helperPath;
-runtimeConfig.openai.credentialHelper = openaiHelperPath;
+if (openaiHelperPath) {
+  runtimeConfig.openai = runtimeConfig.openai ?? {};
+  runtimeConfig.openai.credentialHelper = openaiHelperPath;
+} else {
+  delete runtimeConfig.openai;
+}
 runtimeConfig.launchAgent.plistPath = plistPath;
 runtimeConfig.launchAgent.logDirectory = logDirectory;
 await writeFile(runtimeConfigPath, JSON.stringify(runtimeConfig, null, 2), { mode: 0o600 });
@@ -294,7 +304,7 @@ console.log(JSON.stringify({
   launchServices,
   keychain: {
     deepseek: config.deepseek.keychain,
-    openai: config.openai.keychain,
+    ...(config.openai?.keychain ? { openai: config.openai.keychain } : {}),
   },
   note: "Open Claude from /Applications. It is the daily Hybrid app; keep Claude Official.app only as the pristine update source.",
 }, null, 2));

@@ -25,7 +25,7 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 
 ## Proven update pattern
 
-This is the formal end-to-end pattern verified on Claude `1.28929.0` / patch `2026-08-18.2`.
+This is the formal end-to-end pattern verified on Claude `1.28929.0` / patch `2026-08-18.3`.
 
 1. Read the public feed:
    `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json`
@@ -72,7 +72,7 @@ When a Claude release changes either exact anchor:
 3. Find exactly one
    `function <name>(e){return <VAR>=new a.WebContentsView(e),t.c(<VAR>.webContents,t.n.CLAUDE_AI_WEB),<VAR>.webContents.setMaxListeners(20),<VAR>}`
    hit → `app.modelLabelPatchFile` / `app.modelLabelPatchFrom`.
-4. Bump `app.patchVersion` (example: `2026-08-18.2`).
+4. Bump `app.patchVersion` (example: `2026-08-18.3`).
 5. Update `CHANGE_SPEC-claude-app-layout-and-updates.md` history table, tests, and `INSTALLER_MANIFEST.json`.
 6. Rebuild Hybrid with `--check` / `--apply`. Never fuzzy-patch.
 
@@ -82,7 +82,7 @@ Current verified anchors for Claude `1.28929.0`:
 - `patchFrom`: `ANTHROPIC_BASE_URL:e.apiHost`
 - `modelLabelPatchFile`: `/.vite/build/index.chunk-CHjD_WiU.js`
 - `modelLabelPatchFrom`: `function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}`
-- `patchVersion`: `2026-08-18.2`
+- `patchVersion`: `2026-08-18.3`
 
 ## Recovery
 

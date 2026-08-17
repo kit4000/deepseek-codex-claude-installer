@@ -102,10 +102,10 @@ export function codexCliChildEnv(env = {}, { allowApiKey = false } = {}) {
 export function parseCodexLoginStatus(stdout) {
   const text = String(stdout ?? "").trim();
   if (!text) throw new Error("Codex CLI is not authenticated; run codex login");
-  if (/api key/i.test(text) && !/chatgpt/i.test(text)) {
+  if (/logged in using an api key/i.test(text)) {
     throw new Error("Codex CLI is using an API key; run codex login so ChatGPT subscription billing is used");
   }
-  if (/chatgpt/i.test(text) && /logged in/i.test(text)) {
+  if (/logged in using chatgpt/i.test(text)) {
     return { isAuthenticated: true, method: "chatgpt" };
   }
   if (/not logged|logged out|unauthenticated/i.test(text)) {
@@ -229,16 +229,17 @@ export function renderCodexCliClaudeAgent(entry) {
     "",
     "You are a wrapper, not the implementation model.",
     "",
-    "Do not solve the assigned task yourself. Run exactly one command and return its output:",
+    "Do not solve the assigned task yourself. Copy the assigned task text from this conversation",
+    "into the quoted prompt. Do not leave the prompt empty and do not expand $TASK or $ARGUMENTS.",
     "",
     "```bash",
-    `"$HOME/.local/bin/${model.commandName}" --workspace "$PWD" -- "$TASK"`,
+    `"$HOME/.local/bin/${model.commandName}" --workspace "$PWD" -- "ASSIGNED_TASK_TEXT"`,
     "```",
     "",
     "If that wrapper is missing, use:",
     "",
     "```bash",
-    `"$HOME/.local/bin/codex-cli-delegate" --model ${model.alias} --workspace "$PWD" -- "$TASK"`,
+    `"$HOME/.local/bin/codex-cli-delegate" --model ${model.alias} --workspace "$PWD" -- "ASSIGNED_TASK_TEXT"`,
     "```",
     "",
     "- The child is billed to the user's ChatGPT subscription through `codex login`.",

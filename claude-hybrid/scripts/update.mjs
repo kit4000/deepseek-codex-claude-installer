@@ -93,12 +93,16 @@ async function inspectState() {
     "-a", config.deepseek.keychain.account,
     "-w",
   ], { stdio: "ignore", timeout: 5000 });
-  const openaiCredential = run("/usr/bin/security", [
-    "find-generic-password",
-    "-s", config.openai.keychain.service,
-    "-a", config.openai.keychain.account,
-    "-w",
-  ], { stdio: "ignore", timeout: 5000 });
+  let openaiCredentialAvailable = false;
+  if (config.openai?.keychain?.service && config.openai?.keychain?.account) {
+    const openaiCredential = run("/usr/bin/security", [
+      "find-generic-password",
+      "-s", config.openai.keychain.service,
+      "-a", config.openai.keychain.account,
+      "-w",
+    ], { stdio: "ignore", timeout: 5000 });
+    openaiCredentialAvailable = openaiCredential.status === 0;
+  }
   const running = run("/usr/bin/pgrep", ["-x", "Claude"]);
   return {
     sourceApp,
@@ -114,7 +118,7 @@ async function inspectState() {
     environmentAnchorPresent,
     labelAnchorPresent,
     credentialAvailable: credential.status === 0,
-    openaiCredentialAvailable: openaiCredential.status === 0,
+    openaiCredentialAvailable,
     openaiRequired: (config.models?.external ?? []).some((entry) => entry.provider === "openai"),
     claudeRunning: running.status === 0,
     targetPatchCompatible: targetExists ? inspectInstalledCompatibility() : false,

@@ -99,6 +99,7 @@ test("parses Cursor CLI auth without exposing tokens", () => {
   assert.equal("accessToken" in authed, false);
   assert.throws(() => parseCursorCliAuth(JSON.stringify({ isAuthenticated: false })), /agent login/);
   assert.throws(() => parseCursorCliAuth(""), /agent login/);
+  assert.throws(() => parseCursorCliAuth("Logged in as staff@example.com"), /agent login/);
 });
 
 test("finds the Cursor agent binary from explicit path, home, or PATH", () => {
@@ -166,7 +167,9 @@ test("renders managed wrappers and Claude Code agents that shell out to Cursor C
   ]);
   for (const agent of agents) {
     assert.match(agent.contents, new RegExp(SKILL_MARKER));
-    assert.match(agent.contents, /\$HOME\/\.local\/bin\/cursor-cli-delegate/);
+    assert.match(agent.contents, /ASSIGNED_TASK_TEXT/);
+    assert.doesNotMatch(agent.contents, /-- "\$TASK"/);
+    assert.doesNotMatch(agent.contents, /-- "\$ARGUMENTS"/);
     assert.match(agent.contents, /\$HOME\/\.local\/bin\/cursor-grok-4-6|\$HOME\/\.local\/bin\/cursor-composer-2-5/);
     assert.match(agent.contents, /Cursor subscription/);
     assert.doesNotMatch(agent.contents, /^model:/m);

@@ -53,6 +53,7 @@ test("Claude Hybrid uses 4.6 DeepSeek slots and keeps newer Claude native", asyn
   assert.equal(byTarget["gpt-5.6-sol"], undefined);
   assert.equal(byTarget["gpt-5.6-luna"], undefined);
   assert.ok(!config.models.external.some((entry) => entry.provider === "openai"));
+  assert.equal(config.openai, undefined);
   const patch = await readFile(resolve(claudeRoot, "src/app-patch.mjs"), "utf8");
   assert.match(patch, /\["Sonnet 4\.6", "DeepSeek V4 Flash"\]/);
   assert.match(patch, /\["Opus 4\.6", "DeepSeek V4 Pro \(1M\)"\]/);
@@ -62,6 +63,7 @@ test("Claude Hybrid uses 4.6 DeepSeek slots and keeps newer Claude native", asyn
   assert.doesNotMatch(patch, /GPT-5\.6 Luna/);
   assert.match(patch, /ANTHROPIC_UNIX_SOCKET/);
   assert.match(patch, /ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"/);
+  assert.doesNotMatch(patch, /ANTHROPIC_CUSTOM_MODEL_OPTION/);
   assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_OPUS_MODEL/);
   assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_SONNET_MODEL/);
   assert.doesNotMatch(patch, /\["Fable 5"/);
@@ -87,7 +89,7 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   assert.match(handoff, /RELEASES\.json/);
   assert.match(handoff, /replace Official source.*update-claude-hybrid --check.*update-claude-hybrid --apply.*prefer-claude-hybrid/s);
   assert.match(handoff, /1\.28929\.0/);
-  assert.match(handoff, /2026-08-18\.2/);
+  assert.match(handoff, /2026-08-18\.3/);
   assert.match(handoff, /ANTHROPIC_UNIX_SOCKET/);
   assert.match(handoff, /Fable 5 と Opus 4\.8、Opus 5/);
   assert.match(handoff, /GitHub URL だけを渡されたエージェントは、この文書を全文読んでから導入します/);
@@ -103,7 +105,7 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   const skill = await readFile(resolve(projectRoot, "skills/claude-hybrid-update/SKILL.md"), "utf8");
   const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
-  assert.equal(config.app.patchVersion, "2026-08-18.2");
+  assert.equal(config.app.patchVersion, "2026-08-18.3");
   assert.equal(config.app.patchFile, "/.vite/build/index.chunk-KnwvxAXh.js");
   assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-CHjD_WiU.js");
   assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
@@ -163,6 +165,8 @@ test("Codex CLI wrappers bill GPT-5.6 Sol and Luna to the ChatGPT subscription",
   const files = JSON.parse(await readFile(resolve(projectRoot, "config/integrated-files.json"), "utf8"));
   const packageJson = JSON.parse(await readFile(resolve(projectRoot, "package.json"), "utf8"));
   assert.equal(packageJson.scripts["codex-cli"], "node scripts/codex-cli-delegate.mjs");
+  assert.equal(packageJson.scripts["store-openai-key"], undefined);
+  assert.ok(!files.includes("scripts/store-openai-key.mjs"));
   assert.match(skill, /\/gpt-5-6-sol/);
   assert.match(skill, /\/gpt-5-6-luna/);
   assert.match(skill, /codex login/);
@@ -188,6 +192,9 @@ test("Codex CLI wrappers bill GPT-5.6 Sol and Luna to the ChatGPT subscription",
   assert.ok(manifest.files["scripts/codex-cli-delegate.mjs"]);
   assert.ok(manifest.files["skills/chatgpt-codex-delegation/SKILL.md"]);
   assert.ok(manifest.files["test/codex-cli.test.mjs"]);
+  assert.equal(manifest.files["scripts/store-openai-key.mjs"], undefined);
+  assert.equal(manifest.files["claude-hybrid/scripts/store-openai-key.mjs"], undefined);
+  assert.match(manifest.protected.join("\n"), /Opus 4\.8/);
 });
 
 test("installer defaults to the promoted Hybrid layout and verifies both roles", async () => {

@@ -40,8 +40,6 @@ export function providerForModel(config, model) {
   const entry = externalModelFor(config, model);
   if (entry?.provider === "openai" || entry?.provider === "deepseek") return entry.provider;
   if (entry) return "deepseek";
-  if (model.startsWith("deepseek-")) return "deepseek";
-  if (model.startsWith("gpt-")) return "openai";
   return "native";
 }
 
@@ -425,6 +423,12 @@ export function createHybridRouter({
   }
 
   async function handleOpenAIMessages(request, response, parsed, requestModel) {
+    if (!config.openai?.baseUrl) {
+      sendJson(response, 400, {
+        error: { message: "OpenAI provider is not configured", type: "invalid_request_error" },
+      });
+      return;
+    }
     const entry = externalModelFor(config, requestModel);
     const openaiBody = anthropicToOpenAIChatCompletions(parsed, entry?.target ?? requestModel);
     const key = await readOpenAIKey();

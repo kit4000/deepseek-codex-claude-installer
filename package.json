@@ -9,7 +9,6 @@
     "verify:bundle": "node scripts/verify-bundle.mjs",
     "preflight": "node scripts/preflight.mjs",
     "store-key": "node scripts/store-key.mjs",
-    "store-openai-key": "node scripts/store-openai-key.mjs",
     "install": "node scripts/install.mjs",
     "install:codex": "node scripts/install.mjs --codex-only",
     "install:claude": "node scripts/install.mjs --claude-only",

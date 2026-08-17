@@ -86,7 +86,7 @@ prefer-claude-hybrid
 公式署名、バージョン固有の2つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
-現行確認済みは Claude `1.28929.0` / patch `2026-08-18.2` です。
+現行確認済みは Claude `1.28929.0` / patch `2026-08-18.3` です。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを

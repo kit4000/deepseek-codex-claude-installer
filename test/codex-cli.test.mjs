@@ -80,6 +80,10 @@ test("parses Codex ChatGPT login status without exposing tokens", () => {
   assert.equal(authed.method, "chatgpt");
   assert.equal("accessToken" in authed, false);
   assert.throws(() => parseCodexLoginStatus("Logged in using an API key"), /API key/);
+  assert.throws(
+    () => parseCodexLoginStatus("Logged in using ChatGPT\nLogged in using an API key"),
+    /API key/,
+  );
   assert.throws(() => parseCodexLoginStatus(""), /codex login/);
   assert.throws(() => parseCodexLoginStatus("Not logged in"), /codex login/);
   assert.match(
@@ -151,7 +155,9 @@ test("renders managed wrappers and Claude Code slash commands that shell out to 
   ]);
   for (const agent of agents) {
     assert.match(agent.contents, new RegExp(SKILL_MARKER));
-    assert.match(agent.contents, /\$HOME\/\.local\/bin\/codex-cli-delegate/);
+    assert.match(agent.contents, /ASSIGNED_TASK_TEXT/);
+    assert.doesNotMatch(agent.contents, /-- "\$TASK"/);
+    assert.doesNotMatch(agent.contents, /-- "\$ARGUMENTS"/);
     assert.match(agent.contents, /ChatGPT subscription/);
     assert.doesNotMatch(agent.contents, /^model:/m);
     assert.doesNotMatch(agent.contents, /Claude Hybrid/);

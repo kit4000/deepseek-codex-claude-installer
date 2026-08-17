@@ -90,7 +90,7 @@ UPDATE CONTRACT
 - On exact-anchor failure: stop; do not fuzzy-patch; update `claude-hybrid/config/claude-hybrid.json` anchors and `patchVersion` first
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
 
-#### 実証済み手順（Claude 1.28929.0 / patch 2026-08-18.2）
+#### 実証済み手順（Claude 1.28929.0 / patch 2026-08-18.3）
 
 1. `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json` から最新 zip URL を取得する。
 2. 展開した `Claude.app` を `codesign --verify --deep --strict` と公証（Developer ID）で確認する。
