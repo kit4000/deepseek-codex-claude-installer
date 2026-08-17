@@ -83,6 +83,7 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   const handoff = await readFile(resolve(projectRoot, "AGENT_HANDOFF.md"), "utf8");
   const readme = await readFile(resolve(projectRoot, "README.md"), "utf8");
   const smoke = await readFile(resolve(projectRoot, "scripts/smoke.mjs"), "utf8");
+  const hybridSmoke = await readFile(resolve(claudeRoot, "scripts/smoke.mjs"), "utf8");
   assert.match(handoff, /APIキーを推測・抽出・コピーしない/);
   assert.match(handoff, /純正実体は `~\/Applications\/Claude Official\.app`/);
   assert.match(handoff, /Do not use in-app updater on Hybrid/);
@@ -97,6 +98,7 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   assert.match(readme, /https:\/\/github\.com\/kit4000\/deepseek-codex-claude-installer/);
   assert.match(readme, /外部エージェントには \*\*この URL だけ\*\* を渡してください/);
   assert.match(smoke, /--allow-billing/);
+  assert.match(hybridSmoke, /--allow-billing/);
 });
 
 test("installer records the Claude official-to-hybrid update pattern", async () => {
@@ -115,6 +117,8 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   assert.match(skill, /RELEASES\.json/);
   assert.match(hybridReadme, /RELEASES\.json/);
   assert.match(hybridReadme, /1\.28929\.0/);
+  assert.match(hybridReadme, /--allow-billing/);
+  assert.doesNotMatch(hybridReadme, /npm run smoke\s+# DeepSeek/);
 });
 
 test("installer exposes safe updater and optional DeepSeek delegation without replacing the picker", async () => {

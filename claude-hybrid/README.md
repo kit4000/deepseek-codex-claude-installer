@@ -51,7 +51,12 @@ npm test
 npm run store-deepseek-key   # 初回のみ。非表示入力
 npm run install
 npm run verify
-npm run smoke                # DeepSeek は実 API を少量使用（課金発生）
+```
+
+課金する smoke は利用者の明示承認後だけ実行します。
+
+```bash
+npm run smoke -- --allow-billing
 ```
 
 ## 公式Claude更新後のHybrid更新
@@ -118,7 +123,7 @@ Cursor Grok 4.6 と Composer 2.5 はピッカー枠ではなく、`/cursor-grok-
 - `ANTHROPIC_BASE_URL` パッチが適用済み
 - `ANTHROPIC_UNIX_SOCKET` パッチが適用済み
 - ルーターの Unix ソケットが応答する
-- DeepSeek のカスタムモデル環境変数が適用済み
+- ルーターの Unix ソケットと `haiku`=DeepSeek Flash が適用済み
 - WebピッカーのDeepSeek表示名パッチとルーターaliasが適用済み
 - codesign 検証
 - Official ソースの Apple 署名と未パッチ状態
@@ -127,7 +132,7 @@ Cursor Grok 4.6 と Composer 2.5 はピッカー枠ではなく、`/cursor-grok-
 - LaunchAgent が running
 - `CLAUDE_USER_DATA_DIR` が公式 Claude データディレクトリを指す
 
-`npm run smoke` はルーター経由で実通信し、純正ルートは 401（認証なし）、
+`npm run smoke -- --allow-billing` はルーター経由で実通信し、純正ルートは 401（認証なし）、
 DeepSeek ルートは `DEEPSEEK_HYBRID_OK` の完全応答を確認します。
 
 ## ロールバック

@@ -14,6 +14,6 @@ runNode(projectRoot, "scripts/verify.mjs");
 if (!claudeOnly) {
   runNode(codexRoot, "scripts/smoke.mjs", ["deepseek/deepseek-v4-flash", "max"]);
 }
-if (!codexOnly) runNode(claudeRoot, "scripts/smoke.mjs");
+if (!codexOnly) runNode(claudeRoot, "scripts/smoke.mjs", ["--allow-billing"]);
 
 console.log("Approved billable DeepSeek smoke tests completed successfully.");
