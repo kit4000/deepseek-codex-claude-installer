@@ -3,7 +3,9 @@ import test from "node:test";
 import {
   EXTENSION_MARKER,
   patchDeepSeekAgentRegistration,
+  patchQwenAgentRegistration,
   renderDeepSeekAgentProfile,
+  renderQwenAgentProfile,
   renderUpdaterWrapper,
 } from "../src/extensions.mjs";
 
@@ -56,6 +58,20 @@ test("agent profile routes only that child to DeepSeek V4 Flash max", () => {
   assert.match(profile, /model_provider = "openai"/);
   assert.match(profile, /model_reasoning_effort = "max"/);
   assert.doesNotMatch(profile, /openai_base_url|OPENAI_API_KEY|ANTHROPIC_AUTH_TOKEN|\b(?:sk|ds)-[A-Za-z0-9_-]{20,}\b/);
+});
+
+test("registers a local Qwen subagent without changing the main model", () => {
+  const source = `model = "gpt-5.6-sol"
+model_provider = "openai"
+`;
+  const patched = patchQwenAgentRegistration(source, "/Users/test/.codex/agent-profiles/qwen-3-8-2-7b.toml");
+  assert.match(patched, /model = "gpt-5\.6-sol"/);
+  assert.match(patched, /\[agents\.qwen-3-8-2-7b\]/);
+  const profile = renderQwenAgentProfile();
+  assert.match(profile, /model = "qwen\/qwen-3\.8-2\.7b"/);
+  assert.match(profile, /model_provider = "openai"/);
+  assert.match(profile, /local\/LAN inference/);
+  assert.doesNotMatch(profile, /OPENAI_API_KEY|ANTHROPIC_AUTH_TOKEN|\b(?:sk|ds)-[A-Za-z0-9_-]{20,}\b/);
 });
 
 test("updater wrapper safely quotes absolute paths", () => {

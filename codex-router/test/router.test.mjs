@@ -52,6 +52,24 @@ test("routes namespaced models and preserves native model names", () => {
   });
 });
 
+test("maps catalog ids onto Chat Completions upstream model names", () => {
+  const ollamaConfig = {
+    native: config.native,
+    routes: [{
+      namespace: "qwen",
+      wireApi: "chat",
+      baseUrl: "http://192.168.0.27:11434/v1",
+      auth: { mode: "none" },
+      models: [{ id: "qwen-3.8-2.7b", upstreamId: "qwen3.8:27b" }],
+    }],
+  };
+  const selection = selectRoute("qwen/qwen-3.8-2.7b", ollamaConfig);
+  assert.equal(selection.kind, "external");
+  assert.equal(selection.upstreamModel, "qwen3.8:27b");
+  assert.equal(externalUpstreamPath("/v1/responses", selection), "/v1/chat/completions");
+  assert.equal(externalUpstreamPath("/v1/responses/compact", selection), "/v1/chat/completions");
+});
+
 test("joins Codex and OpenAI-compatible upstream paths", () => {
   assert.equal(
     upstreamUrl("https://chatgpt.com/backend-api/codex", "/v1/responses?foo=bar"),

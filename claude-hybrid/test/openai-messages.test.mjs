@@ -53,6 +53,21 @@ test("maps Anthropic messages, tools, and effort onto Chat Completions", () => {
   assert.deepEqual(payload.stream_options, { include_usage: true });
 });
 
+test("maps Anthropic messages onto Ollama Chat Completions without cloud-only fields", () => {
+  const payload = anthropicToOpenAIChatCompletions({
+    model: "qwen-3.8-2.7b",
+    max_tokens: 64,
+    stream: true,
+    thinking: { type: "enabled" },
+    messages: [{ role: "user", content: "hi" }],
+  }, "qwen3.8:27b", { dialect: "ollama" });
+  assert.equal(payload.model, "qwen3.8:27b");
+  assert.equal(payload.max_tokens, 64);
+  assert.equal(payload.max_completion_tokens, undefined);
+  assert.equal(payload.reasoning_effort, undefined);
+  assert.equal(payload.stream_options, undefined);
+});
+
 test("converts a non-stream OpenAI chat response back to Anthropic", () => {
   const message = openaiChatToAnthropicMessage({
     id: "chatcmpl-1",

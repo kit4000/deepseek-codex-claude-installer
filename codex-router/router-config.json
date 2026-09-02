@@ -52,6 +52,37 @@
           ]
         }
       ]
+    },
+    {
+      "namespace": "qwen",
+      "name": "Qwen 3.8 27B (Ollama)",
+      "baseUrl": "http://192.168.0.27:11434/v1",
+      "timeoutMs": 1200000,
+      "wireApi": "chat",
+      "keepAlive": "30m",
+      "auth": {
+        "mode": "none"
+      },
+      "models": [
+        {
+          "id": "qwen-3.8-2.7b",
+          "upstreamId": "qwen3.8:27b",
+          "displayName": "Qwen 3.8 27B",
+          "description": "Qwen 3.8 27B through a LAN Ollama OpenAI-compatible Chat Completions endpoint.",
+          "contextWindow": 262144,
+          "defaultReasoningEffort": "max",
+          "supportsReasoningSummaries": false,
+          "reasoningEfforts": [
+            "low",
+            "medium",
+            "high",
+            "max"
+          ],
+          "inputModalities": [
+            "text"
+          ]
+        }
+      ]
     }
   ],
   "configMigration": {

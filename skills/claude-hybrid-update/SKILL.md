@@ -25,7 +25,7 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 
 ## Proven update pattern
 
-This is the formal end-to-end pattern verified on Claude `1.28929.0` / patch `2026-08-18.3`.
+This is the formal end-to-end pattern verified on Claude `1.44121.0` / patch `2026-09-02.1`.
 
 1. Read the public feed:
    `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json`
@@ -70,19 +70,20 @@ When a Claude release changes either exact anchor:
 1. Extract Official `Contents/Resources/app.asar`.
 2. Find exactly one `ANTHROPIC_BASE_URL:e.apiHost` hit → `app.patchFile` / `app.patchFrom`.
 3. Find exactly one
-   `function <name>(e){return <VAR>=new a.WebContentsView(e),t.c(<VAR>.webContents,t.n.CLAUDE_AI_WEB),<VAR>.webContents.setMaxListeners(20),<VAR>}`
+   `function <name>(e){return <VAR>=new <OBJ>.WebContentsView(e),<FN>(<VAR>.webContents,<CONST>.CLAUDE_AI_WEB),<VAR>.webContents.setMaxListeners(<N>),<VAR>}`
    hit → `app.modelLabelPatchFile` / `app.modelLabelPatchFrom`.
-4. Bump `app.patchVersion` (example: `2026-08-18.3`).
+   The function name, object, helper, constant, and listener count vary per build.
+4. Bump `app.patchVersion` (example: `2026-09-02.1`).
 5. Update `CHANGE_SPEC-claude-app-layout-and-updates.md` history table, tests, and `INSTALLER_MANIFEST.json`.
 6. Rebuild Hybrid with `--check` / `--apply`. Never fuzzy-patch.
 
-Current verified anchors for Claude `1.28929.0`:
+Current verified anchors for Claude `1.44121.0`:
 
-- `patchFile`: `/.vite/build/index.chunk-KnwvxAXh.js`
+- `patchFile`: `/.vite/build/index.chunk-CjUl9Ys6.js`
 - `patchFrom`: `ANTHROPIC_BASE_URL:e.apiHost`
-- `modelLabelPatchFile`: `/.vite/build/index.chunk-CHjD_WiU.js`
-- `modelLabelPatchFrom`: `function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}`
-- `patchVersion`: `2026-08-18.3`
+- `modelLabelPatchFile`: `/.vite/build/index.chunk-CjUl9Ys6.js`
+- `modelLabelPatchFrom`: `function Fge(e){return B=new o.WebContentsView(e),oi(B.webContents,ai.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}`
+- `patchVersion`: `2026-09-02.1`
 
 ## Recovery
 

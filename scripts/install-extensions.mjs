@@ -5,7 +5,9 @@ import {
   EXTENSION_MARKER,
   SKILL_MARKER,
   patchDeepSeekAgentRegistration,
+  patchQwenAgentRegistration,
   renderDeepSeekAgentProfile,
+  renderQwenAgentProfile,
   renderUpdaterWrapper,
 } from "../src/extensions.mjs";
 import {
@@ -38,6 +40,7 @@ if (!home) throw new Error("HOME is required");
 const codexHome = process.env.CODEX_HOME ?? resolve(home, ".codex");
 const configPath = resolve(codexHome, "config.toml");
 const profilePath = resolve(codexHome, "agent-profiles/deepseek-v4.toml");
+const qwenProfilePath = resolve(codexHome, "agent-profiles/qwen-3-8-2-7b.toml");
 const wrapperPath = resolve(home, ".local/bin/update-claude-hybrid");
 const preferPath = resolve(home, ".local/bin/prefer-claude-hybrid");
 const cursorDelegatePath = resolve(home, ".local/bin/cursor-cli-delegate");
@@ -90,8 +93,12 @@ async function writeManaged(path, contents, marker, mode, { replaceHybridApiAgen
 }
 
 const originalConfig = await readFile(configPath, "utf8");
-const patchedConfig = patchDeepSeekAgentRegistration(originalConfig, profilePath);
+const patchedConfig = patchQwenAgentRegistration(
+  patchDeepSeekAgentRegistration(originalConfig, profilePath),
+  qwenProfilePath,
+);
 const profileContents = renderDeepSeekAgentProfile();
+const qwenProfileContents = renderQwenAgentProfile();
 const wrapperContents = renderUpdaterWrapper(process.execPath, updaterPath);
 const preferContents = renderPreferClaudeHybrid();
 const cursorDelegateContents = renderCursorCliDelegateWrapper(process.execPath, cursorCliDelegateScript);
@@ -119,6 +126,7 @@ for (const [name, source, scope] of skillTargets) {
 // Validate every overwrite boundary before making the first managed write.
 for (const [path, marker] of [
   [profilePath, EXTENSION_MARKER],
+  [qwenProfilePath, EXTENSION_MARKER],
   [wrapperPath, EXTENSION_MARKER],
   [preferPath, PREFER_HELPER_MARKER],
   [cursorDelegatePath, EXTENSION_MARKER],
@@ -157,6 +165,7 @@ if (patchedConfig !== originalConfig) {
 }
 
 await writeManaged(profilePath, profileContents, EXTENSION_MARKER, 0o600);
+await writeManaged(qwenProfilePath, qwenProfileContents, EXTENSION_MARKER, 0o600);
 await writeManaged(wrapperPath, wrapperContents, EXTENSION_MARKER, 0o700);
 await writeManaged(preferPath, preferContents, PREFER_HELPER_MARKER, 0o700);
 await writeManaged(cursorDelegatePath, cursorDelegateContents, EXTENSION_MARKER, 0o700);
@@ -212,8 +221,9 @@ console.log(JSON.stringify({
     "Restart Codex Desktop so the new skills and deepseek-v4 agent type are loaded.",
     "Use update-claude-hybrid --check before update-claude-hybrid --apply.",
     "Use prefer-claude-hybrid if Launch Services ever selects Claude Official.app.",
-    "Invoke Claude Code agents deepseek-v4-flash or deepseek-v4-pro only when billable delegation is intended.",
+    "Invoke Claude Code agents deepseek-v4-flash, deepseek-v4-pro, or qwen-3-8-2-7b when that model is requested.",
     "Invoke agent_type deepseek-v4 only for explicitly requested or approved billable delegation.",
+    "Invoke agent_type qwen-3-8-2-7b for the local Ollama Qwen 3.8 2.7B model.",
     "Run cursor-cli-delegate --check-auth, then cursor-grok-4-6 or cursor-composer-2-5 for Cursor subscription models.",
     "Run codex-cli-delegate --check-auth, then gpt-5-6-sol or gpt-5-6-luna for ChatGPT subscription models.",
     "In Claude Code, start a new session and use /cursor-grok-4-6, /cursor-composer-2-5, /gpt-5-6-sol, or /gpt-5-6-luna.",
@@ -222,6 +232,7 @@ console.log(JSON.stringify({
     configPath,
     backupPath,
     profilePath,
+    qwenProfilePath,
     wrapperPath,
     preferPath,
     cursorDelegatePath,

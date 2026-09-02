@@ -16,6 +16,9 @@
     },
     "credentialHelper": "<home>/.local/bin/claude-desktop-credential-helper"
   },
+  "ollama": {
+    "baseUrl": "http://192.168.0.27:11434/v1"
+  },
   "models": {
     "external": [
       {
@@ -38,6 +41,16 @@
         "target": "deepseek-v4-flash",
         "displayName": "DeepSeek V4 Flash",
         "provider": "deepseek",
+        "tier": "haiku"
+      },
+      {
+        "id": "qwen-3.8-2.7b",
+        "agentName": "qwen-3-8-2-7b",
+        "aliases": [],
+        "target": "qwen3.8:27b",
+        "displayName": "Qwen 3.8 27B",
+        "provider": "ollama",
+        "local": true,
         "tier": "haiku"
       }
     ],
@@ -65,15 +78,15 @@
     ]
   },
   "app": {
-    "patchVersion": "2026-08-18.3",
+    "patchVersion": "2026-09-02.1",
     "source": "<home>/Applications/Claude Official.app",
     "target": "/Applications/Claude.app",
     "userDataDir": "<home>/Library/Application Support/Claude",
     "routerBaseUrl": "http://127.0.0.1:10102",
-    "patchFile": "/.vite/build/index.chunk-KnwvxAXh.js",
+    "patchFile": "/.vite/build/index.chunk-CjUl9Ys6.js",
     "patchFrom": "ANTHROPIC_BASE_URL:e.apiHost",
-    "modelLabelPatchFile": "/.vite/build/index.chunk-CHjD_WiU.js",
-    "modelLabelPatchFrom": "function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}"
+    "modelLabelPatchFile": "/.vite/build/index.chunk-CjUl9Ys6.js",
+    "modelLabelPatchFrom": "function Fge(e){return B=new o.WebContentsView(e),oi(B.webContents,ai.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}"
   },
   "launchAgent": {
     "label": "com.local.claude-hybrid-router",

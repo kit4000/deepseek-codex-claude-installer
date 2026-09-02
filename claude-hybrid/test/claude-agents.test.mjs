@@ -38,3 +38,22 @@ test("renders four named Claude Code agents without changing global subagent def
     assert.doesNotMatch(agent.contents, /\b(?:sk|ds)-[A-Za-z0-9_-]{20,}\b/);
   }
 });
+
+test("local Ollama agents are not described as billable cloud APIs", () => {
+  const [agent] = renderClaudeHybridAgents({
+    models: {
+      external: [{
+        id: "qwen-3.8-2.7b",
+        agentName: "qwen-3-8-2-7b",
+        target: "qwen3.8:27b",
+        displayName: "Qwen 3.8 27B",
+        provider: "ollama",
+        local: true,
+      }],
+    },
+  });
+  assert.equal(agent.name, "qwen-3-8-2-7b");
+  assert.equal(agent.model, "qwen-3.8-2.7b");
+  assert.match(agent.contents, /Local Ollama inference/);
+  assert.doesNotMatch(agent.contents, /Billable external API usage/);
+});

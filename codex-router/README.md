@@ -25,6 +25,8 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
   Responses API 側でCodex対応が有効になるまでは、モデル名に `Responses API pending` を表示し、
   選択後の実行は公式APIのエラーになります。上流で有効化された後はローカル側の追加変更なしで
   同じルートから利用できます。
+- `qwen/qwen-3.8-2.7b` は LAN 上の Ollama（`http://192.168.0.27:11434/v1/chat/completions`）へ
+  Chat Completions として転送します。APIキーは不要です。
 - ChatGPT の Authorization と account id は外部 endpoint へ転送しません。
 - Codex の remote compaction v2 は、DeepSeek 用の通常要約ターンと単一の
   `compaction` 応答へ相互変換します。要約は DeepSeek API キーから導出した鍵で
@@ -74,8 +76,11 @@ CodexのHTTPリクエスト圧縮はループバックルーターでは不要�
 `[features] enable_request_compression = false`も設定します。DeepSeek用CLIプロファイルは
 現行Codex形式の`~/.codex/deepseek.config.toml`へ分離します。
 
-タスクDBやスレッドの provider id は読み書きしません。外部 endpoint やモデルを増やしたら
+タスクDBやスレッドの provider id は読み書きしません。外部モデルを増やしたら
 `router-config.json` を編集し、`npm run catalog` と LaunchAgent の再起動を行います。
+
+Qwen 3.8 2.7B は `qwen` 名前空間でカタログに載ります。Ollama 側のモデル ID は
+`router-config.json` の `upstreamId`（既定 `qwen3.8:27b`）です。
 
 DeepSeek API キーは `config.toml` や plist には保存せず、macOS キーチェーンの
 `com.local.codex-native-model-router.deepseek` に保存します。`store-deepseek-key` は

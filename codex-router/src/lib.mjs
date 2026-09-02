@@ -36,10 +36,12 @@ export function selectRoute(model, config) {
     for (const route of config.routes ?? []) {
       const prefix = `${route.namespace}/`;
       if (model.startsWith(prefix)) {
+        const id = model.slice(prefix.length);
+        const listed = (route.models ?? []).find((entry) => entry.id === id);
         return {
           kind: "external",
           route,
-          upstreamModel: model.slice(prefix.length),
+          upstreamModel: listed?.upstreamId ?? listed?.target ?? id,
         };
       }
     }
@@ -504,8 +506,9 @@ export function rewriteRequestBody(body, selection, options = {}) {
   return rewritten;
 }
 
-export function externalUpstreamPath(pathname) {
+export function externalUpstreamPath(pathname, selection) {
   // Pathname only; callers must reattach request.search when needed.
+  if (selection?.route?.wireApi === "chat") return "/v1/chat/completions";
   if (isCompactEndpoint(pathname)) return "/v1/responses";
   return pathname.startsWith("/v1/") ? pathname : `/v1${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
 }

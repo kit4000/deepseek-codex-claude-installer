@@ -49,12 +49,44 @@ You are a DeepSeek V4 external-API subagent. Complete the bounded task assigned 
 }
 
 export function patchDeepSeekAgentRegistration(source, profilePath) {
-  const tableHeader = "[agents.deepseek-v4]";
+  return patchManagedAgentRegistration(source, {
+    tableName: "agents.deepseek-v4",
+    description: "DeepSeek V4 Flash external-API agent. It is available alongside the main model picker; use for explicitly requested or approved billable delegation.",
+    profilePath,
+  });
+}
+
+export function renderQwenAgentProfile() {
+  return `${EXTENSION_MARKER}
+model = "qwen/qwen-3.8-2.7b"
+model_provider = "openai"
+model_reasoning_effort = "low"
+developer_instructions = """
+You are a local Qwen 3.8 27B subagent reached through the loopback router and a LAN Ollama server. Complete the bounded task assigned by the parent agent and return concise evidence.
+
+- You are not alone in the codebase. Preserve unrelated and concurrent edits; never revert work you do not own.
+- Inspect before editing, remain within the assigned files and responsibility, and report exact verification performed.
+- Never read, print, copy, or request API keys. This path is local/LAN inference, not a cloud API.
+- Do not perform destructive actions, external publication, or extra work beyond the delegated task without explicit authorization.
+"""
+`;
+}
+
+export function patchQwenAgentRegistration(source, profilePath) {
+  return patchManagedAgentRegistration(source, {
+    tableName: "agents.qwen-3-8-2-7b",
+    description: "Qwen 3.8 27B local Ollama agent. It is available alongside the main model picker; use when the user explicitly asks for this local model.",
+    profilePath,
+  });
+}
+
+function patchManagedAgentRegistration(source, { tableName, description, profilePath }) {
+  const tableHeader = `[${tableName}]`;
   const lines = source.split(/\r?\n/);
   const tableStart = lines.findIndex((line) => line.trim() === tableHeader);
   if (tableStart !== -1) {
     if (tableStart === 0 || lines[tableStart - 1].trim() !== EXTENSION_MARKER) {
-      throw new Error("Refusing to overwrite an unmanaged [agents.deepseek-v4] table");
+      throw new Error(`Refusing to overwrite an unmanaged [${tableName}] table`);
     }
     let tableEnd = lines.length;
     for (let index = tableStart + 1; index < lines.length; index += 1) {
@@ -70,7 +102,7 @@ export function patchDeepSeekAgentRegistration(source, profilePath) {
     "",
     EXTENSION_MARKER,
     tableHeader,
-    'description = "DeepSeek V4 Flash external-API agent. It is available alongside the main model picker; use for explicitly requested or approved billable delegation."',
+    `description = ${tomlString(description)}`,
     `config_file = ${tomlString(profilePath)}`,
     "",
   );

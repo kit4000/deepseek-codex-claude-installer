@@ -38,7 +38,9 @@ export function externalModelFor(config, model) {
 export function providerForModel(config, model) {
   if (typeof model !== "string" || model.length === 0) return "native";
   const entry = externalModelFor(config, model);
-  if (entry?.provider === "openai" || entry?.provider === "deepseek") return entry.provider;
+  if (entry?.provider === "openai" || entry?.provider === "ollama" || entry?.provider === "deepseek") {
+    return entry.provider;
+  }
   if (entry) return "deepseek";
   return "native";
 }
@@ -387,7 +389,7 @@ export function createHybridRouter({
       await forward(request, response, { external: false, pathname: "/v1/messages/count_tokens", search: "" }, body);
       return;
     }
-    if (providerForModel(config, parsed.model) === "openai") {
+    if (providerForModel(config, parsed.model) === "openai" || providerForModel(config, parsed.model) === "ollama") {
       const estimate = Math.max(1, Math.ceil(body.toString("utf8").length / 4));
       sendJson(response, 200, { input_tokens: estimate });
       return;
@@ -422,32 +424,39 @@ export function createHybridRouter({
     sendJson(response, 200, { input_tokens: estimate });
   }
 
-  async function handleOpenAIMessages(request, response, parsed, requestModel) {
-    if (!config.openai?.baseUrl) {
+  async function handleOpenAIMessages(request, response, parsed, requestModel, provider = "openai") {
+    const spec = provider === "ollama" ? config.ollama : config.openai;
+    if (!spec?.baseUrl) {
       sendJson(response, 400, {
-        error: { message: "OpenAI provider is not configured", type: "invalid_request_error" },
+        error: { message: `${provider} provider is not configured`, type: "invalid_request_error" },
       });
       return;
     }
     const entry = externalModelFor(config, requestModel);
-    const openaiBody = anthropicToOpenAIChatCompletions(parsed, entry?.target ?? requestModel);
-    const key = await readOpenAIKey();
+    const openaiBody = anthropicToOpenAIChatCompletions(
+      parsed,
+      entry?.target ?? requestModel,
+      { dialect: provider === "ollama" ? "ollama" : "openai" },
+    );
     const headers = new Headers({
-      authorization: `Bearer ${key}`,
       "content-type": "application/json",
     });
+    if (provider !== "ollama") {
+      const key = await readOpenAIKey();
+      headers.set("authorization", `Bearer ${key}`);
+    }
     const abortController = new AbortController();
     response.on("close", () => {
       if (!response.writableEnded) abortController.abort();
     });
-    const upstream = await fetchImpl(targetUrl(config.openai.baseUrl, "/chat/completions"), {
+    const upstream = await fetchImpl(targetUrl(spec.baseUrl, "/chat/completions"), {
       method: "POST",
       headers,
       body: JSON.stringify(openaiBody),
       redirect: "error",
       signal: abortController.signal,
     });
-    logger.info?.(`claude-hybrid openai POST /v1/messages -> ${upstream.status}`);
+    logger.info?.(`claude-hybrid ${provider} POST /v1/messages -> ${upstream.status}`);
     if (!upstream.ok) {
       const mapped = openaiErrorToAnthropic(upstream.status, await upstream.text());
       sendJson(response, mapped.status, mapped.payload);
@@ -470,6 +479,7 @@ export function createHybridRouter({
             native: config.native.baseUrl,
             deepseek: config.deepseek.baseUrl,
             openai: config.openai?.baseUrl ?? null,
+            ollama: config.ollama?.baseUrl ?? null,
           },
           socketPath: config.router.socketPath ?? null,
         });
@@ -498,8 +508,8 @@ export function createHybridRouter({
           return;
         }
         const provider = providerForModel(config, parsed.model);
-        if (provider === "openai") {
-          await handleOpenAIMessages(request, response, parsed, parsed.model);
+        if (provider === "openai" || provider === "ollama") {
+          await handleOpenAIMessages(request, response, parsed, parsed.model, provider);
           return;
         }
         let forwardBody = body;

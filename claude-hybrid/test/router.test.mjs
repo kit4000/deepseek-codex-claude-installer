@@ -320,3 +320,64 @@ test("OpenAI aliases use the OpenAI key and Chat Completions translation", async
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("Ollama models use Chat Completions without an API key", async () => {
+  const ollamaConfig = {
+    ...config,
+    openai: undefined,
+    ollama: { baseUrl: "http://192.168.0.27:11434/v1" },
+    models: {
+      ...config.models,
+      external: [
+        ...config.models.external.filter((entry) => entry.provider !== "openai"),
+        {
+          id: "qwen-3.8-2.7b",
+          target: "qwen3.8:27b",
+          displayName: "Qwen 3.8 27B",
+          provider: "ollama",
+        },
+      ],
+    },
+  };
+  const calls = [];
+  const fetchImpl = async (url, options) => {
+    calls.push({ url, options });
+    return jsonResponse(200, {
+      id: "chatcmpl-qwen",
+      choices: [{ finish_reason: "stop", message: { content: "hello from qwen" } }],
+      usage: { prompt_tokens: 2, completion_tokens: 3 },
+    });
+  };
+  const router = createHybridRouter({
+    config: ollamaConfig,
+    fetchImpl,
+    keychainReader: async () => "deepseek-key",
+    logger: { info() {}, error() {} },
+  });
+  const { server } = router;
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}/v1/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer native-token" },
+      body: JSON.stringify({
+        model: "qwen-3.8-2.7b",
+        max_tokens: 32,
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.model, "qwen-3.8-2.7b");
+    assert.equal(payload.content[0].text, "hello from qwen");
+    assert.equal(calls[0].url, "http://192.168.0.27:11434/v1/chat/completions");
+    assert.equal(calls[0].options.headers.get("authorization"), null);
+    const sent = JSON.parse(calls[0].options.body);
+    assert.equal(sent.model, "qwen3.8:27b");
+    assert.equal(sent.max_tokens, 32);
+    assert.equal(sent.reasoning_effort, undefined);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

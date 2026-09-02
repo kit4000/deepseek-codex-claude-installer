@@ -28,7 +28,7 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   assert.match(library, /isCompactEndpoint/);
   assert.match(library, /externalUpstreamPath/);
   assert.match(router, /compactEndpoint/);
-  assert.match(router, /externalUpstreamPath\(pathname\)/);
+  assert.match(router, /externalUpstreamPath\(pathname, selection\)/);
   assert.match(tests, /maps Codex custom_tool_call pairs onto DeepSeek function_call pairs/);
   assert.match(tests, /strips OpenAI encrypted function outputs and agent_message before DeepSeek/);
   assert.match(tests, /maps \/responses\/compact onto a DeepSeek text-only summary turn/);
@@ -54,6 +54,11 @@ test("Claude Hybrid uses 4.6 DeepSeek slots and keeps newer Claude native", asyn
   assert.equal(byTarget["gpt-5.6-luna"], undefined);
   assert.ok(!config.models.external.some((entry) => entry.provider === "openai"));
   assert.equal(config.openai, undefined);
+  const qwen = config.models.external.find((entry) => entry.provider === "ollama");
+  assert.equal(qwen?.id, "qwen-3.8-2.7b");
+  assert.equal(qwen?.target, "qwen3.8:27b");
+  assert.deepEqual(qwen?.aliases ?? [], []);
+  assert.equal(config.ollama?.baseUrl, "http://192.168.0.27:11434/v1");
   const patch = await readFile(resolve(claudeRoot, "src/app-patch.mjs"), "utf8");
   assert.match(patch, /\["Sonnet 4\.6", "DeepSeek V4 Flash"\]/);
   assert.match(patch, /\["Opus 4\.6", "DeepSeek V4 Pro \(1M\)"\]/);
@@ -76,6 +81,7 @@ test("Claude Hybrid uses 4.6 DeepSeek slots and keeps newer Claude native", asyn
   assert.deepEqual(agents.map((entry) => entry.name).sort(), [
     "deepseek-v4-flash",
     "deepseek-v4-pro",
+    "qwen-3-8-2-7b",
   ]);
 });
 
@@ -107,16 +113,16 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   const skill = await readFile(resolve(projectRoot, "skills/claude-hybrid-update/SKILL.md"), "utf8");
   const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
-  assert.equal(config.app.patchVersion, "2026-08-18.3");
-  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-KnwvxAXh.js");
-  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-CHjD_WiU.js");
+  assert.equal(config.app.patchVersion, "2026-09-02.1");
+  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-CjUl9Ys6.js");
+  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-CjUl9Ys6.js");
   assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
   assert.match(changeSpec, /実証済みアップデートパターン/);
   assert.match(changeSpec, /1\.28929\.0/);
   assert.match(skill, /Proven update pattern/);
   assert.match(skill, /RELEASES\.json/);
   assert.match(hybridReadme, /RELEASES\.json/);
-  assert.match(hybridReadme, /1\.28929\.0/);
+  assert.match(hybridReadme, /1\.44121\.0/);
   assert.match(hybridReadme, /--allow-billing/);
   assert.doesNotMatch(hybridReadme, /npm run smoke\s+# DeepSeek/);
 });
@@ -189,6 +195,7 @@ test("Codex CLI wrappers bill GPT-5.6 Sol and Luna to the ChatGPT subscription",
   const changeSpec = await readFile(resolve(projectRoot, "CHANGE_SPEC-claude-app-layout-and-updates.md"), "utf8");
   assert.match(changeSpec, /### 3\.7 ChatGPT \/ Cursor サブスクはピッカー枠ではなく CLI 委譲/);
   assert.match(changeSpec, /### 3\.8 配布の正本は GitHub/);
+  assert.match(changeSpec, /### 3\.9 ローカル Ollama の Qwen 3\.8 2\.7B/);
   assert.match(changeSpec, /\/gpt-5-6-sol/);
   const manifest = JSON.parse(await readFile(resolve(projectRoot, "INSTALLER_MANIFEST.json"), "utf8"));
   assert.match(manifest.purpose, /ChatGPT Codex CLI/);
