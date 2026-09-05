@@ -30,6 +30,7 @@ const config = {
       contextWindow: 1048576,
       defaultReasoningEffort: "high",
       supportsReasoningSummaries: false,
+      supportsParallelToolCalls: true,
       reasoningEfforts: ["low", "high", "max"],
     }],
   }],
@@ -554,6 +555,7 @@ test("merges external models into the ModelsCache wrapper", () => {
   assert.deepEqual(merged.models[1].additional_speed_tiers, []);
   assert.equal(merged.models[0].supports_reasoning_summaries, true);
   assert.equal(merged.models[1].supports_reasoning_summaries, false);
+  assert.equal(merged.models[1].supports_parallel_tool_calls, true);
   assert.equal(merged.models[1].default_reasoning_level, "high");
   assert.deepEqual(
     merged.models[1].supported_reasoning_levels.map(({ effort }) => effort),
@@ -580,6 +582,27 @@ test("restores Desktop-required catalog fields from newer native cache entries",
   const merged = mergeCatalog(native, { routes: [] }, new Date("2026-09-05T00:00:00Z"));
   assert.equal(merged.models[0].base_instructions, "You are Codex, an agent based on GPT-6.");
   assert.equal(merged.models[0].supports_parallel_tool_calls, true);
+});
+
+test("defaults external parallel tool support to false unless configured", () => {
+  const native = {
+    models: [{
+      slug: "gpt-5.4-mini",
+      display_name: "GPT-5.4 mini",
+      base_instructions: "native instructions",
+      supports_parallel_tool_calls: true,
+    }],
+  };
+  const merged = mergeCatalog(native, {
+    routes: [{
+      namespace: "example",
+      models: [{
+        id: "example-model",
+        displayName: "Example Model",
+      }],
+    }],
+  });
+  assert.equal(merged.models[1].supports_parallel_tool_calls, false);
 });
 
 test("preserves existing Desktop-required catalog fields", () => {

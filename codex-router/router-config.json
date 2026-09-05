@@ -27,6 +27,7 @@
           "contextWindow": 1048576,
           "defaultReasoningEffort": "high",
           "supportsReasoningSummaries": false,
+          "supportsParallelToolCalls": true,
           "reasoningEfforts": [
             "low",
             "high",
@@ -43,6 +44,7 @@
           "contextWindow": 1048576,
           "defaultReasoningEffort": "high",
           "supportsReasoningSummaries": false,
+          "supportsParallelToolCalls": true,
           "reasoningEfforts": [
             "high",
             "max"
@@ -72,6 +74,7 @@
           "contextWindow": 262144,
           "defaultReasoningEffort": "max",
           "supportsReasoningSummaries": false,
+          "supportsParallelToolCalls": true,
           "reasoningEfforts": [
             "low",
             "medium",

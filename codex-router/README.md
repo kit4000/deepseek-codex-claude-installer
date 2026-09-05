@@ -83,7 +83,9 @@ CodexのHTTPリクエスト圧縮はループバックルーターでは不要�
 `model-catalogs/native-pristine.json` を更新するため、ChatGPT 側で追加されたネイティブモデルを
 古いスナップショットが隠すことはありません。新しいキャッシュで欠落した
 `base_instructions` は `model_messages.instructions_template` から復元し、
-`supports_parallel_tool_calls` は未指定時に `true` を補完します。
+`supports_parallel_tool_calls` はネイティブモデルでは未指定時に `true` を補完し、外部モデルでは
+`router-config.json` の `supportsParallelToolCalls` だけを参照します。外部モデルで未指定の場合は
+`false` になります。
 
 特定リポジトリだけ GPT-6 Astra を既定モデルにする場合は、そのリポジトリの
 `.codex/config.toml` に次を置きます。これはインストーラーが全リポジトリの既定モデルを
