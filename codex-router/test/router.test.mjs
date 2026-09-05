@@ -566,6 +566,36 @@ test("merges external models into the ModelsCache wrapper", () => {
   assert.match(merged.models[1].base_instructions, /powered by DeepSeek V4 Flash/);
 });
 
+test("restores Desktop-required catalog fields from newer native cache entries", () => {
+  const native = {
+    models: [{
+      slug: "gpt-6-astra",
+      display_name: "GPT-6-Astra",
+      priority: 1,
+      model_messages: {
+        instructions_template: "You are Codex, an agent based on GPT-6.",
+      },
+    }],
+  };
+  const merged = mergeCatalog(native, { routes: [] }, new Date("2026-09-05T00:00:00Z"));
+  assert.equal(merged.models[0].base_instructions, "You are Codex, an agent based on GPT-6.");
+  assert.equal(merged.models[0].supports_parallel_tool_calls, true);
+});
+
+test("preserves existing Desktop-required catalog fields", () => {
+  const native = {
+    models: [{
+      slug: "gpt-5.6-sol",
+      display_name: "GPT-5.6-Sol",
+      base_instructions: "existing instructions",
+      supports_parallel_tool_calls: false,
+    }],
+  };
+  const merged = mergeCatalog(native, { routes: [] });
+  assert.equal(merged.models[0].base_instructions, "existing instructions");
+  assert.equal(merged.models[0].supports_parallel_tool_calls, false);
+});
+
 test("patches only managed root keys and preserves unrelated profiles", () => {
   const source = `model = "gpt-5.6-sol"
 

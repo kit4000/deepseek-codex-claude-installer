@@ -6,13 +6,22 @@ import { mergeCatalog } from "../src/lib.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 
-export async function generateCatalog({ codexHome, routerConfigPath, outputPath }) {
+export async function generateCatalog({ codexHome, routerConfigPath, outputPath, refresh = true }) {
   const pristineCatalogPath = resolve(codexHome, "model-catalogs/native-pristine.json");
+  const cachePath = resolve(codexHome, "models_cache.json");
   await mkdir(dirname(pristineCatalogPath), { recursive: true });
-  try {
-    await access(pristineCatalogPath, constants.R_OK);
-  } catch {
-    await copyFile(resolve(codexHome, "models_cache.json"), pristineCatalogPath, constants.COPYFILE_EXCL);
+  // Always refresh native-pristine.json from models_cache.json so newly
+  // launched ChatGPT models (e.g. GPT-6 Astra) appear without a manual copy.
+  // When refresh is false (e.g. tests), fall back to the existing pristine
+  // file or copy only if it is missing.
+  if (refresh) {
+    await copyFile(cachePath, pristineCatalogPath);
+  } else {
+    try {
+      await access(pristineCatalogPath, constants.R_OK);
+    } catch {
+      await copyFile(cachePath, pristineCatalogPath, constants.COPYFILE_EXCL);
+    }
   }
   const [nativeCatalog, routerConfig] = await Promise.all([
     readFile(pristineCatalogPath, "utf8").then(JSON.parse),

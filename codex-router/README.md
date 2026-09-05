@@ -12,7 +12,8 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
 
 ## Routing
 
-- `gpt-*` など名前空間のないモデルは ChatGPT Codex upstream へそのまま転送します。
+- `gpt-*` など名前空間のないモデルは ChatGPT Codex upstream へそのまま転送します。ChatGPT 側で追加された
+  GPT-6 Astra などのネイティブモデルも、インストール時に最新カタログを取り込んで同じ一覧へ残します。
 - `deepseek/deepseek-v4-flash` は DeepSeek 公式 Responses API へ直接転送し、upstream では
   `deepseek/` 名前空間だけを除きます。
 - Flash の reasoning effort は公式Codex向け定義に合わせて `low` / `high` / `max` を表示し、
@@ -77,7 +78,23 @@ CodexのHTTPリクエスト圧縮はループバックルーターでは不要�
 現行Codex形式の`~/.codex/deepseek.config.toml`へ分離します。
 
 タスクDBやスレッドの provider id は読み書きしません。外部モデルを増やしたら
-`router-config.json` を編集し、`npm run catalog` と LaunchAgent の再起動を行います。
+`router-config.json` を編集し、`npm run catalog`（`codex-router/` 内）と LaunchAgent の再起動を行います。
+`npm run catalog` は毎回 `~/.codex/models_cache.json` を読み直して
+`model-catalogs/native-pristine.json` を更新するため、ChatGPT 側で追加されたネイティブモデルを
+古いスナップショットが隠すことはありません。新しいキャッシュで欠落した
+`base_instructions` は `model_messages.instructions_template` から復元し、
+`supports_parallel_tool_calls` は未指定時に `true` を補完します。
+
+特定リポジトリだけ GPT-6 Astra を既定モデルにする場合は、そのリポジトリの
+`.codex/config.toml` に次を置きます。これはインストーラーが全リポジトリの既定モデルを
+勝手に変更するのを避けるため、任意設定として扱います。
+
+```toml
+model = "gpt-6-astra"
+```
+
+設定変更後は Codex Desktop を完全終了・再起動し、既存スレッドではなく新しいチャットで
+モデル選択を確認してください。
 
 Qwen 3.8 2.7B は `qwen` 名前空間でカタログに載ります。Ollama 側のモデル ID は
 `router-config.json` の `upstreamId`（既定 `qwen3.8:27b`）です。
