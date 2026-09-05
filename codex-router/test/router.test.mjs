@@ -152,6 +152,7 @@ test("prepares a native compaction fallback as a text-only summary turn", () => 
   assert.deepEqual(rewritten.tools, []);
   assert.equal(rewritten.tool_choice, undefined);
   assert.equal(rewritten.store, false);
+  assert.equal(rewritten.stream, true);
 });
 
 test("strips OpenAI encrypted function outputs and agent_message before DeepSeek", () => {

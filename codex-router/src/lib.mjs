@@ -502,6 +502,7 @@ export function rewriteRequestBody(body, selection, options = {}) {
       rewritten.tools = [];
       delete rewritten.tool_choice;
       rewritten.store = false;
+      rewritten.stream = true;
     }
     return rewritten;
   }
