@@ -103,7 +103,7 @@ async function handleProxy(request, response, pathname) {
   // adapt the SSE into a single Codex compaction item after the call.
   const incomingUrl = new URL(request.url, "http://127.0.0.1");
   const chatWire = selection.kind === "external" && selection.route.wireApi === "chat";
-  const targetUrl = selection.kind === "external"
+  let targetUrl = selection.kind === "external"
     ? upstreamUrl(baseUrl, `${externalUpstreamPath(pathname, selection)}${incomingUrl.search}`)
     : upstreamUrl(baseUrl, request.url);
   const resolvedToken = selection.kind === "external" ? keychainToken(selection.route.auth) : undefined;
@@ -115,10 +115,11 @@ async function handleProxy(request, response, pathname) {
       },
     });
   }
+  const nativeCompaction = selection.kind === "native" && compactEndpoint;
   let compactionSecret = resolvedToken;
   if (!compactionSecret) {
     const needsLocalSecret = hasLocalCompaction(parsedBody?.input)
-      || (chatWire && compactEndpoint);
+      || compactEndpoint;
     if (needsLocalSecret) {
       const compactionAuth = config.routes.find((route) => route.auth?.mode === "bearer_keychain")?.auth;
       compactionSecret = keychainToken(compactionAuth);
@@ -146,10 +147,10 @@ async function handleProxy(request, response, pathname) {
       keepAlive: selection.route.keepAlive,
     });
   }
-  const adaptCompaction = isRemoteCompactionV2Request(parsedBody, selection, { compactEndpoint });
+  let adaptCompaction = isRemoteCompactionV2Request(parsedBody, selection, { compactEndpoint });
   const headers = forwardRequestHeaders(request.headers, selection, process.env, resolvedToken);
   headers.set("content-type", "application/json");
-  const payload = JSON.stringify(rewrittenBody);
+  let payload = JSON.stringify(rewrittenBody);
 
   // Local chat upstreams (Ollama) may take minutes of prompt evaluation before
   // the first byte. Open the SSE early and send keep-alive comments so the
@@ -203,6 +204,23 @@ async function handleProxy(request, response, pathname) {
     }
     return sendJson(response, 502, {
       error: { message: `${routeName} model upstream is unavailable`, type: "upstream_unavailable" },
+    });
+  }
+  if (nativeCompaction && upstream.status === 404) {
+    await upstream.arrayBuffer();
+    targetUrl = upstreamUrl(baseUrl, `/v1/responses${incomingUrl.search}`);
+    rewrittenBody = rewriteRequestBody(parsedBody, selection, {
+      compactionSecret,
+      nativeCompactionFallback: true,
+    });
+    payload = JSON.stringify(rewrittenBody);
+    adaptCompaction = true;
+    upstream = await fetch(targetUrl, {
+      method: request.method,
+      headers,
+      body: payload,
+      signal: AbortSignal.timeout(selection.route.timeoutMs ?? 300_000),
+      redirect: "manual",
     });
   }
   stopKeepAlive();

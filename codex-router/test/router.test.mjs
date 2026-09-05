@@ -135,6 +135,23 @@ test("maps /responses/compact onto a DeepSeek text-only summary turn", () => {
   assert.equal(rewritten.tool_choice, undefined);
 });
 
+test("prepares a native compaction fallback as a text-only summary turn", () => {
+  const selection = selectRoute("gpt-5.6-luna", config);
+  const rewritten = rewriteRequestBody({
+    model: "gpt-5.6-luna",
+    input: [{
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Long GPT session history." }],
+    }],
+    tools: [{ type: "function", name: "shell" }],
+    tool_choice: "auto",
+  }, selection, { nativeCompactionFallback: true });
+  assert.match(rewritten.input.at(-1).content[0].text, /CONTEXT CHECKPOINT COMPACTION/);
+  assert.deepEqual(rewritten.tools, []);
+  assert.equal(rewritten.tool_choice, undefined);
+});
+
 test("strips OpenAI encrypted function outputs and agent_message before DeepSeek", () => {
   const selection = selectRoute("deepseek/deepseek-v4-flash", config);
   const rewritten = rewriteRequestBody({

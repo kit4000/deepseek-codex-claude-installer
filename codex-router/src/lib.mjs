@@ -486,6 +486,21 @@ export function rewriteRequestBody(body, selection, options = {}) {
     rewritten.input = rewriteLocalCompactions(rewritten.input, options.compactionSecret);
     if (Array.isArray(rewritten.input)) {
       rewritten.input = rewritten.input.flatMap((item) => repairNativeInputItem(item));
+      if (options.nativeCompactionFallback
+        && !rewritten.input.some((item) => item?.type === "message"
+          && Array.isArray(item.content)
+          && item.content.some((part) => typeof part?.text === "string"
+            && part.text.includes(SUMMARIZATION_MARKER)))) {
+        rewritten.input.push({
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: SUMMARIZATION_PROMPT }],
+        });
+      }
+    }
+    if (options.nativeCompactionFallback) {
+      rewritten.tools = [];
+      delete rewritten.tool_choice;
     }
     return rewritten;
   }
