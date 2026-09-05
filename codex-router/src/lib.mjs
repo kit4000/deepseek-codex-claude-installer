@@ -501,6 +501,7 @@ export function rewriteRequestBody(body, selection, options = {}) {
     if (options.nativeCompactionFallback) {
       rewritten.tools = [];
       delete rewritten.tool_choice;
+      rewritten.store = false;
     }
     return rewritten;
   }

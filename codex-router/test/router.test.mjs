@@ -146,10 +146,12 @@ test("prepares a native compaction fallback as a text-only summary turn", () => 
     }],
     tools: [{ type: "function", name: "shell" }],
     tool_choice: "auto",
+    store: true,
   }, selection, { nativeCompactionFallback: true });
   assert.match(rewritten.input.at(-1).content[0].text, /CONTEXT CHECKPOINT COMPACTION/);
   assert.deepEqual(rewritten.tools, []);
   assert.equal(rewritten.tool_choice, undefined);
+  assert.equal(rewritten.store, false);
 });
 
 test("strips OpenAI encrypted function outputs and agent_message before DeepSeek", () => {
