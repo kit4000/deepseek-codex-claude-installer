@@ -633,6 +633,9 @@ function cloneExternalModel(template, route, model, priority) {
   entry.additional_speed_tiers = [];
   entry.supports_reasoning_summaries = model.supportsReasoningSummaries ?? false;
   entry.supports_parallel_tool_calls = model.supportsParallelToolCalls ?? false;
+  // Native templates may carry a retirement upgrade (for example GPT-5.4
+  // Mini -> GPT-5.6 Luna). Never expose that migration to external models.
+  delete entry.upgrade;
   delete entry.service_tier;
   delete entry.service_tiers;
   delete entry.default_service_tier;

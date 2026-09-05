@@ -544,6 +544,7 @@ test("merges external models into the ModelsCache wrapper", () => {
       max_context_window: 272000,
       service_tiers: [{ id: "priority" }],
       additional_speed_tiers: ["fast"],
+      upgrade: { model: "gpt-5.6-luna", retirement_at: "2026-08-31T19:00:00Z" },
       base_instructions: "You are Codex, an agent based on GPT-5.",
     }],
   };
@@ -552,6 +553,7 @@ test("merges external models into the ModelsCache wrapper", () => {
   assert.equal(merged.models[1].slug, "deepseek/deepseek-v4-flash");
   assert.equal(merged.models[1].display_name, "DeepSeek V4 Flash");
   assert.equal(merged.models[1].service_tiers, undefined);
+  assert.equal(merged.models[1].upgrade, undefined);
   assert.deepEqual(merged.models[1].additional_speed_tiers, []);
   assert.equal(merged.models[0].supports_reasoning_summaries, true);
   assert.equal(merged.models[1].supports_reasoning_summaries, false);
