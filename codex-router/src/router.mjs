@@ -1,9 +1,16 @@
 import { createServer } from "node:http";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { text } from "node:stream/consumers";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import {
+  chatCompletionsToResponses,
+  createChatToResponsesTransform,
+  createChatToResponsesTranslator,
+  responsesToChatCompletions,
+} from "./chat-completions.mjs";
 import {
   adaptCompactionSse,
   externalUpstreamPath,
@@ -95,8 +102,9 @@ async function handleProxy(request, response, pathname) {
   // DeepSeek has no /responses/compact endpoint; map it onto /v1/responses and
   // adapt the SSE into a single Codex compaction item after the call.
   const incomingUrl = new URL(request.url, "http://127.0.0.1");
+  const chatWire = selection.kind === "external" && selection.route.wireApi === "chat";
   const targetUrl = selection.kind === "external"
-    ? upstreamUrl(baseUrl, `${externalUpstreamPath(pathname)}${incomingUrl.search}`)
+    ? upstreamUrl(baseUrl, `${externalUpstreamPath(pathname, selection)}${incomingUrl.search}`)
     : upstreamUrl(baseUrl, request.url);
   const resolvedToken = selection.kind === "external" ? keychainToken(selection.route.auth) : undefined;
   if (selection.kind === "external" && selection.route.auth?.mode === "bearer_keychain" && !resolvedToken) {
@@ -108,9 +116,13 @@ async function handleProxy(request, response, pathname) {
     });
   }
   let compactionSecret = resolvedToken;
-  if (selection.kind !== "external" && hasLocalCompaction(parsedBody?.input)) {
-    const compactionAuth = config.routes.find((route) => route.auth?.mode === "bearer_keychain")?.auth;
-    compactionSecret = keychainToken(compactionAuth);
+  if (!compactionSecret) {
+    const needsLocalSecret = hasLocalCompaction(parsedBody?.input)
+      || (chatWire && compactEndpoint);
+    if (needsLocalSecret) {
+      const compactionAuth = config.routes.find((route) => route.auth?.mode === "bearer_keychain")?.auth;
+      compactionSecret = keychainToken(compactionAuth);
+    }
   }
   let rewrittenBody;
   try {
@@ -126,10 +138,46 @@ async function handleProxy(request, response, pathname) {
       },
     });
   }
+  const responsesTools = rewrittenBody?.tools;
+  if (chatWire) {
+    rewrittenBody = responsesToChatCompletions(rewrittenBody, {
+      model: selection.upstreamModel,
+      dialect: "ollama",
+      keepAlive: selection.route.keepAlive,
+    });
+  }
   const adaptCompaction = isRemoteCompactionV2Request(parsedBody, selection, { compactEndpoint });
   const headers = forwardRequestHeaders(request.headers, selection, process.env, resolvedToken);
   headers.set("content-type", "application/json");
   const payload = JSON.stringify(rewrittenBody);
+
+  // Local chat upstreams (Ollama) may take minutes of prompt evaluation before
+  // the first byte. Open the SSE early and send keep-alive comments so the
+  // client does not treat the silence as a dead connection and retry.
+  let earlyTranslator;
+  let keepAliveTimer;
+  const stopKeepAlive = () => {
+    if (keepAliveTimer) {
+      clearInterval(keepAliveTimer);
+      keepAliveTimer = undefined;
+    }
+  };
+  if (chatWire && !adaptCompaction && parsedBody?.stream !== false) {
+    earlyTranslator = createChatToResponsesTranslator({
+      id: `resp_${Date.now()}`,
+      model: parsedBody.model,
+    });
+    response.writeHead(200, {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache",
+    });
+    for (const event of earlyTranslator.start()) response.write(event);
+    keepAliveTimer = setInterval(() => {
+      if (response.destroyed) return stopKeepAlive();
+      response.write(": keep-alive\n\n");
+    }, 10_000);
+    response.on("close", stopKeepAlive);
+  }
 
   let upstream;
   try {
@@ -143,15 +191,46 @@ async function handleProxy(request, response, pathname) {
   } catch (error) {
     const routeName = selection.kind === "native" ? "native" : selection.route.namespace;
     // Do not include bodies, credentials, or full upstream URLs in logs.
-    console.error(`[router] ${routeName} upstream unavailable: ${error.name}`);
+    const causeCode = typeof error?.cause?.code === "string" ? ` (${error.cause.code})` : "";
+    console.error(`[router] ${routeName} upstream unavailable: ${error.name}${causeCode}`);
+    stopKeepAlive();
+    if (earlyTranslator) {
+      response.write(`event: response.failed\ndata: ${JSON.stringify({
+        type: "response.failed",
+        response: { status: "failed", error: { message: `${routeName} model upstream is unavailable` } },
+      })}\n\n`);
+      return response.end();
+    }
     return sendJson(response, 502, {
       error: { message: `${routeName} model upstream is unavailable`, type: "upstream_unavailable" },
     });
   }
+  stopKeepAlive();
+  if (earlyTranslator && !upstream.ok) {
+    let upstreamMessage = "";
+    try {
+      const errorBody = await upstream.json();
+      upstreamMessage = errorBody?.error?.message ?? "";
+    } catch {}
+    response.write(`event: response.failed\ndata: ${JSON.stringify({
+      type: "response.failed",
+      response: {
+        status: "failed",
+        error: { message: upstreamMessage || `qwen upstream returned HTTP ${upstream.status}` },
+      },
+    })}\n\n`);
+    return response.end();
+  }
 
   if (adaptCompaction && upstream.ok) {
     try {
-      const adapted = adaptCompactionSse(await upstream.text(), resolvedToken);
+      let upstreamPayload = await (chatWire && upstream.body
+        ? text(Readable.fromWeb(upstream.body).pipe(createChatToResponsesTransform({
+          id: `resp_compact_${Date.now()}`,
+          model: parsedBody.model,
+        })))
+        : upstream.text());
+      const adapted = adaptCompactionSse(upstreamPayload, compactionSecret);
       const responseHeaders = forwardResponseHeaders(upstream.headers);
       delete responseHeaders["content-length"];
       responseHeaders["content-type"] = "text/event-stream; charset=utf-8";
@@ -168,15 +247,37 @@ async function handleProxy(request, response, pathname) {
     }
   }
 
-  response.writeHead(upstream.status, forwardResponseHeaders(upstream.headers));
+  const isEventStream = upstream.headers.get("content-type")?.toLowerCase().startsWith("text/event-stream");
+  if (chatWire && upstream.ok && !isEventStream) {
+    const mapped = chatCompletionsToResponses(await upstream.json(), {
+      requestModel: parsedBody.model,
+    });
+    return sendJson(response, 200, mapped);
+  }
+
+  const translateChat = chatWire && upstream.ok;
+  if (!earlyTranslator) {
+    const responseHeaders = forwardResponseHeaders(upstream.headers);
+    if (translateChat) {
+      delete responseHeaders["content-length"];
+      responseHeaders["content-type"] = "text/event-stream; charset=utf-8";
+    }
+    response.writeHead(upstream.status, responseHeaders);
+  }
   if (!upstream.body) return response.end();
   const streams = [Readable.fromWeb(upstream.body)];
-  const isEventStream = upstream.headers.get("content-type")?.toLowerCase().startsWith("text/event-stream");
-  if (selection.kind === "external" && selection.route.suppressReasoningContent && isEventStream) {
+  if (translateChat) {
+    streams.push(createChatToResponsesTransform({
+      id: `resp_${Date.now()}`,
+      model: parsedBody.model,
+      translator: earlyTranslator,
+    }));
+  }
+  if (selection.kind === "external" && selection.route.suppressReasoningContent && (isEventStream || translateChat)) {
     streams.push(createReasoningContentFilter({
       stabilizeMessagePhase: selection.route.stabilizeMessagePhase
-        && Array.isArray(rewrittenBody.tools)
-        && rewrittenBody.tools.length > 0,
+        && Array.isArray(responsesTools)
+        && responsesTools.length > 0,
     }));
   }
   streams.push(response);
@@ -224,6 +325,13 @@ const server = createServer(async (request, response) => {
 server.on("upgrade", (_request, socket) => {
   socket.end("HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\n\r\n");
 });
+
+// Local Ollama models can take far longer than Node's 5-minute default
+// requestTimeout to produce a first token (cold model load, long prompts on
+// modest hardware). Disable it so slow-but-alive SSE streams are not killed
+// mid-response, which otherwise looks like an empty/blank reply to the
+// client. headersTimeout stays at its default since headers arrive quickly.
+server.requestTimeout = 0;
 
 server.listen(config.listen.port, config.listen.host, () => {
   console.log(`[router] listening on http://${config.listen.host}:${config.listen.port}`);

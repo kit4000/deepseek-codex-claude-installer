@@ -140,11 +140,12 @@ npm run handoff:install
 このコマンドは次の順で fail-closed に処理します。
 
 1. 事前検査を再実行する。
-2. ネイティブモデルと DeepSeek のカタログを合成する。
-3. ルーターを起動し、`/healthz` が期待する provider / route を返したことを確認する。
-4. その後でのみ `~/.codex/config.toml` をバックアップし、管理対象キーを更新する。
-5. `claude-deepseek` ランチャーを作成する。通常の `claude` 設定は変更しない。
-6. API 呼び出しを行わない構成検証を実行する。
+2. 最新の `models_cache.json` を読み直し、ネイティブモデルと DeepSeek のカタログを合成する。
+3. ChatGPT Desktop 用の `base_instructions` と `supports_parallel_tool_calls` を補完する。
+4. ルーターを起動し、`/healthz` が期待する provider / route を返したことを確認する。
+5. その後でのみ `~/.codex/config.toml` をバックアップし、管理対象キーを更新する。
+6. `claude-deepseek` ランチャーを作成する。通常の `claude` 設定は変更しない。
+7. API 呼び出しを行わない構成検証を実行する。
 
 出力された `backupPath` を安全な場所へ記録してください。既存の Codex 設定テーブルやプロファイル、タスク DB、セッションは削除されません。また、既存の未管理 `claude-deepseek` 実行ファイルや `deepseek.config.toml` がある場合は上書きせず停止します。
 

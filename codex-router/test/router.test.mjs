@@ -30,6 +30,7 @@ const config = {
       contextWindow: 1048576,
       defaultReasoningEffort: "high",
       supportsReasoningSummaries: false,
+      supportsParallelToolCalls: true,
       reasoningEfforts: ["low", "high", "max"],
     }],
   }],
@@ -50,6 +51,24 @@ test("routes namespaced models and preserves native model names", () => {
     kind: "unknown",
     upstreamModel: "unknown/model",
   });
+});
+
+test("maps catalog ids onto Chat Completions upstream model names", () => {
+  const ollamaConfig = {
+    native: config.native,
+    routes: [{
+      namespace: "qwen",
+      wireApi: "chat",
+      baseUrl: "http://192.168.0.27:11434/v1",
+      auth: { mode: "none" },
+      models: [{ id: "qwen-3.8-2.7b", upstreamId: "qwen3.8:27b" }],
+    }],
+  };
+  const selection = selectRoute("qwen/qwen-3.8-2.7b", ollamaConfig);
+  assert.equal(selection.kind, "external");
+  assert.equal(selection.upstreamModel, "qwen3.8:27b");
+  assert.equal(externalUpstreamPath("/v1/responses", selection), "/v1/chat/completions");
+  assert.equal(externalUpstreamPath("/v1/responses/compact", selection), "/v1/chat/completions");
 });
 
 test("joins Codex and OpenAI-compatible upstream paths", () => {
@@ -536,6 +555,7 @@ test("merges external models into the ModelsCache wrapper", () => {
   assert.deepEqual(merged.models[1].additional_speed_tiers, []);
   assert.equal(merged.models[0].supports_reasoning_summaries, true);
   assert.equal(merged.models[1].supports_reasoning_summaries, false);
+  assert.equal(merged.models[1].supports_parallel_tool_calls, true);
   assert.equal(merged.models[1].default_reasoning_level, "high");
   assert.deepEqual(
     merged.models[1].supported_reasoning_levels.map(({ effort }) => effort),
@@ -546,6 +566,57 @@ test("merges external models into the ModelsCache wrapper", () => {
   assert.equal(merged.models[1].multi_agent_version, null);
   assert.equal(merged.models[1].tool_mode, null);
   assert.match(merged.models[1].base_instructions, /powered by DeepSeek V4 Flash/);
+});
+
+test("restores Desktop-required catalog fields from newer native cache entries", () => {
+  const native = {
+    models: [{
+      slug: "gpt-6-astra",
+      display_name: "GPT-6-Astra",
+      priority: 1,
+      model_messages: {
+        instructions_template: "You are Codex, an agent based on GPT-6.",
+      },
+    }],
+  };
+  const merged = mergeCatalog(native, { routes: [] }, new Date("2026-09-05T00:00:00Z"));
+  assert.equal(merged.models[0].base_instructions, "You are Codex, an agent based on GPT-6.");
+  assert.equal(merged.models[0].supports_parallel_tool_calls, true);
+});
+
+test("defaults external parallel tool support to false unless configured", () => {
+  const native = {
+    models: [{
+      slug: "gpt-5.4-mini",
+      display_name: "GPT-5.4 mini",
+      base_instructions: "native instructions",
+      supports_parallel_tool_calls: true,
+    }],
+  };
+  const merged = mergeCatalog(native, {
+    routes: [{
+      namespace: "example",
+      models: [{
+        id: "example-model",
+        displayName: "Example Model",
+      }],
+    }],
+  });
+  assert.equal(merged.models[1].supports_parallel_tool_calls, false);
+});
+
+test("preserves existing Desktop-required catalog fields", () => {
+  const native = {
+    models: [{
+      slug: "gpt-5.6-sol",
+      display_name: "GPT-5.6-Sol",
+      base_instructions: "existing instructions",
+      supports_parallel_tool_calls: false,
+    }],
+  };
+  const merged = mergeCatalog(native, { routes: [] });
+  assert.equal(merged.models[0].base_instructions, "existing instructions");
+  assert.equal(merged.models[0].supports_parallel_tool_calls, false);
 });
 
 test("patches only managed root keys and preserves unrelated profiles", () => {

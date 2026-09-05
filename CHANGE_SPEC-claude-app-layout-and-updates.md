@@ -188,6 +188,17 @@ https://github.com/kit4000/deepseek-codex-claude-installer
 clone 先は永続ディレクトリ（推奨: `~/Applications/deepseek-codex-claude-installer`）。
 `/tmp` 禁止。導入後も削除しない。手順の正本はルートの `AGENT_HANDOFF.md`。
 
+### 3.9 ローカル Ollama の Qwen 3.8 2.7B
+
+Claude.app の 4.6 ピッカー枠は DeepSeek のまま。Qwen は追加モデルとして載せる。
+
+- Codex: `qwen/qwen-3.8-2.7b`。10100 ルーターが Responses を
+  `http://192.168.0.27:11434/v1/chat/completions` へ変換する。認証なし。
+- Claude Hybrid: `/v1/models` に `qwen-3.8-2.7b` を追加し、名前付きエージェント
+  `qwen-3-8-2-7b` を置く。Anthropic Messages を同じ Chat Completions へ変換する。
+- Ollama 側のモデル ID は `upstreamId` / `target`（既定 `qwen3.8:27b`）。
+- ChatGPT サブスクを OpenAI API のピッカー枠として解釈しない契約は維持する。
+
 ---
 
 ## 4. アップデート方法（インストーラーが利用者・エージェントに示す正式手順）
@@ -329,15 +340,16 @@ prefer-claude-hybrid
 | 1.28929.0 | 2026-08-18.1 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 | 1.28929.0 | 2026-08-18.2 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 | 1.28929.0 | 2026-08-18.3 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
+| 1.44121.0 | 2026-09-02.1 | `index.chunk-CjUl9Ys6.js` | `index.chunk-CjUl9Ys6.js` | `B` |
 
-現行（1.28929.0 / 2026-08-18.3）:
+現行（1.44121.0 / 2026-09-02.1）:
 
 ```text
-patchFile: /.vite/build/index.chunk-KnwvxAXh.js
+patchFile: /.vite/build/index.chunk-CjUl9Ys6.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-CHjD_WiU.js
-modelLabelPatchFrom: function ti(e){return J=new a.WebContentsView(e),t.c(J.webContents,t.n.CLAUDE_AI_WEB),J.webContents.setMaxListeners(20),J}
-patchVersion: 2026-08-18.3
+modelLabelPatchFile: /.vite/build/index.chunk-CjUl9Ys6.js
+modelLabelPatchFrom: function Fge(e){return B=new o.WebContentsView(e),oi(B.webContents,ai.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}
+patchVersion: 2026-09-02.1
 ```
 
 2026-08-18.3 はアンカー位置は変えず、Remote Control 用 `ANTHROPIC_UNIX_SOCKET` を残したまま

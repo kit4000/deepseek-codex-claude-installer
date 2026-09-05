@@ -36,10 +36,12 @@ export function selectRoute(model, config) {
     for (const route of config.routes ?? []) {
       const prefix = `${route.namespace}/`;
       if (model.startsWith(prefix)) {
+        const id = model.slice(prefix.length);
+        const listed = (route.models ?? []).find((entry) => entry.id === id);
         return {
           kind: "external",
           route,
-          upstreamModel: model.slice(prefix.length),
+          upstreamModel: listed?.upstreamId ?? listed?.target ?? id,
         };
       }
     }
@@ -504,8 +506,9 @@ export function rewriteRequestBody(body, selection, options = {}) {
   return rewritten;
 }
 
-export function externalUpstreamPath(pathname) {
+export function externalUpstreamPath(pathname, selection) {
   // Pathname only; callers must reattach request.search when needed.
+  if (selection?.route?.wireApi === "chat") return "/v1/chat/completions";
   if (isCompactEndpoint(pathname)) return "/v1/responses";
   return pathname.startsWith("/v1/") ? pathname : `/v1${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
 }
@@ -629,6 +632,7 @@ function cloneExternalModel(template, route, model, priority) {
   }
   entry.additional_speed_tiers = [];
   entry.supports_reasoning_summaries = model.supportsReasoningSummaries ?? false;
+  entry.supports_parallel_tool_calls = model.supportsParallelToolCalls ?? false;
   delete entry.service_tier;
   delete entry.service_tiers;
   delete entry.default_service_tier;
@@ -643,6 +647,21 @@ function addBackwardCompatibleFields(model) {
   }
   if (!("multi_agent_version" in model)) model.multi_agent_version = null;
   if (!("tool_mode" in model)) model.tool_mode = null;
+  // ChatGPT Desktop requires a top-level base_instructions field, but newer
+  // catalogs only store it inside model_messages.instructions_template.
+  // Restore it so Desktop can parse the catalog without a "missing field
+  // 'base_instructions'" error.
+  if (typeof model.base_instructions !== "string" || model.base_instructions.length === 0) {
+    const template = model?.model_messages?.instructions_template;
+    if (typeof template === "string" && template.length > 0) {
+      model.base_instructions = template;
+    }
+  }
+  // ChatGPT Desktop also requires supports_parallel_tool_calls, which newer
+  // catalogs omit. Default to true (Codex has always supported parallel tools).
+  if (!("supports_parallel_tool_calls" in model)) {
+    model.supports_parallel_tool_calls = true;
+  }
   return model;
 }
 

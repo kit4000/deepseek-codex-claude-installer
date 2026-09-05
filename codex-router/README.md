@@ -12,7 +12,8 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
 
 ## Routing
 
-- `gpt-*` など名前空間のないモデルは ChatGPT Codex upstream へそのまま転送します。
+- `gpt-*` など名前空間のないモデルは ChatGPT Codex upstream へそのまま転送します。ChatGPT 側で追加された
+  GPT-6 Astra などのネイティブモデルも、インストール時に最新カタログを取り込んで同じ一覧へ残します。
 - `deepseek/deepseek-v4-flash` は DeepSeek 公式 Responses API へ直接転送し、upstream では
   `deepseek/` 名前空間だけを除きます。
 - Flash の reasoning effort は公式Codex向け定義に合わせて `low` / `high` / `max` を表示し、
@@ -25,6 +26,8 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
   Responses API 側でCodex対応が有効になるまでは、モデル名に `Responses API pending` を表示し、
   選択後の実行は公式APIのエラーになります。上流で有効化された後はローカル側の追加変更なしで
   同じルートから利用できます。
+- `qwen/qwen-3.8-2.7b` は LAN 上の Ollama（`http://192.168.0.27:11434/v1/chat/completions`）へ
+  Chat Completions として転送します。APIキーは不要です。
 - ChatGPT の Authorization と account id は外部 endpoint へ転送しません。
 - Codex の remote compaction v2 は、DeepSeek 用の通常要約ターンと単一の
   `compaction` 応答へ相互変換します。要約は DeepSeek API キーから導出した鍵で
@@ -74,8 +77,29 @@ CodexのHTTPリクエスト圧縮はループバックルーターでは不要�
 `[features] enable_request_compression = false`も設定します。DeepSeek用CLIプロファイルは
 現行Codex形式の`~/.codex/deepseek.config.toml`へ分離します。
 
-タスクDBやスレッドの provider id は読み書きしません。外部 endpoint やモデルを増やしたら
-`router-config.json` を編集し、`npm run catalog` と LaunchAgent の再起動を行います。
+タスクDBやスレッドの provider id は読み書きしません。外部モデルを増やしたら
+`router-config.json` を編集し、`npm run catalog`（`codex-router/` 内）と LaunchAgent の再起動を行います。
+`npm run catalog` は毎回 `~/.codex/models_cache.json` を読み直して
+`model-catalogs/native-pristine.json` を更新するため、ChatGPT 側で追加されたネイティブモデルを
+古いスナップショットが隠すことはありません。新しいキャッシュで欠落した
+`base_instructions` は `model_messages.instructions_template` から復元し、
+`supports_parallel_tool_calls` はネイティブモデルでは未指定時に `true` を補完し、外部モデルでは
+`router-config.json` の `supportsParallelToolCalls` だけを参照します。外部モデルで未指定の場合は
+`false` になります。
+
+特定リポジトリだけ GPT-6 Astra を既定モデルにする場合は、そのリポジトリの
+`.codex/config.toml` に次を置きます。これはインストーラーが全リポジトリの既定モデルを
+勝手に変更するのを避けるため、任意設定として扱います。
+
+```toml
+model = "gpt-6-astra"
+```
+
+設定変更後は Codex Desktop を完全終了・再起動し、既存スレッドではなく新しいチャットで
+モデル選択を確認してください。
+
+Qwen 3.8 2.7B は `qwen` 名前空間でカタログに載ります。Ollama 側のモデル ID は
+`router-config.json` の `upstreamId`（既定 `qwen3.8:27b`）です。
 
 DeepSeek API キーは `config.toml` や plist には保存せず、macOS キーチェーンの
 `com.local.codex-native-model-router.deepseek` に保存します。`store-deepseek-key` は

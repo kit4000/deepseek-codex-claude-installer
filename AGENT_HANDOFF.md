@@ -18,6 +18,8 @@ tar.gz や別端末のキー、会話から推測した秘密は使いません�
    Keychain項目を移送、削除、全面置換しません。
 4. Fable 5 と Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5 は純正Claudeとして維持します。
    外部APIへ割り当てるのは Opus 4.6（DeepSeek Pro）、Sonnet 4.6（DeepSeek Flash）の2枠だけです。
+   ローカル Ollama の Qwen 3.8 2.7B は 4.6 枠を借りず、Codex カタログと Claude Code の
+   追加モデル／名前付きエージェントとして載せます。
    ChatGPT サブスクリプションを OpenAI API キー経路として解釈しません。
    `haiku` エイリアスは DeepSeek Flash のまま残し、opus / sonnet エイリアスは純正のままです。
 5. 課金テストは利用者の明示承認前に実行しません。`--allow-billing` は承認を記録した
@@ -68,6 +70,8 @@ native GPT（`gpt-5.6-sol` など）の remote compact / 親ターンも同じ�
   `ANTHROPIC_UNIX_SOCKET`（Hybrid ルーターの Unix ソケット）を渡す。
 - 通常のClaudeモデルはAnthropicへ転送し、4.6 の2エイリアスだけを外部APIへ振り分け。
   DeepSeek は公式 Anthropic 互換。ChatGPT サブスクリプションは Claude.app のピッカー枠に載せない。
+  Qwen 3.8 2.7B は `qwen-3.8-2.7b` としてモデル一覧と名前付きエージェントに追加し、
+  LAN Ollama の `/v1/chat/completions` へ変換する。4.6 枠は使わない。
 - `ANTHROPIC_UNIX_SOCKET` は Claude Code の Remote Control 判定用。
   橋は `wss://bridge.claudeusercontent.com` のままなので、外部モデル選択と共存する。
 - Webピッカーの表示は Sonnet 4.6→DeepSeek V4 Flash、Opus 4.6→DeepSeek V4 Pro (1M)。
@@ -124,8 +128,9 @@ DeepSeekはメインピッカーにも残り、全サブエージェントの既
 伴うため、利用者がDeepSeek委譲を明示した場合または課金委譲を承認した場合だけ呼び出します。
 
 Claude Code では `~/.claude/agents/` に次の名前付きエージェントも入れます。
-`deepseek-v4-flash`、`deepseek-v4-pro`。
+`deepseek-v4-flash`、`deepseek-v4-pro`、`qwen-3-8-2-7b`。
 `model: "haiku"` は従来どおり DeepSeek Flash です。opus / sonnet エイリアスは純正のままです。
+Codex では `[agents.qwen-3-8-2-7b]` が `qwen/qwen-3.8-2.7b` をループバック経由で呼びます。
 
 ### Cursor CLI（サブスクリプション）の外部呼び出し
 
@@ -290,6 +295,8 @@ Codexは `deepseek/deepseek-v4-flash` を `max` で呼び `ROUTER_OK` を、Clau
 - 正本は `https://github.com/kit4000/deepseek-codex-claude-installer` の clone であり、
   URL だけ渡されたエージェントが AGENT_HANDOFF に従って導入できる。
 - DeepSeekはメイン選択可能なまま、`deepseek-v4` サブエージェントも呼び出せる。
+- Qwen 3.8 2.7B は Codex の `qwen/qwen-3.8-2.7b` と Claude Code の `qwen-3.8-2.7b` /
+  `qwen-3-8-2-7b` から呼べる。Claude.app の 4.6 ピッカー枠は増やしていない。
 - `cursor-cli-delegate --check-auth` が成功し、Grok 4.6 / Composer 2.5 は Cursor
   サブスクの CLI ラッパーとして呼べる。Claude.app ピッカー枠は増やしていない。
 - `codex-cli-delegate --check-auth` が成功し、GPT-5.6 Sol / Luna は ChatGPT

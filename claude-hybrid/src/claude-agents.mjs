@@ -21,11 +21,12 @@ export function agentName(entry) {
 
 export function renderClaudeHybridAgent(entry) {
   const name = agentName(entry);
-  const model = entry.target ?? entry.id;
+  const model = entry.id ?? entry.target;
+  const local = entry.local === true || entry.provider === "ollama";
   const description = [
     `${entry.displayName} via Claude Hybrid.`,
     "Use when the user explicitly asks for this model as a subagent.",
-    "Billable external API usage.",
+    local ? "Local Ollama inference, no cloud API billing." : "Billable external API usage.",
   ].join(" ");
   return [
     "---",
@@ -39,7 +40,9 @@ export function renderClaudeHybridAgent(entry) {
     "",
     "- Complete the bounded task assigned by the parent and return concise evidence.",
     "- You are not alone in the codebase. Preserve unrelated and concurrent edits.",
-    "- Never read, print, copy, or request API keys. Authentication stays in macOS Keychain.",
+    local
+      ? "- Never read, print, copy, or request API keys. This path is local/LAN Ollama."
+      : "- Never read, print, copy, or request API keys. Authentication stays in macOS Keychain.",
     "- Do not perform destructive actions, publication, or extra billable work without authorization.",
     "",
   ].join("\n");
@@ -49,7 +52,7 @@ export function renderClaudeHybridAgents(config) {
   return (config?.models?.external ?? []).map((entry) => ({
     fileName: agentFileName(entry),
     name: agentName(entry),
-    model: entry.target ?? entry.id,
+    model: entry.id ?? entry.target,
     contents: renderClaudeHybridAgent(entry),
   }));
 }

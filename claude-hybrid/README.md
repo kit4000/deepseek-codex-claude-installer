@@ -40,6 +40,8 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
 - 外部モデル:
   - `claude-opus-4-6` → `deepseek-v4-pro[1m]`（DeepSeek 公式 Anthropic 互換）
   - `claude-sonnet-4-6` → `deepseek-v4-flash`
+  - `qwen-3.8-2.7b` → LAN Ollama `POST http://192.168.0.27:11434/v1/chat/completions`
+    （4.6 ピッカー枠は使わない。Claude Code のモデル一覧と `qwen-3-8-2-7b` エージェント）
 - APIキーはファイルへ保存せず、macOS キーチェーンから credential helper 経由で読み出し。
 - `/v1/models` は公式一覧に外部エントリを追加して返却。
 - 上流の `content-encoding` は fetch が展開済みボディを渡すため除去して転送。
@@ -91,7 +93,7 @@ prefer-claude-hybrid
 公式署名、バージョン固有の2つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
-現行確認済みは Claude `1.28929.0` / patch `2026-08-18.3` です。
+現行確認済みは Claude `1.44121.0` / patch `2026-09-02.1` です。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを

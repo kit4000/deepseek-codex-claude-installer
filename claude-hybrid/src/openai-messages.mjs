@@ -107,10 +107,11 @@ function assistantMessageToOpenAI(content) {
   return message;
 }
 
-export function anthropicToOpenAIChatCompletions(body, targetModel) {
+export function anthropicToOpenAIChatCompletions(body, targetModel, options = {}) {
   if (!body || typeof body !== "object") {
     throw new Error("Expected an Anthropic Messages request body");
   }
+  const dialect = options.dialect ?? "openai";
   const messages = [];
   const system = systemText(body.system);
   if (system) messages.push({ role: "system", content: system });
@@ -146,11 +147,14 @@ export function anthropicToOpenAIChatCompletions(body, targetModel) {
     model: targetModel,
     messages,
     stream: Boolean(body.stream),
-    reasoning_effort: mapEffort(body),
   };
-  if (body.stream) payload.stream_options = { include_usage: true };
+  if (dialect !== "ollama") payload.reasoning_effort = mapEffort(body);
+  if (body.stream && dialect !== "ollama") payload.stream_options = { include_usage: true };
   const maxTokens = body.max_tokens ?? body.max_output_tokens;
-  if (Number.isFinite(maxTokens)) payload.max_completion_tokens = maxTokens;
+  if (Number.isFinite(maxTokens)) {
+    if (dialect === "ollama") payload.max_tokens = maxTokens;
+    else payload.max_completion_tokens = maxTokens;
+  }
   if (Array.isArray(body.tools) && body.tools.length > 0) {
     payload.tools = body.tools.map(openaiToolFromAnthropic);
     const toolChoice = mapToolChoice(body.tool_choice);

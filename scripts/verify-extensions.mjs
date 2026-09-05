@@ -21,6 +21,7 @@ if (!home) throw new Error("HOME is required");
 const codexHome = process.env.CODEX_HOME ?? resolve(home, ".codex");
 const configPath = resolve(codexHome, "config.toml");
 const profilePath = resolve(codexHome, "agent-profiles/deepseek-v4.toml");
+const qwenProfilePath = resolve(codexHome, "agent-profiles/qwen-3-8-2-7b.toml");
 const wrapperPath = resolve(home, ".local/bin/update-claude-hybrid");
 const preferPath = resolve(home, ".local/bin/prefer-claude-hybrid");
 const cursorDelegatePath = resolve(home, ".local/bin/cursor-cli-delegate");
@@ -64,6 +65,28 @@ await check("deepseekSubagentProfile", async () => {
     if (!source.includes(expected)) throw new Error(`Agent profile is missing: ${expected}`);
   }
   return "DeepSeek V4 Flash through the existing loopback router at max effort";
+});
+
+await check("qwenSubagentRegistration", async () => {
+  const source = await readFile(configPath, "utf8");
+  if (!source.includes(EXTENSION_MARKER) || !source.includes("[agents.qwen-3-8-2-7b]")) {
+    throw new Error("Managed Qwen 3.8 2.7B agent registration is missing");
+  }
+  if (!source.includes(`config_file = ${JSON.stringify(qwenProfilePath)}`)) throw new Error("Qwen agent profile path is stale");
+  return "callable as agent_type qwen-3-8-2-7b without changing the main model";
+});
+
+await check("qwenSubagentProfile", async () => {
+  const source = await readFile(qwenProfilePath, "utf8");
+  if (!source.startsWith(EXTENSION_MARKER)) throw new Error("Qwen agent profile is not managed by this installer");
+  for (const expected of [
+    'model = "qwen/qwen-3.8-2.7b"',
+    'model_provider = "openai"',
+    'model_reasoning_effort = "low"',
+  ]) {
+    if (!source.includes(expected)) throw new Error(`Qwen agent profile is missing: ${expected}`);
+  }
+  return "Qwen 3.8 2.7B through the existing loopback router and LAN Ollama";
 });
 
 await check("managedUpdaterCommand", async () => {
