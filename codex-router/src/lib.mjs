@@ -547,6 +547,9 @@ function parseSseEvents(payload) {
 }
 
 function completedSummary(response) {
+  if (typeof response?.output_text === "string" && response.output_text.trim()) {
+    return response.output_text.trim();
+  }
   return (response?.output ?? [])
     .filter((item) => item?.type === "message")
     .flatMap((item) => item.content ?? [])
@@ -556,8 +559,20 @@ function completedSummary(response) {
     .trim();
 }
 
+function parseCompactionEvents(payload) {
+  const trimmed = payload.trim();
+  if (trimmed.startsWith("{")) {
+    const response = JSON.parse(trimmed);
+    if (response?.type === "response.completed" && response.response) return [response];
+    if (Array.isArray(response?.output) || typeof response?.output_text === "string") {
+      return [{ type: "response.completed", response }];
+    }
+  }
+  return parseSseEvents(payload);
+}
+
 export function adaptCompactionSse(payload, secret) {
-  const events = parseSseEvents(payload);
+  const events = parseCompactionEvents(payload);
   const completed = events.findLast((event) => event?.type === "response.completed");
   if (!completed?.response) {
     throw new Error("Compaction upstream closed before response.completed");

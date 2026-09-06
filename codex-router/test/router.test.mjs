@@ -540,6 +540,23 @@ test("adapts a DeepSeek SSE response into exactly one Codex compaction item", ()
   assert.equal(events[1].response.usage.total_tokens, 15);
 });
 
+test("adapts a JSON DeepSeek compaction response into one Codex item", () => {
+  const upstream = JSON.stringify({
+    id: "response-2",
+    status: "completed",
+    output_text: "Keep the red decision.",
+    output: [],
+  });
+  const adapted = adaptCompactionSse(upstream, "test-secret");
+  const events = adapted
+    .split(/\n\n/)
+    .filter(Boolean)
+    .map((block) => JSON.parse(block.split("\n").find((line) => line.startsWith("data: ")).slice(6)));
+  const item = events.find((event) => event.type === "response.output_item.done").item;
+  assert.equal(item.type, "compaction");
+  assert.match(openLocalCompaction(item.encrypted_content, "test-secret"), /red decision/);
+});
+
 test("does not leak ChatGPT credentials to an external route", () => {
   const selection = selectRoute("deepseek/deepseek-v4-flash", config);
   const headers = forwardRequestHeaders({
