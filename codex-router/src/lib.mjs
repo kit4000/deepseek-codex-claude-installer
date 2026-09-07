@@ -498,11 +498,14 @@ export function rewriteRequestBody(body, selection, options = {}) {
         });
       }
     }
+    if (options.compactEndpoint || options.nativeCompactionFallback) {
+      // ChatGPT's /responses/compact rejects stream:false and store:true.
+      rewritten.store = false;
+      rewritten.stream = true;
+    }
     if (options.nativeCompactionFallback) {
       rewritten.tools = [];
       delete rewritten.tool_choice;
-      rewritten.store = false;
-      rewritten.stream = true;
     }
     return rewritten;
   }
@@ -517,6 +520,8 @@ export function rewriteRequestBody(body, selection, options = {}) {
     // item. Force a text-only summary turn; its SSE is adapted after the call.
     rewritten.tools = [];
     delete rewritten.tool_choice;
+    rewritten.store = false;
+    rewritten.stream = true;
   }
   // Local OpenAI-compatible servers commonly reject OpenAI billing-only fields.
   delete rewritten.service_tier;
@@ -546,6 +551,13 @@ function parseSseEvents(payload) {
   });
 }
 
+function isSummaryTextPart(content) {
+  return Boolean(content)
+    && typeof content.text === "string"
+    && content.text.trim().length > 0
+    && (content.type == null || content.type === "output_text" || content.type === "text");
+}
+
 function completedSummary(response) {
   if (typeof response?.output_text === "string" && response.output_text.trim()) {
     return response.output_text.trim();
@@ -553,10 +565,32 @@ function completedSummary(response) {
   return (response?.output ?? [])
     .filter((item) => item?.type === "message")
     .flatMap((item) => item.content ?? [])
-    .filter((content) => content?.type === "output_text" && typeof content.text === "string")
+    .filter((content) => isSummaryTextPart(content))
     .map((content) => content.text)
     .join("\n")
     .trim();
+}
+
+function summaryFromEvents(events) {
+  const fromCompleted = completedSummary(events.findLast((event) => event?.type === "response.completed")?.response);
+  if (fromCompleted) return fromCompleted;
+
+  const texts = [];
+  for (const event of events) {
+    if (event?.type === "response.output_text.done" && typeof event.text === "string") {
+      texts.push(event.text);
+      continue;
+    }
+    if (event?.type === "response.content_part.done" && isSummaryTextPart(event.part)) {
+      texts.push(event.part.text);
+      continue;
+    }
+    if (event?.type === "response.output_item.done" && event.item) {
+      const fromItem = completedSummary({ output: [event.item] });
+      if (fromItem) texts.push(fromItem);
+    }
+  }
+  return [...new Set(texts.map((text) => text.trim()).filter(Boolean))].join("\n");
 }
 
 function parseCompactionEvents(payload) {
@@ -571,28 +605,44 @@ function parseCompactionEvents(payload) {
   return parseSseEvents(payload);
 }
 
-export function adaptCompactionSse(payload, secret) {
+function adaptCompactionResult(payload, secret) {
   const events = parseCompactionEvents(payload);
   const completed = events.findLast((event) => event?.type === "response.completed");
   if (!completed?.response) {
     throw new Error("Compaction upstream closed before response.completed");
   }
-  const generatedSummary = completedSummary(completed.response);
+  const generatedSummary = summaryFromEvents(events);
   if (!generatedSummary) throw new Error("Compaction upstream returned no summary text");
 
   const item = {
+    id: `cmp_${completed.response.id ?? Date.now()}`,
     type: "compaction",
     encrypted_content: sealLocalCompaction(`${SUMMARY_PREFIX}\n${generatedSummary}`, secret),
   };
+  const response = structuredClone(completed.response);
+  response.object = response.object ?? "response";
+  response.status = "completed";
+  response.output = [item];
+  return { item, response };
+}
+
+export function adaptCompactionJson(payload, secret) {
+  return adaptCompactionResult(payload, secret).response;
+}
+
+export function adaptCompactionSse(payload, secret) {
+  const { item, response } = adaptCompactionResult(payload, secret);
   const outputDone = {
     type: "response.output_item.done",
     item,
     output_index: 0,
     sequence_number: 0,
   };
-  const completedEvent = structuredClone(completed);
-  completedEvent.response.output = [item];
-  completedEvent.sequence_number = 1;
+  const completedEvent = {
+    type: "response.completed",
+    response,
+    sequence_number: 1,
+  };
   return `event: response.output_item.done\ndata: ${JSON.stringify(outputDone)}\n\nevent: response.completed\ndata: ${JSON.stringify(completedEvent)}\n\n`;
 }
 

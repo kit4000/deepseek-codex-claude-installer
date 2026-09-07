@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  adaptCompactionJson,
   adaptCompactionSse,
   externalUpstreamPath,
   forwardRequestHeaders,
@@ -153,6 +154,46 @@ test("prepares a native compaction fallback as a text-only summary turn", () => 
   assert.equal(rewritten.tool_choice, undefined);
   assert.equal(rewritten.store, false);
   assert.equal(rewritten.stream, true);
+});
+
+test("forces stream and disables store for native ChatGPT compact requests", () => {
+  const selection = selectRoute("gpt-6-astra", config);
+  const body = {
+    model: "gpt-6-astra",
+    input: [{
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Long GPT session history." }],
+    }],
+    tools: [{ type: "function", name: "shell" }],
+    store: true,
+    stream: false,
+  };
+  const rewritten = rewriteRequestBody(body, selection, { compactEndpoint: true });
+  assert.equal(rewritten.stream, true);
+  assert.equal(rewritten.store, false);
+  assert.equal(rewritten.input.at(-1).content[0].text, "Long GPT session history.");
+  assert.deepEqual(rewritten.tools, body.tools);
+});
+
+test("forces stream for DeepSeek compact endpoint requests", () => {
+  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const rewritten = rewriteRequestBody({
+    model: "deepseek/deepseek-v4-flash",
+    input: [{
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Long session history." }],
+    }],
+    stream: false,
+    store: true,
+  }, selection, {
+    compactionSecret: "test-secret",
+    compactEndpoint: true,
+  });
+  assert.equal(rewritten.stream, true);
+  assert.equal(rewritten.store, false);
+  assert.match(rewritten.input.at(-1).content[0].text, /CONTEXT CHECKPOINT COMPACTION/);
 });
 
 test("strips OpenAI encrypted function outputs and agent_message before DeepSeek", () => {
@@ -538,6 +579,64 @@ test("adapts a DeepSeek SSE response into exactly one Codex compaction item", ()
   assert.match(openLocalCompaction(outputItems[0].item.encrypted_content, "test-secret"), /blue decision/);
   assert.deepEqual(events[1].response.output, [outputItems[0].item]);
   assert.equal(events[1].response.usage.total_tokens, 15);
+});
+
+test("adapts ChatGPT compact fallback SSE when completed.output is empty", () => {
+  const upstream = [
+    "event: response.output_text.done",
+    `data: ${JSON.stringify({
+      type: "response.output_text.done",
+      text: "Keep the green decision.",
+    })}`,
+    "",
+    "event: response.completed",
+    `data: ${JSON.stringify({
+      type: "response.completed",
+      response: {
+        id: "response-3",
+        status: "completed",
+        output: [],
+      },
+    })}`,
+    "",
+  ].join("\n");
+  const adapted = adaptCompactionSse(upstream, "test-secret");
+  const events = adapted
+    .split(/\n\n/)
+    .filter(Boolean)
+    .map((block) => JSON.parse(block.split("\n").find((line) => line.startsWith("data: ")).slice(6)));
+  const item = events.find((event) => event.type === "response.output_item.done").item;
+  assert.equal(item.type, "compaction");
+  assert.match(openLocalCompaction(item.encrypted_content, "test-secret"), /green decision/);
+});
+
+test("returns a JSON compaction response for Codex compact clients", () => {
+  const upstream = [
+    "event: response.output_text.done",
+    `data: ${JSON.stringify({
+      type: "response.output_text.done",
+      text: "Keep the amber decision.",
+    })}`,
+    "",
+    "event: response.completed",
+    `data: ${JSON.stringify({
+      type: "response.completed",
+      response: {
+        id: "response-4",
+        object: "response",
+        status: "completed",
+        output: [],
+      },
+    })}`,
+    "",
+  ].join("\n");
+  const adapted = adaptCompactionJson(upstream, "test-secret");
+  assert.equal(adapted.object, "response");
+  assert.equal(adapted.status, "completed");
+  assert.equal(adapted.output.length, 1);
+  assert.equal(adapted.output[0].type, "compaction");
+  assert.match(adapted.output[0].id, /^cmp_/);
+  assert.match(openLocalCompaction(adapted.output[0].encrypted_content, "test-secret"), /amber decision/);
 });
 
 test("adapts a JSON DeepSeek compaction response into one Codex item", () => {

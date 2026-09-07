@@ -13,6 +13,9 @@ macOS上で次を共存させます。
 - CodexのDeepSeek V4 Flash / Pro経路
 - ローカル Ollama の Qwen 3.8 2.7B（`http://192.168.0.27:11434/v1/chat/completions`）
 - DeepSeekで作った暗号化コンパクションをGPTへ戻す際の安全な復号・要約変換
+- GPT-6 Astra など native GPT の remote compact。ChatGPT に `/responses/compact`
+  が無い場合は通常の `/responses` 要約へフォールバックし、Codex が読める JSON の
+  `compaction` 応答へ戻す（SSE のまま返すと `expected value at line 1 column 1` になる）
 - DeepSeek経路での remote compact、暗号化 function output 除去、Codex
   `custom_tool_call` の `function_call` 正規化
 - 公式Claudeのアカウント・セッションと、Claude CodeタブのDeepSeek経路

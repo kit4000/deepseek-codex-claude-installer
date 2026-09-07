@@ -34,8 +34,12 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
   AES-256-GCM 暗号化します。次の DeepSeek ターンでは通常履歴へ戻し、GPT など
   native モデルへ切り替えたときもルーターが復号して平文の要約として転送するため、
   `invalid_encrypted_content` にならずに既存セッションを継続できます。
-- `/v1/responses/compact` は DeepSeek に無いため、通常の `/v1/responses` 要約ターンへ
-  マップし、SSE を Codex 用の単一 `compaction` 項目へ再構成します。
+- `/v1/responses/compact` は DeepSeek にも GPT-6 Astra 向け ChatGPT compact API にも
+  無いため、通常の `/responses` 要約ターンへマップします。上流へは `stream: true` と
+  `store: false` を付け、Astra のように `response.completed.output` が空でも
+  `response.output_text.done` から要約を拾います。Codex へは JSON の Responses オブジェクト
+  （`output` に密封済み `compaction` を1件）を返します。SSE のまま返すと
+  `stream disconnected before completion: expected value at line 1 column 1` になります。
 - DeepSeek へ渡す前に、OpenAI 専用の `encrypted_content` / `agent_message` を除去し、
   Codex の `custom_tool_call`・`local_shell_call` とその output を
   `function_call` / `function_call_output` ペアへ正規化します。これにより
