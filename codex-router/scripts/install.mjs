@@ -129,6 +129,8 @@ async function main() {
     routes: routerConfig.routes,
     removeSections: routerConfig.configMigration?.removeSections,
     profile: routerConfig.configMigration?.profile,
+    defaultModel: routerConfig.configMigration?.defaultModel,
+    disableExternalMigration: routerConfig.configMigration?.disableExternalMigration,
   });
   const profilePath = await writeProfile(routerConfig.configMigration?.profile);
   await atomicWrite(configPath, patchedConfig, 0o600);

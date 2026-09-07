@@ -4,6 +4,7 @@ import test from "node:test";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  findCodexDesktopLocalRouterConflicts,
   findGlobalClaudeDeepSeekSettings,
   findShellDeepSeekExports,
   inspectCodexConfig,
@@ -25,6 +26,24 @@ test("validates the portable router and display stability settings", async () =>
     }),
     /reasoning suppression/,
   );
+  assert.throws(
+    () => validateRouterForHandoff({
+      ...config,
+      routes: config.routes.map((route) => route.namespace === "deepseek"
+        ? { ...route, models: route.models.map((model) => ({ ...model, priority: 1 })) }
+        : route),
+    }),
+    /priority 0/,
+  );
+  assert.throws(
+    () => validateRouterForHandoff({
+      ...config,
+      routes: config.routes.map((route) => route.namespace === "deepseek"
+        ? { ...route, models: [...route.models, { id: "future", displayName: "Responses API pending" }] }
+        : route),
+    }),
+    /Pending DeepSeek models/,
+  );
 });
 
 test("inspects only the managed Codex root settings", () => {
@@ -40,6 +59,16 @@ enable_request_compression = false
 model_provider = "another-provider"
 `;
   assert.ok(inspectCodexConfig(source, { catalogPath }).every((entry) => entry.ok));
+});
+
+test("detects remote Codex Desktop projects that bypass the local router", () => {
+  assert.deepEqual(findCodexDesktopLocalRouterConflicts({
+    "selected-project": { type: "remote", projectId: "remote-project" },
+  }), ["selected-project:remote"]);
+  assert.deepEqual(findCodexDesktopLocalRouterConflicts({
+    "selected-project": { type: "local", projectId: "local-project" },
+  }), []);
+  assert.deepEqual(findCodexDesktopLocalRouterConflicts({}), []);
 });
 
 test("requires the exact router health identity", () => {

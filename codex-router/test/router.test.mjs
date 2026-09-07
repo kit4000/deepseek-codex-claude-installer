@@ -28,6 +28,7 @@ const config = {
     models: [{
       id: "deepseek-v4-flash",
       displayName: "DeepSeek V4 Flash",
+      priority: 0,
       contextWindow: 1048576,
       defaultReasoningEffort: "high",
       supportsReasoningSummaries: false,
@@ -705,6 +706,7 @@ test("merges external models into the ModelsCache wrapper", () => {
   assert.deepEqual(Object.keys(merged).sort(), ["client_version", "etag", "fetched_at", "models"]);
   assert.equal(merged.models[1].slug, "deepseek/deepseek-v4-flash");
   assert.equal(merged.models[1].display_name, "DeepSeek V4 Flash");
+  assert.equal(merged.models[1].priority, 0);
   assert.equal(merged.models[1].service_tiers, undefined);
   assert.equal(merged.models[1].upgrade, undefined);
   assert.deepEqual(merged.models[1].additional_speed_tiers, []);
@@ -808,6 +810,23 @@ base_url = "http://127.0.0.1:8001/v1"
     routes: config.routes,
     profile: { name: "deepseek", model: "deepseek/deepseek-v4-flash" },
   }), patched);
+});
+
+test("sets the configured external default and disables migration", () => {
+  const patched = patchCodexConfig(`model = "gpt-6-astra"
+
+[features]
+external_migration = true
+`, {
+    catalogPath: "/tmp/catalog.json",
+    routerBaseUrl: "http://127.0.0.1:10100/v1",
+    routes: config.routes,
+    defaultModel: "deepseek/deepseek-v4-flash",
+    disableExternalMigration: true,
+  });
+  assert.match(patched, /^# Managed by[\s\S]*model = "deepseek\/deepseek-v4-flash"/);
+  assert.doesNotMatch(patched, /model = "gpt-6-astra"/);
+  assert.match(patched, /\[features\][\s\S]*external_migration = false/);
 });
 
 test("adds the compression feature table when it is absent", () => {
