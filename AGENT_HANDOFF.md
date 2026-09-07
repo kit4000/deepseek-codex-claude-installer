@@ -43,12 +43,29 @@ Keychain資格情報から導出した鍵でルーターが復号し、平文の
 これにより、DeepSeekからGPT-5.6 Solなどへ切り替えた際の
 `invalid_encrypted_content`／`Encrypted content could not be decrypted or parsed` を防ぎます。
 
+### native GPT の remote compact（GPT-6 Astra）
+
+Codex Desktop が `gpt-6-astra` などの native GPT で `/v1/responses/compact` を呼ぶとき、
+ChatGPT 上流の compact API は 404 です。ルーターは次を行います。
+
+1. 上流 compact へは `stream: true` と `store: false` を付ける。これが無いと
+   `Stream must be set to true` や `Store must be set to false` で失敗する。
+2. 404 のときだけ通常の `/responses` 要約ターンへフォールバックする。
+3. Astra は本文を `response.output_text.done` などに出し、
+   `response.completed.output` は空のことがある。ストリーム側から要約を拾う。
+4. Codex へは JSON の Responses オブジェクトを返す。`output` はルーター密封の
+   `compaction` 1件だけ。SSE（`event:`）のまま返すと
+   `stream disconnected before completion: expected value at line 1 column 1` になる。
+5. 秘密が不要な通常の GPT 要求では Keychain を読まない。ローカルの
+   router-sealed compaction を復号するとき、または 404 フォールバック結果を
+   密封するときだけ読む。
+
 ### DeepSeek経路の remote compact と tool call 正規化
 
 Codex Desktop が DeepSeek V4 Flash を使うとき、ルーターは次を行います。
 
 1. `/v1/responses/compact` を DeepSeek の通常 Responses 要約へマップし、結果を
-   ルーター密封の `compaction` へ戻す。
+   ルーター密封の JSON `compaction` へ戻す。
 2. OpenAI 専用の `encrypted_content` と平文のない `agent_message` を除去する。
 3. Codex の `custom_tool_call` / `custom_tool_call_output`（`apply_patch`、`exec` など）と
    `local_shell_call` 系を、DeepSeek が受け付ける `function_call` /
@@ -57,6 +74,7 @@ Codex Desktop が DeepSeek V4 Flash を使うとき、ルーターは次を行�
 これにより次の実行時エラーを防ぎます。
 
 - `Error running remote compact task: ... Encrypted function output content could not be decrypted or decoded`
+- `Error running remote compact task: stream disconnected before completion: expected value at line 1 column 1`
 - `No tool call found for tool output with call_id ...`
 
 加えて、MultiAgent V2 が `encrypted_content` に平文ステータス文を入れてしまった履歴では、
@@ -214,6 +232,9 @@ clone 内容を照合できます。これが失敗したコピーは実行し�
 - native GPTでルーター製コンパクションだけを復元するテスト
 - ChatGPT製暗号項目を温存するテスト
 - コンパクションがなければ秘密を要求しないテスト
+- native ChatGPT compact で stream/store を強制するテスト
+- completed.output が空でも要約を拾うテスト
+- Codex compact クライアントへ JSON を返すテスト
 - Claude 4.6 / 4.8 / 4.7エイリアスとFable／Opus 5温存テスト
 
 `preflight` の `fail` は一件でも停止条件です。未保存キーと、未起動の10102ルーターは
@@ -257,6 +278,8 @@ ASAR再パック領域が不足する場合は停止します。古いバック�
 1. Codex Desktopを完全終了して再起動。
 2. 既存タスクが見え、GPTモデルとDeepSeekモデルが共存することを確認。
 3. 既存タスクをGPT→DeepSeek→GPTと切り替え、暗号化コンパクションエラーがないことを確認。
+   GPT-6 Astra の長いスレッドでは remote compact が
+   `Stream must be set to true` や `expected value at line 1 column 1` にならないこと。
 4. 両方のClaudeを完全終了し、`/Applications/Claude.app` を開く。
 5. `Claude Safe Storage` の確認へログインパスワードを入力し「常に許可」を選ぶ。
 6. Codeタブの一覧でFable 5とOpus 4.8とOpus 5が残り、DeepSeek Pro／Flashが 4.6 枠にあることを確認。
@@ -287,6 +310,7 @@ Codexは `deepseek/deepseek-v4-flash` を `max` で呼び `ROUTER_OK` を、Clau
 - 10100と10102が期待するルーターとして応答。
 - 再起動後もCodex純正GPT／DeepSeek、Claude純正／DeepSeekが共存。
 - GPT復帰時に暗号化コンパクションエラーが再発しない。
+- GPT-6 Astra の remote compact が JSON で成功し、`expected value at line 1 column 1` にならない。
 - ClaudeでFable 5とOpus 4.8とOpus 5を失わず、4.6枠のPro／Flashを選択可能。
 - `~/Applications/Claude Official.app` の署名対象ファイルを一切変更していない。
 - `/Applications/Claude.app` が Hybrid マーカー、表示名 `Claude`、自動更新無効を持つ。

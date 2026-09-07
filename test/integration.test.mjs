@@ -14,6 +14,12 @@ test("native GPT restores only router-sealed compactions", async () => {
   assert.match(tests, /restores router-sealed summaries for native GPT requests/);
   assert.match(tests, /keeps ChatGPT-encrypted compactions untouched for native GPT requests/);
   assert.match(tests, /does not require a compaction secret for native requests without local compactions/);
+  assert.match(tests, /forces stream and disables store for native ChatGPT compact requests/);
+  assert.match(tests, /normalizes string input for native compaction fallback/);
+  assert.match(tests, /adapts ChatGPT compact fallback SSE when completed\.output is empty/);
+  assert.match(tests, /returns a JSON compaction response for Codex compact clients/);
+  assert.match(library, /options\.compactEndpoint \|\| options\.nativeCompactionFallback/);
+  assert.match(library, /function summaryFromEvents/);
 });
 
 test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () => {
@@ -29,13 +35,20 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   assert.match(library, /externalUpstreamPath/);
   assert.match(router, /compactEndpoint/);
   assert.match(router, /externalUpstreamPath\(pathname, selection\)/);
+  assert.match(router, /adaptCompactionJson/);
   assert.match(tests, /maps Codex custom_tool_call pairs onto DeepSeek function_call pairs/);
   assert.match(tests, /strips OpenAI encrypted function outputs and agent_message before DeepSeek/);
   assert.match(tests, /maps \/responses\/compact onto a DeepSeek text-only summary turn/);
   assert.match(tests, /repairs MultiAgent V2 plaintext stored as encrypted_content for native GPT/);
   assert.match(handoff, /No tool call found for tool output with call_id/);
   assert.match(handoff, /Encrypted function output content could not be decrypted or decoded/);
+  assert.match(handoff, /expected value at line 1 column 1/);
+  assert.match(handoff, /native GPT の remote compact（GPT-6 Astra）/);
   assert.match(handoff, /MultiAgent V2/);
+  const routerReadme = await readFile(resolve(codexRoot, "README.md"), "utf8");
+  assert.match(routerReadme, /JSON の Responses オブジェクト/);
+  const rootReadme = await readFile(resolve(projectRoot, "README.md"), "utf8");
+  assert.match(rootReadme, /GPT-6 Astra など native GPT の remote compact/);
 });
 
 test("Claude Hybrid uses 4.6 DeepSeek slots and keeps newer Claude native", async () => {

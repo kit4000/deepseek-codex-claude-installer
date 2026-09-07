@@ -12,7 +12,7 @@ import {
   responsesToChatCompletions,
 } from "./chat-completions.mjs";
 import {
-  adaptCompactionSse,
+  adaptCompactionJson,
   externalUpstreamPath,
   forwardRequestHeaders,
   forwardResponseHeaders,
@@ -99,11 +99,11 @@ async function handleProxy(request, response, pathname) {
   }
   const baseUrl = selection.kind === "native" ? config.native.baseUrl : selection.route.baseUrl;
   const compactEndpoint = isCompactEndpoint(pathname);
-  // DeepSeek has no /responses/compact endpoint; map it onto /v1/responses and
-  // adapt the SSE into a single Codex compaction item after the call.
+  // DeepSeek and GPT-6 Astra have no /responses/compact endpoint; map it onto
+  // /v1/responses and return a JSON compaction item after the call.
   const incomingUrl = new URL(request.url, "http://127.0.0.1");
   const chatWire = selection.kind === "external" && selection.route.wireApi === "chat";
-  const targetUrl = selection.kind === "external"
+  let targetUrl = selection.kind === "external"
     ? upstreamUrl(baseUrl, `${externalUpstreamPath(pathname, selection)}${incomingUrl.search}`)
     : upstreamUrl(baseUrl, request.url);
   const resolvedToken = selection.kind === "external" ? keychainToken(selection.route.auth) : undefined;
@@ -115,10 +115,11 @@ async function handleProxy(request, response, pathname) {
       },
     });
   }
+  const nativeCompaction = selection.kind === "native" && compactEndpoint;
   let compactionSecret = resolvedToken;
   if (!compactionSecret) {
     const needsLocalSecret = hasLocalCompaction(parsedBody?.input)
-      || (chatWire && compactEndpoint);
+      || (compactEndpoint && selection.kind === "external");
     if (needsLocalSecret) {
       const compactionAuth = config.routes.find((route) => route.auth?.mode === "bearer_keychain")?.auth;
       compactionSecret = keychainToken(compactionAuth);
@@ -146,10 +147,10 @@ async function handleProxy(request, response, pathname) {
       keepAlive: selection.route.keepAlive,
     });
   }
-  const adaptCompaction = isRemoteCompactionV2Request(parsedBody, selection, { compactEndpoint });
+  let adaptCompaction = isRemoteCompactionV2Request(parsedBody, selection, { compactEndpoint });
   const headers = forwardRequestHeaders(request.headers, selection, process.env, resolvedToken);
   headers.set("content-type", "application/json");
-  const payload = JSON.stringify(rewrittenBody);
+  let payload = JSON.stringify(rewrittenBody);
 
   // Local chat upstreams (Ollama) may take minutes of prompt evaluation before
   // the first byte. Open the SSE early and send keep-alive comments so the
@@ -188,6 +189,27 @@ async function handleProxy(request, response, pathname) {
       signal: AbortSignal.timeout(selection.route.timeoutMs ?? 300_000),
       redirect: "manual",
     });
+    if (nativeCompaction && upstream.status === 404) {
+      if (!compactionSecret) {
+        const compactionAuth = config.routes.find((route) => route.auth?.mode === "bearer_keychain")?.auth;
+        compactionSecret = keychainToken(compactionAuth);
+      }
+      await upstream.arrayBuffer();
+      targetUrl = upstreamUrl(baseUrl, `/v1/responses${incomingUrl.search}`);
+      rewrittenBody = rewriteRequestBody(parsedBody, selection, {
+        compactionSecret,
+        nativeCompactionFallback: true,
+      });
+      payload = JSON.stringify(rewrittenBody);
+      adaptCompaction = true;
+      upstream = await fetch(targetUrl, {
+        method: request.method,
+        headers,
+        body: payload,
+        signal: AbortSignal.timeout(selection.route.timeoutMs ?? 300_000),
+        redirect: "manual",
+      });
+    }
   } catch (error) {
     const routeName = selection.kind === "native" ? "native" : selection.route.namespace;
     // Do not include bodies, credentials, or full upstream URLs in logs.
@@ -230,17 +252,16 @@ async function handleProxy(request, response, pathname) {
           model: parsedBody.model,
         })))
         : upstream.text());
-      const adapted = adaptCompactionSse(upstreamPayload, compactionSecret);
-      const responseHeaders = forwardResponseHeaders(upstream.headers);
-      delete responseHeaders["content-length"];
-      responseHeaders["content-type"] = "text/event-stream; charset=utf-8";
-      response.writeHead(upstream.status, responseHeaders);
-      return response.end(adapted);
+      // Codex compact (/responses/compact) consumes a JSON Responses object.
+      // SSE makes the client fail with "stream disconnected ... expected value
+      // at line 1 column 1" because it tries to parse `event:` as JSON.
+      return sendJson(response, 200, adaptCompactionJson(upstreamPayload, compactionSecret));
     } catch (error) {
-      console.error(`[router] external compaction adaptation failed: ${error.name}`);
+      const routeName = selection.kind === "native" ? "ChatGPT" : selection.route.namespace;
+      console.error(`[router] ${routeName} compaction adaptation failed: ${error.name}: ${error.message}`);
       return sendJson(response, 502, {
         error: {
-          message: "DeepSeek returned an invalid compaction response",
+          message: `${routeName} returned an invalid compaction response`,
           type: "external_compaction_failed",
         },
       });
