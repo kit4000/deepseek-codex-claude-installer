@@ -106,7 +106,7 @@ prefer-claude-hybrid           # ランチャーが純正を選ぶ場合
 
 アンカー不一致時は停止が正常です。近似パッチせず、Official ASAR から
 `patchFile` / `modelLabelPatchFile` を取り直し、`patchVersion` を上げてから再実行します。
-現行確認済み: Claude `1.44121.0` / Hybrid patch `2026-09-02.1`。詳細は
+現行確認済み: Claude `1.46388.4` / Hybrid patch `2026-09-07.1`。詳細は
 `CHANGE_SPEC-claude-app-layout-and-updates.md` §5。
 
 Codexには `claude-hybrid-update`、`deepseek-v4-delegation`、`cursor-cli-delegation`、
