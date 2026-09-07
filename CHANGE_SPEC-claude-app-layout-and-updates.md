@@ -341,15 +341,16 @@ prefer-claude-hybrid
 | 1.28929.0 | 2026-08-18.2 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 | 1.28929.0 | 2026-08-18.3 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 | 1.44121.0 | 2026-09-02.1 | `index.chunk-CjUl9Ys6.js` | `index.chunk-CjUl9Ys6.js` | `B` |
+| 1.46388.4 | 2026-09-07.1 | `index.chunk-CMJVFTis.js` | `index.chunk-CMJVFTis.js` | `B` |
 
-現行（1.44121.0 / 2026-09-02.1）:
+現行（1.46388.4 / 2026-09-07.1）:
 
 ```text
-patchFile: /.vite/build/index.chunk-CjUl9Ys6.js
+patchFile: /.vite/build/index.chunk-CMJVFTis.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-CjUl9Ys6.js
-modelLabelPatchFrom: function Fge(e){return B=new o.WebContentsView(e),oi(B.webContents,ai.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}
-patchVersion: 2026-09-02.1
+modelLabelPatchFile: /.vite/build/index.chunk-CMJVFTis.js
+modelLabelPatchFrom: function qge(e){return B=new o.WebContentsView(e),ri(B.webContents,ni.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}
+patchVersion: 2026-09-07.1
 ```
 
 2026-08-18.3 はアンカー位置は変えず、Remote Control 用 `ANTHROPIC_UNIX_SOCKET` を残したまま
