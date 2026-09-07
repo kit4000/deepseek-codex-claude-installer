@@ -129,6 +129,10 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   assert.equal(config.app.patchVersion, "2026-09-07.1");
   assert.equal(config.app.patchFile, "/.vite/build/index.chunk-CMJVFTis.js");
   assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-CMJVFTis.js");
+  assert.equal(
+    config.app.modelLabelPatchFrom,
+    "function qge(e){return B=new o.WebContentsView(e),ri(B.webContents,ni.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}",
+  );
   assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
   assert.match(changeSpec, /実証済みアップデートパターン/);
   assert.match(changeSpec, /1\.28929\.0/);
