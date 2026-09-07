@@ -15,6 +15,7 @@ test("native GPT restores only router-sealed compactions", async () => {
   assert.match(tests, /keeps ChatGPT-encrypted compactions untouched for native GPT requests/);
   assert.match(tests, /does not require a compaction secret for native requests without local compactions/);
   assert.match(tests, /forces stream and disables store for native ChatGPT compact requests/);
+  assert.match(tests, /normalizes string input for native compaction fallback/);
   assert.match(tests, /adapts ChatGPT compact fallback SSE when completed\.output is empty/);
   assert.match(tests, /returns a JSON compaction response for Codex compact clients/);
   assert.match(library, /options\.compactEndpoint \|\| options\.nativeCompactionFallback/);

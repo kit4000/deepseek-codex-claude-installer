@@ -156,6 +156,23 @@ test("prepares a native compaction fallback as a text-only summary turn", () => 
   assert.equal(rewritten.stream, true);
 });
 
+test("normalizes string input for native compaction fallback", () => {
+  const selection = selectRoute("gpt-6-astra", config);
+  const rewritten = rewriteRequestBody({
+    model: "gpt-6-astra",
+    input: "Long GPT session history.",
+    tools: [{ type: "function", name: "shell" }],
+    store: true,
+  }, selection, { nativeCompactionFallback: true });
+  assert.equal(rewritten.input[0].type, "message");
+  assert.equal(rewritten.input[0].role, "user");
+  assert.equal(rewritten.input[0].content[0].text, "Long GPT session history.");
+  assert.match(rewritten.input.at(-1).content[0].text, /CONTEXT CHECKPOINT COMPACTION/);
+  assert.deepEqual(rewritten.tools, []);
+  assert.equal(rewritten.store, false);
+  assert.equal(rewritten.stream, true);
+});
+
 test("forces stream and disables store for native ChatGPT compact requests", () => {
   const selection = selectRoute("gpt-6-astra", config);
   const body = {

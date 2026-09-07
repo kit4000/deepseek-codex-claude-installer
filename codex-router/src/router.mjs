@@ -189,6 +189,27 @@ async function handleProxy(request, response, pathname) {
       signal: AbortSignal.timeout(selection.route.timeoutMs ?? 300_000),
       redirect: "manual",
     });
+    if (nativeCompaction && upstream.status === 404) {
+      if (!compactionSecret) {
+        const compactionAuth = config.routes.find((route) => route.auth?.mode === "bearer_keychain")?.auth;
+        compactionSecret = keychainToken(compactionAuth);
+      }
+      await upstream.arrayBuffer();
+      targetUrl = upstreamUrl(baseUrl, `/v1/responses${incomingUrl.search}`);
+      rewrittenBody = rewriteRequestBody(parsedBody, selection, {
+        compactionSecret,
+        nativeCompactionFallback: true,
+      });
+      payload = JSON.stringify(rewrittenBody);
+      adaptCompaction = true;
+      upstream = await fetch(targetUrl, {
+        method: request.method,
+        headers,
+        body: payload,
+        signal: AbortSignal.timeout(selection.route.timeoutMs ?? 300_000),
+        redirect: "manual",
+      });
+    }
   } catch (error) {
     const routeName = selection.kind === "native" ? "native" : selection.route.namespace;
     // Do not include bodies, credentials, or full upstream URLs in logs.
@@ -204,27 +225,6 @@ async function handleProxy(request, response, pathname) {
     }
     return sendJson(response, 502, {
       error: { message: `${routeName} model upstream is unavailable`, type: "upstream_unavailable" },
-    });
-  }
-  if (nativeCompaction && upstream.status === 404) {
-    if (!compactionSecret) {
-      const compactionAuth = config.routes.find((route) => route.auth?.mode === "bearer_keychain")?.auth;
-      compactionSecret = keychainToken(compactionAuth);
-    }
-    await upstream.arrayBuffer();
-    targetUrl = upstreamUrl(baseUrl, `/v1/responses${incomingUrl.search}`);
-    rewrittenBody = rewriteRequestBody(parsedBody, selection, {
-      compactionSecret,
-      nativeCompactionFallback: true,
-    });
-    payload = JSON.stringify(rewrittenBody);
-    adaptCompaction = true;
-    upstream = await fetch(targetUrl, {
-      method: request.method,
-      headers,
-      body: payload,
-      signal: AbortSignal.timeout(selection.route.timeoutMs ?? 300_000),
-      redirect: "manual",
     });
   }
   stopKeepAlive();

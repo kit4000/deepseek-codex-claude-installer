@@ -484,6 +484,13 @@ export function rewriteRequestBody(body, selection, options = {}) {
     // untouched; MultiAgent V2 plaintext-in-encrypted_content blobs are
     // repaired so remote compact / parent turns do not 400.
     rewritten.input = rewriteLocalCompactions(rewritten.input, options.compactionSecret);
+    if (options.nativeCompactionFallback && typeof rewritten.input === "string") {
+      rewritten.input = [{
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: rewritten.input }],
+      }];
+    }
     if (Array.isArray(rewritten.input)) {
       rewritten.input = rewritten.input.flatMap((item) => repairNativeInputItem(item));
       if (options.nativeCompactionFallback

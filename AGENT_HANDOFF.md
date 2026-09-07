@@ -56,7 +56,9 @@ ChatGPT 上流の compact API は 404 です。ルーターは次を行います
 4. Codex へは JSON の Responses オブジェクトを返す。`output` はルーター密封の
    `compaction` 1件だけ。SSE（`event:`）のまま返すと
    `stream disconnected before completion: expected value at line 1 column 1` になる。
-5. 通常の GPT 要求では Keychain を読まない。404 フォールバックで密封するときだけ読む。
+5. 秘密が不要な通常の GPT 要求では Keychain を読まない。ローカルの
+   router-sealed compaction を復号するとき、または 404 フォールバック結果を
+   密封するときだけ読む。
 
 ### DeepSeek経路の remote compact と tool call 正規化
 
