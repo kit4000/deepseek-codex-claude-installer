@@ -24,28 +24,13 @@
           "id": "deepseek-v4-flash",
           "displayName": "DeepSeek V4 Flash (Official API)",
           "description": "DeepSeek V4 Flash through the official stateless Responses API.",
+          "priority": 0,
           "contextWindow": 1048576,
           "defaultReasoningEffort": "high",
           "supportsReasoningSummaries": false,
           "supportsParallelToolCalls": true,
           "reasoningEfforts": [
             "low",
-            "high",
-            "max"
-          ],
-          "inputModalities": [
-            "text"
-          ]
-        },
-        {
-          "id": "deepseek-v4-pro",
-          "displayName": "DeepSeek V4 Pro (Responses API pending)",
-          "description": "DeepSeek V4 Pro prepared for the official Responses API; upstream Codex support is not enabled yet.",
-          "contextWindow": 1048576,
-          "defaultReasoningEffort": "high",
-          "supportsReasoningSummaries": false,
-          "supportsParallelToolCalls": true,
-          "reasoningEfforts": [
             "high",
             "max"
           ],
@@ -89,6 +74,8 @@
     }
   ],
   "configMigration": {
+    "defaultModel": "deepseek/deepseek-v4-flash",
+    "disableExternalMigration": true,
     "profile": {
       "name": "deepseek",
       "model": "deepseek/deepseek-v4-flash"

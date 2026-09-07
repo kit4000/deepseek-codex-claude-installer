@@ -24,9 +24,17 @@ export function validateRouterForHandoff(config) {
   requireCondition(route.auth?.mode === "bearer_keychain", "DeepSeek credential must come from macOS Keychain");
   requireCondition(route.auth?.service === DEEPSEEK_KEYCHAIN.service, "Unexpected DeepSeek Keychain service");
   requireCondition(route.auth?.account === DEEPSEEK_KEYCHAIN.account, "Unexpected DeepSeek Keychain account");
-  requireCondition(route.models?.some((entry) => entry.id === "deepseek-v4-flash"), "DeepSeek V4 Flash is missing");
+  const flash = route.models?.find((entry) => entry.id === "deepseek-v4-flash");
+  requireCondition(flash, "DeepSeek V4 Flash is missing");
+  requireCondition(flash.priority === 0, "DeepSeek V4 Flash must have priority 0 so Codex marks it as default");
+  requireCondition(
+    !route.models.some((entry) => /pending|not enabled/i.test(`${entry.displayName ?? ""} ${entry.description ?? ""}`)),
+    "Pending DeepSeek models must not be exposed in the Codex picker",
+  );
   requireCondition(!config.configMigration?.removeSections, "Handoff config must not remove unrelated Codex sections");
   requireCondition(config.configMigration?.profile?.model === "deepseek/deepseek-v4-flash", "Unexpected DeepSeek Codex profile");
+  requireCondition(config.configMigration?.defaultModel === "deepseek/deepseek-v4-flash", "Unexpected default Codex model");
+  requireCondition(config.configMigration?.disableExternalMigration === true, "External model migration must be disabled");
   return config;
 }
 
@@ -71,8 +79,13 @@ function tableTomlValue(source, tableName, key) {
   return undefined;
 }
 
-export function inspectCodexConfig(source, { catalogPath, routerBaseUrl = CODEX_ROUTER_BASE_URL }) {
-  return [
+export function inspectCodexConfig(source, {
+  catalogPath,
+  routerBaseUrl = CODEX_ROUTER_BASE_URL,
+  defaultModel,
+  requireExternalMigrationDisabled = false,
+}) {
+  const checks = [
     {
       name: "Codex provider identity",
       ok: rootTomlValue(source, "model_provider") === "openai",
@@ -94,6 +107,27 @@ export function inspectCodexConfig(source, { catalogPath, routerBaseUrl = CODEX_
       expected: false,
     },
   ];
+  if (defaultModel) {
+    checks.push({
+      name: "Codex default model",
+      ok: rootTomlValue(source, "model") === defaultModel,
+      expected: defaultModel,
+    });
+  }
+  if (requireExternalMigrationDisabled) {
+    checks.push({
+      name: "Codex external migration",
+      ok: tableTomlValue(source, "features", "external_migration") === false,
+      expected: false,
+    });
+  }
+  return checks;
+}
+
+export function findCodexDesktopLocalRouterConflicts(state) {
+  const findings = [];
+  if (state?.["selected-project"]?.type === "remote") findings.push("selected-project:remote");
+  return findings;
 }
 
 export function inspectRouterHealth(health, expectedRoutes = ["deepseek"]) {

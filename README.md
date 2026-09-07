@@ -73,6 +73,20 @@ GPT-6 Astra などの新しいネイティブモデルを、DeepSeek / Qwen の�
 `base_instructions` と `supports_parallel_tool_calls` が新しいキャッシュに無い場合も、
 `model_messages.instructions_template` などから自動補完します。
 
+DeepSeek V4 Flash は `priority: 0` として生成し、Codex app-server の `model/list` で
+`isDefault: true` になるようにします。未提供の Responses API や `pending` と明記されたモデルは
+メインピッカーへ載せません。ローカルルーターはリモート SSH ホストから利用できないため、
+Codex Desktop でリモートプロジェクトが選択されている場合、`handoff:verify` は失敗します。
+左側のプロジェクト選択をローカルへ戻してから、新しい会話で確認してください。
+
+再発確認では、モデル名の表示だけでなく、次をすべて満たす必要があります。
+
+1. `~/.codex/config.toml` が `model = "deepseek/deepseek-v4-flash"` かつ
+   `external_migration = false`。
+2. `model/list` が DeepSeek を `isDefault: true` として返す。
+3. Desktop ログの `thread/start` が `hostId=local`。
+4. `127.0.0.1:10100/v1/responses` が DeepSeek の完了応答を返す。
+
 特定のリポジトリだけ GPT-6 Astra を既定モデルにする場合は、そのリポジトリのルートで
 次を一度だけ実行します。全リポジトリ共通の `~/.codex/config.toml` は変更しません。
 

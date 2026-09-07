@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { validateClaudeConfig } from "../src/claude-config.mjs";
 import {
   CODEX_ROUTER_BASE_URL,
+  findCodexDesktopLocalRouterConflicts,
   findGlobalClaudeDeepSeekSettings,
   findShellDeepSeekExports,
   inspectCodexConfig,
@@ -53,8 +54,12 @@ await verify("router source configuration", async () => {
 
 await verify("Codex root configuration", async () => {
   const source = await readFile(resolve(codexHome, "config.toml"), "utf8");
-  const failed = inspectCodexConfig(source, { catalogPath, routerBaseUrl: CODEX_ROUTER_BASE_URL })
-    .filter((entry) => !entry.ok);
+  const failed = inspectCodexConfig(source, {
+    catalogPath,
+    routerBaseUrl: CODEX_ROUTER_BASE_URL,
+    defaultModel: "deepseek/deepseek-v4-flash",
+    requireExternalMigrationDisabled: true,
+  }).filter((entry) => !entry.ok);
   if (failed.length > 0) throw new Error(`Unexpected settings: ${failed.map((entry) => entry.name).join(", ")}`);
   return "openai provider identity, merged catalog, loopback router, and uncompressed requests";
 });
@@ -62,13 +67,25 @@ await verify("Codex root configuration", async () => {
 await verify("merged Codex model catalog", async () => {
   const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
   if (!Array.isArray(catalog.models) || catalog.models.length === 0) throw new Error("Model catalog is empty");
-  if (!catalog.models.some((entry) => entry.slug === "deepseek/deepseek-v4-flash")) {
-    throw new Error("DeepSeek V4 Flash is missing from the Codex model catalog");
+  const flash = catalog.models.find((entry) => entry.slug === "deepseek/deepseek-v4-flash");
+  if (!flash) throw new Error("DeepSeek V4 Flash is missing from the Codex model catalog");
+  if (flash.priority !== 0) throw new Error("DeepSeek V4 Flash must have priority 0");
+  if (catalog.models.some((entry) => /pending|not enabled/i.test(`${entry.display_name ?? ""} ${entry.description ?? ""}`))) {
+    throw new Error("Pending models must not be exposed in the Codex model catalog");
   }
   if (!catalog.models.some((entry) => !entry.slug?.startsWith("deepseek/"))) {
     throw new Error("Native Codex models are missing from the merged catalog");
   }
   return `${catalog.models.length} models including native and DeepSeek entries`;
+});
+
+await verify("Codex Desktop execution target", async () => {
+  const state = JSON.parse(await readFile(resolve(codexHome, ".codex-global-state.json"), "utf8"));
+  const conflicts = findCodexDesktopLocalRouterConflicts(state);
+  if (conflicts.length > 0) {
+    throw new Error("A remote project is selected; choose a local project before using the local DeepSeek router");
+  }
+  return "selected project is local or unset";
 });
 
 await verify("DeepSeek Codex profile", async () => {
@@ -79,12 +96,21 @@ await verify("DeepSeek Codex profile", async () => {
   return "managed profile present";
 });
 
-await verify("LaunchAgent", async () => {
-  const path = resolve(home, "Library/LaunchAgents/com.local.codex-native-model-router.plist");
-  const source = await readFile(path, "utf8");
-  if (!source.includes(resolve(projectRoot, "src/router.mjs"))) throw new Error("LaunchAgent points to a different bundle path");
-  if (!source.includes(resolve(projectRoot, "router-config.json"))) throw new Error("LaunchAgent points to a different router config");
-  return path;
+await verify("automatic router startup", async () => {
+  const launchAgentPath = resolve(home, "Library/LaunchAgents/com.local.codex-native-model-router.plist");
+  const source = await optionalText(launchAgentPath);
+  if (source !== undefined) {
+    if (!source.includes(resolve(projectRoot, "src/router.mjs"))) throw new Error("LaunchAgent points to a different bundle path");
+    if (!source.includes(resolve(projectRoot, "router-config.json"))) throw new Error("LaunchAgent points to a different router config");
+    return launchAgentPath;
+  }
+
+  const appInfoPath = resolve(home, "Applications/Codex Native Model Router.app/Contents/Info.plist");
+  const appInfo = await readFile(appInfoPath, "utf8");
+  if (!appInfo.includes("com.local.codex-native-model-router")) throw new Error("Router app has an unexpected bundle identifier");
+  if (!appInfo.includes("NSLocalNetworkUsageDescription")) throw new Error("Router app is missing its local network permission description");
+  await access(resolve(home, ".local/bin/codex-router-watchdog.sh"), constants.R_OK | constants.X_OK);
+  return resolve(home, "Applications/Codex Native Model Router.app");
 });
 
 await verify("router health", async () => {

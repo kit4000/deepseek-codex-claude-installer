@@ -69,16 +69,18 @@ npm run smoke -- deepseek/deepseek-v4-flash max
 
 インストーラーは先にカタログと LaunchAgent を準備し、`/healthz` 成功後に
 `~/.codex/config.toml` をタイムスタンプ付きでバックアップします。その後だけ、ルート直下へ
-次の3キーを設定します。
+次の4キーを設定します。
 
 ```toml
 model_provider = "openai"
 model_catalog_json = "/Users/.../.codex/model-catalogs/native-plus-external.json"
 openai_base_url = "http://127.0.0.1:10100/v1"
+model = "deepseek/deepseek-v4-flash"
 ```
 
 CodexのHTTPリクエスト圧縮はループバックルーターでは不要なため、インストーラーは
-`[features] enable_request_compression = false`も設定します。DeepSeek用CLIプロファイルは
+`[features] enable_request_compression = false` と `external_migration = false` も設定します。
+DeepSeek用CLIプロファイルは
 現行Codex形式の`~/.codex/deepseek.config.toml`へ分離します。
 
 タスクDBやスレッドの provider id は読み書きしません。外部モデルを増やしたら
@@ -90,6 +92,17 @@ CodexのHTTPリクエスト圧縮はループバックルーターでは不要�
 `supports_parallel_tool_calls` はネイティブモデルでは未指定時に `true` を補完し、外部モデルでは
 `router-config.json` の `supportsParallelToolCalls` だけを参照します。外部モデルで未指定の場合は
 `false` になります。
+
+DeepSeek V4 Flash は `priority: 0` を明示し、生成後の `model/list` で `isDefault: true` にします。
+Codex Desktop の簡易モデル選択は選択後に `isDefault` モデルへ状態を戻すため、この値が欠けると
+DeepSeek を選択できても GPT-6 Astra へ戻ります。`pending` または `not enabled` と記載された
+未対応モデルは、API 実装が完了するまでメインピッカーへ追加しません。
+
+また `127.0.0.1:10100` はこの Mac だけのアドレスです。新しい会話の選択プロジェクトが
+リモート SSH の場合、そのホストのモデル一覧が使われるためローカル DeepSeek は選べません。
+`npm run handoff:verify` が `A remote project is selected` と報告したら、Codex Desktop の
+プロジェクト選択をローカルへ戻し、アプリの補助プロセスも含めて完全終了してから再起動します。
+リモート接続情報や既存スレッドを削除して解決しません。
 
 特定リポジトリだけ GPT-6 Astra を既定モデルにする場合は、そのリポジトリの
 `.codex/config.toml` に次を置きます。これはインストーラーが全リポジトリの既定モデルを

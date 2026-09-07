@@ -701,7 +701,7 @@ function cloneExternalModel(template, route, model, priority) {
   entry.slug = `${route.namespace}/${model.id}`;
   entry.display_name = displayName;
   entry.description = model.description ?? `${displayName} routed through ${route.name ?? route.namespace}.`;
-  entry.priority = priority;
+  entry.priority = model.priority ?? priority;
   entry.visibility = "list";
   entry.supported_in_api = true;
   entry.context_window = model.contextWindow ?? entry.context_window;
@@ -825,6 +825,7 @@ export function patchCodexConfig(source, options) {
   const firstTable = lines.findIndex((line) => /^\s*\[/.test(line));
   const rootEnd = firstTable === -1 ? lines.length : firstTable;
   const rootKeys = new Set(["model_provider", "model_catalog_json", "openai_base_url"]);
+  if (options.defaultModel) rootKeys.add("model");
   const root = lines.slice(0, rootEnd).filter((line) => {
     if (line.trim() === "# Managed by codex-native-model-router. Keep the built-in provider identity.") {
       return false;
@@ -848,10 +849,15 @@ export function patchCodexConfig(source, options) {
     'model_provider = "openai"',
     `model_catalog_json = ${tomlString(options.catalogPath)}`,
     `openai_base_url = ${tomlString(options.routerBaseUrl)}`,
+    ...(options.defaultModel ? [`model = ${tomlString(options.defaultModel)}`] : []),
     "",
   ];
-  const patched = [...managed, ...root, "", ...rest]
+  let patched = [...managed, ...root, "", ...rest]
     .join("\n")
     .replace(/\n{3,}/g, "\n\n");
-  return setTomlTableKey(patched, "features", "enable_request_compression", "false");
+  patched = setTomlTableKey(patched, "features", "enable_request_compression", "false");
+  if (options.disableExternalMigration) {
+    patched = setTomlTableKey(patched, "features", "external_migration", "false");
+  }
+  return patched;
 }

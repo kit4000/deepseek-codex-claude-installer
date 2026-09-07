@@ -166,7 +166,9 @@ claude-deepseek --deepseek-print-config
 
 - `handoff:verify` の最上位 `ok` が `true`。
 - Codex の `model_provider` は引き続き組み込みの `openai`。
-- 合成カタログにネイティブモデルと `deepseek/deepseek-v4-flash` の両方がある。
+- 合成カタログにネイティブモデルと `deepseek/deepseek-v4-flash` の両方があり、Flash の `priority` は `0`。
+- `~/.codex/config.toml` の既定モデルが Flash で、`external_migration = false`。
+- Codex Desktop の選択プロジェクトがローカルまたは未選択であり、リモートなら検証が明示的に失敗する。
 - `/healthz` は `provider: openai` と `routes: ["deepseek", ...]` を返す。
 - `claude-deepseek --deepseek-print-config` は公式 URL、選択モデル、`credential.available: true` を表示するが、API キー値は表示しない。
 - `sessionStore` は既存の場所のままであり、通常の `claude` は従来の provider のまま。
@@ -175,17 +177,18 @@ claude-deepseek --deepseek-print-config
 
 ## 8. Codex Desktop の再起動と UI 受け入れ確認
 
-1. Codex Desktop を完全終了し、再度起動する。
-2. 既存のタスクを1件開き、履歴が残り、従来のネイティブモデルで継続できることを確認する。
-3. 新しいテスト用タスクを開き、モデル一覧にネイティブモデルと `DeepSeek V4 Flash (Official API)` が両方あることを確認する。
-4. Flash を選び、進捗更新が3回以上発生する少し長めのタスクを実行する。
-5. 生成中に表示が先頭へ飛ばず、最新の進捗を追えることを確認する。
-6. 進捗、最終回答、ツール呼び出しが残り、巨大な生の推論ブロックが挿入されないことを確認する。
-7. 生成後、同じタスクをネイティブモデルへ戻して継続できることを確認する。
+1. Codex Desktop のメインと補助プロセスを完全終了し、再度起動する。
+2. プロジェクト選択が `Local` のプロジェクトであることを確認する。`remote-ssh-*` のプロジェクトではローカルルーターを使えない。
+3. 既存のタスクを1件開き、履歴が残り、従来のネイティブモデルで継続できることを確認する。
+4. 新しいローカルのテスト用タスクを開き、モデル一覧にネイティブモデルと `DeepSeek V4 Flash (Official API)` が両方あることを確認する。
+5. Flash を選び、送信前に Astra へ戻らないことを確認してから、進捗更新が3回以上発生する少し長めのタスクを実行する。
+6. 生成中に表示が先頭へ飛ばず、最新の進捗を追えることを確認する。
+7. 進捗、最終回答、ツール呼び出しが残り、巨大な生の推論ブロックが挿入されないことを確認する。
+8. 生成後、同じタスクをネイティブモデルへ戻して継続できることを確認する。
 
 ルーターは `reasoning_text` の表示用イベントだけを抑止し、通常の `commentary`、最終回答、ツール呼び出しは保持します。また、同一メッセージの `phase` が生成途中で変化して表示要素が再配置されることを抑止します。ただし、実際の Codex Desktop UI の受け入れ確認は自動テストでは代替できないため、上記の目視確認を完了条件に含めてください。
 
-Codex 用の `DeepSeek V4 Pro (Responses API pending)` は、DeepSeek 公式 Responses API 側の対応待ちです。表示されても、Codex 側の移管受け入れテストには使用しません。
+Codex 用の DeepSeek V4 Pro は、DeepSeek 公式 Responses API 側の対応が確認できるまでモデルピッカーへ表示しません。`pending` または `not enabled` のモデルが合成カタログに含まれている場合、検証失敗として扱います。
 
 ## 9. Claude Code で DeepSeek を選ぶ
 
@@ -325,6 +328,17 @@ LaunchAgent と `claude-deepseek` は絶対パスを保持します。元の場�
 ### Codex のモデル一覧が更新されない
 
 `npm run handoff:verify` を実行し、すべて成功してから Codex Desktop を完全終了・再起動します。`~/.codex/config.toml` の全面置換やモデルキャッシュの削除は行いません。
+
+### DeepSeek を選ぶと送信前に Astra へ戻る
+
+次を順に確認します。
+
+1. `router-config.json` の Flash が `priority: 0` で、未対応の `pending` モデルがない。
+2. `npm run catalog` 後の `model/list` で Flash が `isDefault: true`。
+3. `~/.codex/config.toml` が Flash と `external_migration = false` を保持している。
+4. Codex Desktop の選択プロジェクトがローカルで、ログの `thread/start` が `hostId=local`。
+
+`selected-project.type` が `remote` の場合、モデル選択自体が保存されても、新しい会話はリモート側のモデル一覧を使うため Astra へ戻ります。リモート接続情報や履歴を削除せず、UIでローカルプロジェクトへ切り替えます。
 
 ### ルーターが起動しない
 
