@@ -15,6 +15,7 @@ const baseline = {
   sourceSignatureValid: true,
   environmentAnchorPresent: true,
   labelAnchorPresent: true,
+  userDataDirAnchorPresent: true,
   credentialAvailable: true,
   openaiCredentialAvailable: true,
   claudeRunning: false,
@@ -41,9 +42,11 @@ test("detects official app and installer patch updates", () => {
 });
 
 test("stops safely when exact anchors changed", () => {
-  const result = decideClaudeHybridUpdate({ ...baseline, labelAnchorPresent: false }, "apply");
-  assert.equal(result.status, "error");
-  assert.match(result.root_cause_hint, /fuzzy patching is intentionally disabled/);
+  const missingLabel = decideClaudeHybridUpdate({ ...baseline, labelAnchorPresent: false }, "apply");
+  assert.equal(missingLabel.status, "error");
+  assert.match(missingLabel.root_cause_hint, /fuzzy patching is intentionally disabled/);
+  const missingUserDataDir = decideClaudeHybridUpdate({ ...baseline, userDataDirAnchorPresent: false }, "apply");
+  assert.equal(missingUserDataDir.status, "error");
 });
 
 test("requires apps to be closed and a per-user credential before apply", () => {

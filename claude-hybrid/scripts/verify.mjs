@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readAsarFile, readAsarHeader } from "../src/asar-repack.mjs";
 import { hasHybridMarker, inspectAppleSignature } from "../src/app-layout.mjs";
-import { environmentPatchEntries, resolvePython3 } from "../src/app-patch.mjs";
+import { environmentPatchEntries, buildUserDataDirPatch, resolvePython3 } from "../src/app-patch.mjs";
 import { requestUnix } from "../src/router.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -62,7 +62,7 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
     ok: Boolean(
       patchedFile
       && requiredEnvironmentPatches.every((value) => patchedFile.includes(value))
-      && !patchedFile.includes("ANTHROPIC_CUSTOM_MODEL_OPTION")
+      && !patchedFile.includes("ANTHROPIC_CUSTOM_MODEL_OPTION:")
     ),
   };
 
@@ -77,6 +77,18 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
       && uiPatch?.includes("DeepSeek V4 Pro (1M)")
       && !uiPatch?.includes("GPT-5.6 Luna")
       && !uiPatch?.includes("GPT-5.6 Sol"),
+    ),
+  };
+
+  const userDataDirSource = await readAsarFile(asarPath, config.app.userDataDirPatchFile);
+  const userDataDirPatch = buildUserDataDirPatch(
+    config.app.userDataDirPatchFile,
+    config.app.userDataDirPatchFrom,
+  );
+  report.checks.userDataDirPatch = {
+    ok: Boolean(
+      userDataDirSource?.includes(userDataDirPatch.to)
+      && !userDataDirSource?.includes("delete process.env.CLAUDE_USER_DATA_DIR")
     ),
   };
 

@@ -85,15 +85,17 @@
     ]
   },
   "app": {
-    "patchVersion": "2026-09-18.1",
+    "patchVersion": "2026-09-18.3",
     "source": "<home>/Applications/Claude Official.app",
     "target": "/Applications/Claude.app",
     "userDataDir": "<home>/Library/Application Support/Claude",
     "routerBaseUrl": "http://127.0.0.1:10102",
-    "patchFile": "/.vite/build/index.chunk-CMJVFTis.js",
+    "patchFile": "/.vite/build/index.chunk-ChZ67Jhw.js",
     "patchFrom": "ANTHROPIC_BASE_URL:e.apiHost",
-    "modelLabelPatchFile": "/.vite/build/index.chunk-CMJVFTis.js",
-    "modelLabelPatchFrom": "function qge(e){return B=new o.WebContentsView(e),ri(B.webContents,ni.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}"
+    "modelLabelPatchFile": "/.vite/build/index.chunk-ChZ67Jhw.js",
+    "modelLabelPatchFrom": "function yxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),jo=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{jo=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{jo=!1})),B.webContents.setMaxListeners(30),B}",
+    "userDataDirPatchFile": "/.vite/build/index.pre.js",
+    "userDataDirPatchFrom": "T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)"
   },
   "launchAgent": {
     "label": "com.local.claude-hybrid-router",

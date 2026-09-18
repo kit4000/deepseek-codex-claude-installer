@@ -32,7 +32,7 @@ export function decideClaudeHybridUpdate(state, mode = "check") {
       artifacts,
     };
   }
-  if (!state.environmentAnchorPresent || !state.labelAnchorPresent) {
+  if (!state.environmentAnchorPresent || !state.labelAnchorPresent || !state.userDataDirAnchorPresent) {
     return {
       status: "error",
       summary: "This Claude build is not compatible with the current Hybrid patch anchors.",

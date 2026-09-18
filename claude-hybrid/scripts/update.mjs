@@ -42,6 +42,7 @@ function inspectInstalledCompatibility() {
     "asarIntegrity",
     "appPatch",
     "modelLabelPatch",
+    "userDataDirPatch",
     "codesign",
     "router",
     "routerSocket",
@@ -78,13 +79,16 @@ async function inspectState() {
   const signature = sourceExists ? inspectAppleSignature(sourceApp) : { ok: false };
   let environmentAnchorPresent = false;
   let labelAnchorPresent = false;
+  let userDataDirAnchorPresent = false;
   if (sourceExists) {
     try {
       const asarPath = join(sourceApp, "Contents/Resources/app.asar");
       const environmentSource = await readAsarFile(asarPath, config.app.patchFile);
       const labelSource = await readAsarFile(asarPath, config.app.modelLabelPatchFile);
+      const userDataDirSource = await readAsarFile(asarPath, config.app.userDataDirPatchFile);
       environmentAnchorPresent = Boolean(environmentSource?.includes(config.app.patchFrom));
       labelAnchorPresent = Boolean(labelSource?.includes(config.app.modelLabelPatchFrom));
+      userDataDirAnchorPresent = Boolean(userDataDirSource?.includes(config.app.userDataDirPatchFrom));
     } catch {}
   }
   const credential = run("/usr/bin/security", [
@@ -117,6 +121,7 @@ async function inspectState() {
     sourceSignatureValid: sourceExists && signature.ok && !hasHybridMarker(sourceApp),
     environmentAnchorPresent,
     labelAnchorPresent,
+    userDataDirAnchorPresent,
     credentialAvailable: credential.status === 0,
     openaiCredentialAvailable,
     openaiRequired: (config.models?.external ?? []).some((entry) => entry.provider === "openai"),

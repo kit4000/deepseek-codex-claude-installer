@@ -21,6 +21,8 @@ const result = await patchClaudeApp({
   patchFrom: config.app.patchFrom,
   modelLabelPatchFile: config.app.modelLabelPatchFile,
   modelLabelPatchFrom: config.app.modelLabelPatchFrom,
+  userDataDirPatchFile: config.app.userDataDirPatchFile,
+  userDataDirPatchFrom: config.app.userDataDirPatchFrom,
   userDataDir: process.env.CLAUDE_HYBRID_USER_DATA_DIR ?? expandHome(config.app.userDataDir, home),
   patchVersion: config.app.patchVersion,
 });

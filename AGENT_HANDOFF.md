@@ -17,7 +17,8 @@ tar.gz や別端末のキー、会話から推測した秘密は使いません�
 3. `~/.codex/auth.json`、CodexのタスクDB／セッション、`~/.claude`、Claudeのユーザーデータ、
    Keychain項目を移送、削除、全面置換しません。
 4. Fable 5 と Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5 は純正Claudeとして維持します。
-   外部APIへ割り当てるのは Opus 4.6（DeepSeek Pro）、Sonnet 4.6（DeepSeek Flash）の2枠だけです。
+   外部APIへ割り当てるのは Opus 4.7 / Sonnet 4.6（DeepSeek V4.1 Flash）と
+   Opus 4.6（DeepSeek Pro）の借り枠だけです。
    ローカル Ollama の Qwen 3.8 2.7B は 4.6 枠を借りず、Codex カタログと Claude Code の
    追加モデル／名前付きエージェントとして載せます。
    ChatGPT サブスクリプションを OpenAI API キー経路として解釈しません。
@@ -112,7 +113,14 @@ UPDATE CONTRACT
 - Update = download official zip from RELEASES.json → replace Official source → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
 - `--apply` は Hybrid アプリが現行でも managed ルーターと `nativeFallback` を再配置する（Fable 5 を `/v1/models` に足す修正など）。アプリ再構築が不要なら Claude を終了しなくてよい。新しい Code セッションでピッカーを取り直す。
 - On exact-anchor failure: stop; do not fuzzy-patch; update `claude-hybrid/config/claude-hybrid.json` anchors and `patchVersion` first
+- Claude 2.x packaged 起動は `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を削除し、既存 `Claude-3p` へ切り替える。Hybrid はこの削除を exact パッチで止め、公式 `~/Library/Application Support/Claude` を共有する
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
+
+#### 現行確認済み（Claude 2.2553.1 / patch 2026-09-18.3）
+
+純正ソースは `~/Applications/Claude Official.app`。日常アプリは `/Applications/Claude.app`（Hybrid）。
+Code 環境パッチ、Web ピッカー表示パッチ、`index.pre.js` の `CLAUDE_USER_DATA_DIR` 削除停止の
+3つの exact アンカーが必要。詳細は `CHANGE_SPEC-claude-app-layout-and-updates.md` §5.3。
 
 #### 実証済み手順（Claude 1.28929.0 / patch 2026-08-18.3）
 
@@ -123,18 +131,20 @@ UPDATE CONTRACT
    `Claude Official.app.before-<version>-<timestamp>` へ退避し、新公式で置換する。
 5. `update-claude-hybrid --check` を実行する。
 6. アンカー不一致なら Official ASAR から
-   `ANTHROPIC_BASE_URL:e.apiHost` と `WebContentsView` / `CLAUDE_AI_WEB` の exact 1 箇所を取り直し、
+   `ANTHROPIC_BASE_URL:e.apiHost`、`WebContentsView` / `CLAUDE_AI_WEB`、
+   packaged 起動の `delete process.env.CLAUDE_USER_DATA_DIR` の exact 1 箇所を取り直し、
    `patchVersion` を上げてから再 check する（fuzzy patch 禁止）。
 7. `update-claude-hybrid --apply` → 無課金検証通過を確認する。
 8. `prefer-claude-hybrid` で Launch Services を Hybrid 優先へ戻す。
-9. `/Applications/Claude.app` を開き、Safe Storage「常に許可」、4.6 枠の DeepSeek と
-   Fable 5 / Opus 4.8 / Opus 5 の純正維持を確認する。
+9. `/Applications/Claude.app` を開き、Safe Storage「常に許可」、公式アカウント、
+   Fable 5 / Opus 4.8 / Opus 5 の純正維持、借り枠の DeepSeek V4.1 Flash / Pro を確認する。
+   ログイン名が違う、または DeepSeek の2行しか出ない場合は 3P（`Claude-3p`）へ落ちている。
 
 `prefer-claude-hybrid` は `# Managed by deepseek-codex-claude-installer.` マーカー必須。
 マーカー無しだと `--apply` が上書き拒否で止まる。
 
 インストーラーは `update-claude-hybrid` コマンドと `claude-hybrid-update` スキルを導入します。
-`--check` は公式版とHybridのバージョン／ビルド／パッチ版、公式署名、厳密な2つのアンカーを
+`--check` は公式版とHybridのバージョン／ビルド／パッチ版、公式署名、厳密な3つのアンカーを
 読み取るだけです。`--apply` は両アプリが終了し、導入先ユーザーのKeychain資格情報がある場合
 だけ、公式版から新しいHybridを構築して無課金検証まで実行します。アンカー変更時は安全に
 停止し、近似パッチは行いません。詳細は
