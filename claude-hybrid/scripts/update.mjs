@@ -165,7 +165,7 @@ try {
       next_actions: [
         "Open Claude from /Applications and approve the Claude Safe Storage prompt if macOS shows it.",
         "Confirm Fable 5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 remain native.",
-        "Confirm Opus 4.6 / Sonnet 4.6 show DeepSeek.",
+        "Confirm Opus 4.7 / Sonnet 4.6 show DeepSeek V4.1 Flash and Opus 4.6 shows DeepSeek Pro.",
         "Start a Code session and confirm it appears in claude.ai/code or the mobile app.",
       ],
       artifacts: { sourceApp, targetApp, expectedPatchVersion: config.app.patchVersion, migration, launchServices },
