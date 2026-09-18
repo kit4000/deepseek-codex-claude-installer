@@ -57,7 +57,7 @@ await verify("Codex root configuration", async () => {
   const failed = inspectCodexConfig(source, {
     catalogPath,
     routerBaseUrl: CODEX_ROUTER_BASE_URL,
-    defaultModel: "deepseek/deepseek-v4-flash",
+    defaultModel: "deepseek/deepseek-flash",
     requireExternalMigrationDisabled: true,
   }).filter((entry) => !entry.ok);
   if (failed.length > 0) throw new Error(`Unexpected settings: ${failed.map((entry) => entry.name).join(", ")}`);
@@ -67,9 +67,9 @@ await verify("Codex root configuration", async () => {
 await verify("merged Codex model catalog", async () => {
   const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
   if (!Array.isArray(catalog.models) || catalog.models.length === 0) throw new Error("Model catalog is empty");
-  const flash = catalog.models.find((entry) => entry.slug === "deepseek/deepseek-v4-flash");
-  if (!flash) throw new Error("DeepSeek V4 Flash is missing from the Codex model catalog");
-  if (flash.priority !== 0) throw new Error("DeepSeek V4 Flash must have priority 0");
+  const flash = catalog.models.find((entry) => entry.slug === "deepseek/deepseek-flash");
+  if (!flash) throw new Error("DeepSeek V4.1 Flash is missing from the Codex model catalog");
+  if (flash.priority !== 0) throw new Error("DeepSeek V4.1 Flash must have priority 0");
   if (catalog.models.some((entry) => /pending|not enabled/i.test(`${entry.display_name ?? ""} ${entry.description ?? ""}`))) {
     throw new Error("Pending models must not be exposed in the Codex model catalog");
   }
@@ -91,7 +91,7 @@ await verify("Codex Desktop execution target", async () => {
 await verify("DeepSeek Codex profile", async () => {
   const source = await readFile(resolve(codexHome, "deepseek.config.toml"), "utf8");
   if (!source.startsWith("# Managed by codex-native-model-router.")) throw new Error("Profile is not managed by this bundle");
-  if (!source.includes('model = "deepseek/deepseek-v4-flash"')) throw new Error("Unexpected DeepSeek profile model");
+  if (!source.includes('model = "deepseek/deepseek-flash"')) throw new Error("Unexpected DeepSeek profile model");
   if (!source.includes('model_provider = "openai"')) throw new Error("Profile changed the built-in provider identity");
   return "managed profile present";
 });

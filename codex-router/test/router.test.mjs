@@ -26,8 +26,8 @@ const config = {
     baseUrl: "https://api.deepseek.com",
     auth: { mode: "bearer_keychain", service: "router.deepseek", account: "api-key" },
     models: [{
-      id: "deepseek-v4-flash",
-      displayName: "DeepSeek V4 Flash",
+      id: "deepseek-flash",
+      displayName: "DeepSeek V4.1 Flash",
       priority: 0,
       contextWindow: 1048576,
       defaultReasoningEffort: "high",
@@ -39,10 +39,10 @@ const config = {
 };
 
 test("routes namespaced models and preserves native model names", () => {
-  assert.deepEqual(selectRoute("deepseek/deepseek-v4-flash", config), {
+  assert.deepEqual(selectRoute("deepseek/deepseek-flash", config), {
     kind: "external",
     route: config.routes[0],
-    upstreamModel: "deepseek-v4-flash",
+    upstreamModel: "deepseek-flash",
   });
   assert.deepEqual(selectRoute("gpt-5.6-sol", config), {
     kind: "native",
@@ -82,17 +82,17 @@ test("joins Codex and OpenAI-compatible upstream paths", () => {
 });
 
 test("strips namespace and OpenAI-only service tier for external requests", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
-  assert.deepEqual(rewriteRequestBody({ model: "deepseek/deepseek-v4-flash", service_tier: "fast", input: "hi" }, selection), {
-    model: "deepseek-v4-flash",
+  const selection = selectRoute("deepseek/deepseek-flash", config);
+  assert.deepEqual(rewriteRequestBody({ model: "deepseek/deepseek-flash", service_tier: "fast", input: "hi" }, selection), {
+    model: "deepseek-flash",
     input: "hi",
   });
 });
 
 test("converts DeepSeek compaction triggers into an explicit text-only summary turn", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const body = {
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [{ type: "message", role: "user", content: [] }, { type: "compaction_trigger" }],
     tools: [{ type: "function", name: "shell" }],
     tool_choice: "auto",
@@ -107,7 +107,7 @@ test("converts DeepSeek compaction triggers into an explicit text-only summary t
 });
 
 test("maps /responses/compact onto a DeepSeek text-only summary turn", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   assert.equal(isCompactEndpoint("/v1/responses/compact"), true);
   assert.equal(externalUpstreamPath("/v1/responses/compact"), "/v1/responses");
   assert.equal(
@@ -118,7 +118,7 @@ test("maps /responses/compact onto a DeepSeek text-only summary turn", () => {
     "https://api.deepseek.com/responses?beta=1",
   );
   const body = {
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [{
       type: "message",
       role: "user",
@@ -195,9 +195,9 @@ test("forces stream and disables store for native ChatGPT compact requests", () 
 });
 
 test("forces stream for DeepSeek compact endpoint requests", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const rewritten = rewriteRequestBody({
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [{
       type: "message",
       role: "user",
@@ -215,9 +215,9 @@ test("forces stream for DeepSeek compact endpoint requests", () => {
 });
 
 test("strips OpenAI encrypted function outputs and agent_message before DeepSeek", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const rewritten = rewriteRequestBody({
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [
       {
         type: "agent_message",
@@ -300,9 +300,9 @@ test("strips OpenAI encrypted function outputs and agent_message before DeepSeek
 });
 
 test("maps Codex custom_tool_call pairs onto DeepSeek function_call pairs", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const rewritten = rewriteRequestBody({
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [
       {
         type: "custom_tool_call",
@@ -402,9 +402,9 @@ test("repairs MultiAgent V2 plaintext stored as encrypted_content for native GPT
 });
 
 test("maps local_shell_call pairs and repairs historical tool-call gaps", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const rewritten = rewriteRequestBody({
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [
       {
         type: "local_shell_call",
@@ -474,7 +474,7 @@ test("maps local_shell_call pairs and repairs historical tool-call gaps", () => 
 });
 
 test("encrypts local summaries and restores them as user context for DeepSeek", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const summary = "A private summary with decisions.";
   const sealed = sealLocalCompaction(summary, "test-secret");
   assert.doesNotMatch(sealed, /private summary/);
@@ -482,7 +482,7 @@ test("encrypts local summaries and restores them as user context for DeepSeek", 
   assert.throws(() => openLocalCompaction(sealed, "wrong-secret"), /decrypt/);
 
   const rewritten = rewriteRequestBody({
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [{ type: "compaction", encrypted_content: sealed }],
   }, selection, { compactionSecret: "test-secret" });
   assert.deepEqual(rewritten.input, [{
@@ -493,14 +493,14 @@ test("encrypts local summaries and restores them as user context for DeepSeek", 
 });
 
 test("drops opaque compactions created by another provider when switching to DeepSeek", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const currentMessage = {
     type: "message",
     role: "user",
     content: [{ type: "input_text", text: "Continue with DeepSeek." }],
   };
   const rewritten = rewriteRequestBody({
-    model: "deepseek/deepseek-v4-flash",
+    model: "deepseek/deepseek-flash",
     input: [
       { type: "compaction", encrypted_content: "opaque-openai-compaction" },
       currentMessage,
@@ -675,7 +675,7 @@ test("adapts a JSON DeepSeek compaction response into one Codex item", () => {
 });
 
 test("does not leak ChatGPT credentials to an external route", () => {
-  const selection = selectRoute("deepseek/deepseek-v4-flash", config);
+  const selection = selectRoute("deepseek/deepseek-flash", config);
   const headers = forwardRequestHeaders({
     authorization: "Bearer chatgpt-secret",
     "chatgpt-account-id": "account",
@@ -704,8 +704,8 @@ test("merges external models into the ModelsCache wrapper", () => {
   };
   const merged = mergeCatalog(native, config, new Date("2026-08-05T00:00:00Z"));
   assert.deepEqual(Object.keys(merged).sort(), ["client_version", "etag", "fetched_at", "models"]);
-  assert.equal(merged.models[1].slug, "deepseek/deepseek-v4-flash");
-  assert.equal(merged.models[1].display_name, "DeepSeek V4 Flash");
+  assert.equal(merged.models[1].slug, "deepseek/deepseek-flash");
+  assert.equal(merged.models[1].display_name, "DeepSeek V4.1 Flash");
   assert.equal(merged.models[1].priority, 0);
   assert.equal(merged.models[1].service_tiers, undefined);
   assert.equal(merged.models[1].upgrade, undefined);
@@ -722,7 +722,7 @@ test("merges external models into the ModelsCache wrapper", () => {
   assert.equal(merged.models[1].max_context_window, 1048576);
   assert.equal(merged.models[1].multi_agent_version, null);
   assert.equal(merged.models[1].tool_mode, null);
-  assert.match(merged.models[1].base_instructions, /powered by DeepSeek V4 Flash/);
+  assert.match(merged.models[1].base_instructions, /powered by DeepSeek V4\.1 Flash/);
 });
 
 test("restores Desktop-required catalog fields from newer native cache entries", () => {
@@ -794,7 +794,7 @@ base_url = "http://127.0.0.1:8001/v1"
     catalogPath: "/tmp/catalog.json",
     routerBaseUrl: "http://127.0.0.1:10100/v1",
     routes: config.routes,
-    profile: { name: "deepseek", model: "deepseek/deepseek-v4-flash" },
+    profile: { name: "deepseek", model: "deepseek/deepseek-flash" },
   });
   assert.match(patched, /^# Managed by[\s\S]*model_provider = "openai"/);
   assert.match(patched, /model_catalog_json = "\/tmp\/catalog.json"/);
@@ -808,7 +808,7 @@ base_url = "http://127.0.0.1:8001/v1"
     catalogPath: "/tmp/catalog.json",
     routerBaseUrl: "http://127.0.0.1:10100/v1",
     routes: config.routes,
-    profile: { name: "deepseek", model: "deepseek/deepseek-v4-flash" },
+    profile: { name: "deepseek", model: "deepseek/deepseek-flash" },
   }), patched);
 });
 
@@ -821,10 +821,10 @@ external_migration = true
     catalogPath: "/tmp/catalog.json",
     routerBaseUrl: "http://127.0.0.1:10100/v1",
     routes: config.routes,
-    defaultModel: "deepseek/deepseek-v4-flash",
+    defaultModel: "deepseek/deepseek-flash",
     disableExternalMigration: true,
   });
-  assert.match(patched, /^# Managed by[\s\S]*model = "deepseek\/deepseek-v4-flash"/);
+  assert.match(patched, /^# Managed by[\s\S]*model = "deepseek\/deepseek-flash"/);
   assert.doesNotMatch(patched, /model = "gpt-6-astra"/);
   assert.match(patched, /\[features\][\s\S]*external_migration = false/);
 });

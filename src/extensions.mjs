@@ -34,7 +34,7 @@ function setTableKey(source, tableName, key, value) {
 
 export function renderDeepSeekAgentProfile() {
   return `${EXTENSION_MARKER}
-model = "deepseek/deepseek-v4-flash"
+model = "deepseek/deepseek-flash"
 model_provider = "openai"
 model_reasoning_effort = "max"
 developer_instructions = """
@@ -51,7 +51,7 @@ You are a DeepSeek V4 external-API subagent. Complete the bounded task assigned 
 export function patchDeepSeekAgentRegistration(source, profilePath) {
   return patchManagedAgentRegistration(source, {
     tableName: "agents.deepseek-v4",
-    description: "DeepSeek V4 Flash external-API agent. It is available alongside the main model picker; use for explicitly requested or approved billable delegation.",
+    description: "DeepSeek V4.1 Flash external-API agent. It is available alongside the main model picker; use for explicitly requested or approved billable delegation.",
     profilePath,
   });
 }
@@ -95,7 +95,11 @@ function patchManagedAgentRegistration(source, { tableName, description, profile
         break;
       }
     }
-    lines.splice(tableStart - 1, tableEnd - tableStart + 1);
+    // Keep the next managed marker that sits immediately above the following table.
+    while (tableEnd > tableStart && lines[tableEnd - 1].trim() === "") tableEnd -= 1;
+    if (tableEnd > tableStart && lines[tableEnd - 1].trim() === EXTENSION_MARKER) tableEnd -= 1;
+    while (tableEnd > tableStart && lines[tableEnd - 1].trim() === "") tableEnd -= 1;
+    lines.splice(tableStart - 1, tableEnd - (tableStart - 1));
   }
   while (lines.at(-1) === "") lines.pop();
   lines.push(

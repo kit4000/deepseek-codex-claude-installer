@@ -5,6 +5,7 @@ export const CREDENTIAL_HELPER_MARKER = "# Managed by deepseek-handoff.";
 
 const ANTHROPIC_MODEL_ALIASES = new Map([
   ["deepseek-v4-pro[1m]", "claude-opus-4-5"],
+  ["deepseek-flash", "claude-haiku-4-5"],
   ["deepseek-v4-flash", "claude-haiku-4-5"],
 ]);
 

@@ -13,8 +13,8 @@
       "displayName": "DeepSeek V4 Pro (1M)"
     },
     "flash": {
-      "id": "deepseek-v4-flash",
-      "displayName": "DeepSeek V4 Flash"
+      "id": "deepseek-flash",
+      "displayName": "DeepSeek V4.1 Flash"
     }
   },
   "aliases": {

@@ -14,8 +14,33 @@ function run(command, args, options = {}) {
   return result;
 }
 
+let cachedPython3;
+
+/** Prefer Homebrew/user Python so Xcode license blocks on /usr/bin/python3 do not stop Hybrid builds. */
+export function resolvePython3() {
+  if (cachedPython3) return cachedPython3;
+  const candidates = [
+    process.env.CLAUDE_HYBRID_PYTHON3,
+    "/usr/local/bin/python3",
+    "/opt/homebrew/bin/python3",
+    "python3",
+    "/usr/bin/python3",
+  ].filter(Boolean);
+  const errors = [];
+  for (const candidate of candidates) {
+    const probe = spawnSync(candidate, ["-c", "import plistlib"], { encoding: "utf8" });
+    if (probe.status === 0) {
+      cachedPython3 = candidate;
+      return cachedPython3;
+    }
+    errors.push(`${candidate}: ${(probe.stderr || probe.stdout || probe.error?.message || "failed").trim()}`);
+  }
+  throw new Error(`No usable python3 with plistlib found. Tried:\n${errors.join("\n")}`);
+}
+
 export const MODEL_LABEL_REWRITES = [
-  ["Sonnet 4.6", "DeepSeek V4 Flash"],
+  ["Opus 4.7", "DeepSeek V4.1 Flash"],
+  ["Sonnet 4.6", "DeepSeek V4.1 Flash"],
   ["Opus 4.6", "DeepSeek V4 Pro (1M)"],
 ];
 
@@ -29,9 +54,9 @@ export function environmentPatchEntries({ routerBaseUrl, routerSocketPath }) {
   return [
     `ANTHROPIC_BASE_URL:${JSON.stringify(routerBaseUrl)}`,
     `ANTHROPIC_UNIX_SOCKET:${JSON.stringify(routerSocketPath)}`,
-    `ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"`,
-    `ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME:"DeepSeek V4 Flash"`,
-    `ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION:"DeepSeek official fast model"`,
+    `ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-flash"`,
+    `ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME:"DeepSeek V4.1 Flash"`,
+    `ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION:"DeepSeek V4.1 Flash official fast model"`,
     `ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES:"effort,max_effort,adaptive_thinking"`,
   ];
 }
@@ -78,7 +103,7 @@ data["ElectronAsarIntegrity"] = {
 with open(path, "wb") as f:
     plistlib.dump(data, f)
 `;
-  run("/usr/bin/python3", ["-c", script, plistPath, headerSha256, displayName, userDataDir, patchVersion]);
+  run(resolvePython3(), ["-c", script, plistPath, headerSha256, displayName, userDataDir, patchVersion]);
 }
 
 function updatePatchVersion(plistPath, patchVersion) {
@@ -91,7 +116,7 @@ data["ClaudeHybridPatchVersion"] = patch_version
 with open(path, "wb") as f:
     plistlib.dump(data, f)
 `;
-  run("/usr/bin/python3", ["-c", script, plistPath, patchVersion]);
+  run(resolvePython3(), ["-c", script, plistPath, patchVersion]);
 }
 
 export async function migrateClaudeHybridPatchVersion({ targetApp, patchVersion }) {

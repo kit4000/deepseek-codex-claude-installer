@@ -52,9 +52,9 @@ multi_agent = false
   assert.equal(twice, once);
 });
 
-test("agent profile routes only that child to DeepSeek V4 Flash max", () => {
+test("agent profile routes only that child to DeepSeek V4.1 Flash max", () => {
   const profile = renderDeepSeekAgentProfile();
-  assert.match(profile, /model = "deepseek\/deepseek-v4-flash"/);
+  assert.match(profile, /model = "deepseek\/deepseek-flash"/);
   assert.match(profile, /model_provider = "openai"/);
   assert.match(profile, /model_reasoning_effort = "max"/);
   assert.doesNotMatch(profile, /openai_base_url|OPENAI_API_KEY|ANTHROPIC_AUTH_TOKEN|\b(?:sk|ds)-[A-Za-z0-9_-]{20,}\b/);
@@ -72,6 +72,33 @@ model_provider = "openai"
   assert.match(profile, /model_provider = "openai"/);
   assert.match(profile, /local\/LAN inference/);
   assert.doesNotMatch(profile, /OPENAI_API_KEY|ANTHROPIC_AUTH_TOKEN|\b(?:sk|ds)-[A-Za-z0-9_-]{20,}\b/);
+});
+
+test("updating DeepSeek registration preserves a following managed Qwen table", () => {
+  const source = `model = "gpt-5.6-sol"
+
+[features]
+multi_agent = true
+
+${EXTENSION_MARKER}
+[agents.deepseek-v4]
+description = "old deepseek"
+config_file = "/old/deepseek.toml"
+
+${EXTENSION_MARKER}
+[agents.qwen-3-8-2-7b]
+description = "old qwen"
+config_file = "/old/qwen.toml"
+`;
+  const patched = patchQwenAgentRegistration(
+    patchDeepSeekAgentRegistration(source, "/new/deepseek.toml"),
+    "/new/qwen.toml",
+  );
+  assert.match(patched, /\[agents\.deepseek-v4\]/);
+  assert.match(patched, /\[agents\.qwen-3-8-2-7b\]/);
+  assert.match(patched, /config_file = "\/new\/deepseek\.toml"/);
+  assert.match(patched, /config_file = "\/new\/qwen\.toml"/);
+  assert.equal((patched.match(new RegExp(EXTENSION_MARKER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length, 2);
 });
 
 test("updater wrapper safely quotes absolute paths", () => {

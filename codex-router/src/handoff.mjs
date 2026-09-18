@@ -24,16 +24,16 @@ export function validateRouterForHandoff(config) {
   requireCondition(route.auth?.mode === "bearer_keychain", "DeepSeek credential must come from macOS Keychain");
   requireCondition(route.auth?.service === DEEPSEEK_KEYCHAIN.service, "Unexpected DeepSeek Keychain service");
   requireCondition(route.auth?.account === DEEPSEEK_KEYCHAIN.account, "Unexpected DeepSeek Keychain account");
-  const flash = route.models?.find((entry) => entry.id === "deepseek-v4-flash");
-  requireCondition(flash, "DeepSeek V4 Flash is missing");
-  requireCondition(flash.priority === 0, "DeepSeek V4 Flash must have priority 0 so Codex marks it as default");
+  const flash = route.models?.find((entry) => entry.id === "deepseek-flash");
+  requireCondition(flash, "DeepSeek V4.1 Flash is missing");
+  requireCondition(flash.priority === 0, "DeepSeek V4.1 Flash must have priority 0 so Codex marks it as default");
   requireCondition(
     !route.models.some((entry) => /pending|not enabled/i.test(`${entry.displayName ?? ""} ${entry.description ?? ""}`)),
     "Pending DeepSeek models must not be exposed in the Codex picker",
   );
   requireCondition(!config.configMigration?.removeSections, "Handoff config must not remove unrelated Codex sections");
-  requireCondition(config.configMigration?.profile?.model === "deepseek/deepseek-v4-flash", "Unexpected DeepSeek Codex profile");
-  requireCondition(config.configMigration?.defaultModel === "deepseek/deepseek-v4-flash", "Unexpected default Codex model");
+  requireCondition(config.configMigration?.profile?.model === "deepseek/deepseek-flash", "Unexpected DeepSeek Codex profile");
+  requireCondition(config.configMigration?.defaultModel === "deepseek/deepseek-flash", "Unexpected default Codex model");
   requireCondition(config.configMigration?.disableExternalMigration === true, "External model migration must be disabled");
   return config;
 }
@@ -195,7 +195,7 @@ export function validateClaudeDesktopTemplate(config) {
     "Claude Desktop Pro model is missing",
   );
   requireCondition(
-    names.includes("claude-haiku-4-5") || names.includes("deepseek-v4-flash"),
+    names.includes("claude-haiku-4-5") || names.includes("deepseek-flash"),
     "Claude Desktop Flash model is missing",
   );
   return config;

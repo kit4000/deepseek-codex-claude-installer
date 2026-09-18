@@ -166,7 +166,7 @@ claude-deepseek --deepseek-print-config
 
 - `handoff:verify` の最上位 `ok` が `true`。
 - Codex の `model_provider` は引き続き組み込みの `openai`。
-- 合成カタログにネイティブモデルと `deepseek/deepseek-v4-flash` の両方があり、Flash の `priority` は `0`。
+- 合成カタログにネイティブモデルと `deepseek/deepseek-flash` の両方があり、Flash の `priority` は `0`。
 - `~/.codex/config.toml` の既定モデルが Flash で、`external_migration = false`。
 - Codex Desktop の選択プロジェクトがローカルまたは未選択であり、リモートなら検証が明示的に失敗する。
 - `/healthz` は `provider: openai` と `routes: ["deepseek", ...]` を返す。
@@ -180,7 +180,7 @@ claude-deepseek --deepseek-print-config
 1. Codex Desktop のメインと補助プロセスを完全終了し、再度起動する。
 2. プロジェクト選択が `Local` のプロジェクトであることを確認する。`remote-ssh-*` のプロジェクトではローカルルーターを使えない。
 3. 既存のタスクを1件開き、履歴が残り、従来のネイティブモデルで継続できることを確認する。
-4. 新しいローカルのテスト用タスクを開き、モデル一覧にネイティブモデルと `DeepSeek V4 Flash (Official API)` が両方あることを確認する。
+4. 新しいローカルのテスト用タスクを開き、モデル一覧にネイティブモデルと `DeepSeek V4.1 Flash (Official API)` が両方あることを確認する。
 5. Flash を選び、送信前に Astra へ戻らないことを確認してから、進捗更新が3回以上発生する少し長めのタスクを実行する。
 6. 生成中に表示が先頭へ飛ばず、最新の進捗を追えることを確認する。
 7. 進捗、最終回答、ツール呼び出しが残り、巨大な生の推論ブロックが挿入されないことを確認する。
@@ -226,8 +226,8 @@ claude-deepseek --resume
 以下は実際の生成 API を呼ぶため、利用者の許可と API 残高を確認してから実行します。
 
 ```bash
-npm run smoke -- deepseek/deepseek-v4-flash
-npm run smoke -- deepseek/deepseek-v4-flash max
+npm run smoke -- deepseek/deepseek-flash
+npm run smoke -- deepseek/deepseek-flash max
 npm run smoke:claude
 ```
 
@@ -258,7 +258,7 @@ npm run install:claude-desktop
    `inferenceGatewayApiKey` にも helper 本体にも含めない。認証は公式サポートの
    `inferenceCredentialKind: "helper-script"` 経由にする。
 5. Gateway URL `https://api.deepseek.com/anthropic`、auth scheme `bearer`、model discovery 無効、
-   固定モデル `claude-opus-4-5`（DeepSeek 側で V4 Pro へ解決）/ `claude-haiku-4-5`（V4 Flash へ解決）
+   固定モデル `claude-opus-4-5`（DeepSeek 側で V4 Pro へ解決）/ `claude-haiku-4-5`（V4.1 Flash へ解決）
    を設定し、3P でも Chat タブを使えるよう `chatTabEnabled: true` を有効にする。
 
 Claude Desktop を完全終了して再起動すると、third-party inference が有効になります。このモードでは

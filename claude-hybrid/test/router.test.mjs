@@ -26,10 +26,11 @@ const config = {
         provider: "deepseek",
       },
       {
-        id: "deepseek-v4-flash",
-        aliases: ["claude-sonnet-4-6", "claude-haiku-4-5-external-flash"],
-        target: "deepseek-v4-flash",
-        displayName: "DeepSeek V4 Flash",
+        id: "deepseek-flash",
+        agentName: "deepseek-v4-flash",
+        aliases: ["claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5-external-flash"],
+        target: "deepseek-flash",
+        displayName: "DeepSeek V4.1 Flash",
         provider: "deepseek",
       },
       {
@@ -41,7 +42,7 @@ const config = {
       },
       {
         id: "gpt-5.6-luna",
-        aliases: ["claude-opus-4-7"],
+        aliases: ["claude-sonnet-4-5-external-luna"],
         target: "gpt-5.6-luna",
         displayName: "GPT-5.6 Luna",
         provider: "openai",
@@ -64,7 +65,7 @@ function jsonResponse(status, body) {
 
 test("isExternalModel recognizes configured aliases and raw provider ids", () => {
   assert.equal(isExternalModel(config, "deepseek-v4-pro[1m]"), true);
-  assert.equal(isExternalModel(config, "deepseek-v4-flash"), true);
+  assert.equal(isExternalModel(config, "deepseek-flash"), true);
   assert.equal(isExternalModel(config, "claude-opus-4-6"), true);
   assert.equal(isExternalModel(config, "claude-sonnet-4-6"), true);
   assert.equal(isExternalModel(config, "claude-opus-4-8"), true);
@@ -84,7 +85,8 @@ test("isExternalModel recognizes configured aliases and raw provider ids", () =>
 
 test("unlisted gpt and deepseek ids stay native unless configured", () => {
   assert.equal(providerForModel(config, "gpt-5.6-sol"), "openai");
-  assert.equal(providerForModel(config, "deepseek-v4-flash"), "deepseek");
+  assert.equal(providerForModel(config, "deepseek-flash"), "deepseek");
+  assert.equal(providerForModel(config, "claude-opus-4-7"), "deepseek");
   assert.equal(providerForModel(config, "gpt-unlisted"), "native");
   assert.equal(providerForModel(config, "deepseek-unlisted"), "native");
   const productionLike = {
@@ -120,7 +122,7 @@ test("model list combines native discovery with external models", async () => {
     const payload = await response.json();
     assert.equal(payload.data.length, 6);
     assert.equal(payload.data[2].id, "deepseek-v4-pro[1m]");
-    assert.equal(payload.data[3].id, "deepseek-v4-flash");
+    assert.equal(payload.data[3].id, "deepseek-flash");
     assert.equal(payload.data[4].id, "gpt-5.6-sol");
     assert.equal(payload.data[5].id, "gpt-5.6-luna");
   } finally {
@@ -186,7 +188,7 @@ test("external messages use the DeepSeek key and target model", async () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].url, "https://api.deepseek.com/anthropic/v1/messages");
     assert.equal(calls[0].options.headers.get("authorization"), "Bearer deepseek-key");
-    assert.equal(JSON.parse(calls[0].options.body).model, "deepseek-v4-flash");
+    assert.equal(JSON.parse(calls[0].options.body).model, "deepseek-flash");
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

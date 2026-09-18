@@ -342,23 +342,28 @@ prefer-claude-hybrid
 | 1.28929.0 | 2026-08-18.3 | `index.chunk-KnwvxAXh.js` | `index.chunk-CHjD_WiU.js` | `J` |
 | 1.44121.0 | 2026-09-02.1 | `index.chunk-CjUl9Ys6.js` | `index.chunk-CjUl9Ys6.js` | `B` |
 | 1.46388.4 | 2026-09-07.1 | `index.chunk-CMJVFTis.js` | `index.chunk-CMJVFTis.js` | `B` |
+| 1.46388.4 | 2026-09-18.1 | `index.chunk-CMJVFTis.js` | `index.chunk-CMJVFTis.js` | `B` |
 
-現行（1.46388.4 / 2026-09-07.1）:
+現行（1.46388.4 / 2026-09-18.1）:
 
 ```text
 patchFile: /.vite/build/index.chunk-CMJVFTis.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
 modelLabelPatchFile: /.vite/build/index.chunk-CMJVFTis.js
 modelLabelPatchFrom: function qge(e){return B=new o.WebContentsView(e),ri(B.webContents,ni.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}
-patchVersion: 2026-09-07.1
+patchVersion: 2026-09-18.1
 ```
 
+2026-09-18.1 は Flash upstream を公式 `deepseek-flash`（V4.1 Flash）へ切り替え、
+Opus 4.7 ピッカー枠を DeepSeek V4.1 Flash へルート/ラベル差し替え（Sonnet 4.6 と同枠）。
+Pro（Opus 4.6 → `deepseek-v4-pro[1m]`）は変更なし。`agentName: deepseek-v4-flash` で
+Claude Code エージェントファイル名は維持。
+
 2026-08-18.3 はアンカー位置は変えず、Remote Control 用 `ANTHROPIC_UNIX_SOCKET` を残したまま
-`ANTHROPIC_CUSTOM_MODEL_OPTION` を外す。ピッカーは Opus/Sonnet 4.6 の DeepSeek だけ。
-`haiku` エイリアスは引き続き DeepSeek Flash。ChatGPT サブスクリプションを OpenAI API の
+`ANTHROPIC_CUSTOM_MODEL_OPTION` を外す。ChatGPT サブスクリプションを OpenAI API の
 借り枠として解釈しない。GPT-5.6 Sol / Luna は `/gpt-5-6-sol` / `/gpt-5-6-luna` が
 ログイン済み Codex CLI に委譲する。Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5 /
-Opus 4.5 / Sonnet 4.5 / Opus 4.7 は純正。
+Opus 4.5 / Sonnet 4.5 は純正。
 
 ---
 
