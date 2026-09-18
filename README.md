@@ -19,7 +19,7 @@ macOS上で次を共存させます。
 - DeepSeek経路での remote compact、暗号化 function output 除去、Codex
   `custom_tool_call` の `function_call` 正規化
 - 公式Claudeのアカウント・セッションと、Claude CodeタブのDeepSeek経路
-- ClaudeのFable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5を残し、Opus 4.6 を DeepSeek Pro、Sonnet 4.6 を DeepSeek Flash として使うモデル選択
+- ClaudeのFable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5を残し、Opus 4.7 / Sonnet 4.6 を DeepSeek V4.1 Flash、Opus 4.6 を DeepSeek Pro として使うモデル選択
 - 公式Claude更新後にHybridを安全に再構築するコマンドとCodexスキル
 - メインのモデル選択を変えず、DeepSeek を名前付きサブエージェントとしても呼べる設定
 - ログイン済み Cursor CLI 経由で Grok 4.6 と Composer 2.5 をサブスク課金のまま外から呼ぶラッパー

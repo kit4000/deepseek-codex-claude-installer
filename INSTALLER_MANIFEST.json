@@ -16,7 +16,7 @@
   "files": {
     "CHANGE_SPEC-claude-app-layout-and-updates.md": "0f9b71b46b6db7ce0ac9a68ec13aee54ebd0f14fbf9fe8b0712809ef84b1ed8c",
     "AGENT_HANDOFF.md": "eda50f58068ea4273db03d2c2478654dd32996c041bb306abe8c551f8a26286d",
-    "README.md": "a0d127f0fa73c260f0320a3aa171e1d08ad7966b0d108f97ecb53adbde734b1e",
+    "README.md": "c2bc60b8036c82a34cc6229c6e612fa255910b983e86a2b38e349ea5a2d6b888",
     "package.json": "fe8c71051d37ac70c9299d62fc7945bc9588d22e211f63b9cbd08aaf48719c3f",
     "config/integrated-files.json": "d3f42afec580a25bc7d909346d45f91929f9daaea9a2075f0b5e0394621e3be9",
     "scripts/create-archive.mjs": "1aed982cea5e8aec3bccda16e7e8be2e7cdf0d3c24a1aa79529c8c0fed59f3d7",
