@@ -65,13 +65,17 @@ await check("Claude version-specific patch anchors", async () => {
   const asarPath = resolve(inspectionSource, "Contents/Resources/app.asar");
   const environmentSource = await readAsarFile(asarPath, claudeConfig.app.patchFile);
   const labelSource = await readAsarFile(asarPath, claudeConfig.app.modelLabelPatchFile);
+  const userDataDirSource = await readAsarFile(asarPath, claudeConfig.app.userDataDirPatchFile);
   if (!environmentSource?.includes(claudeConfig.app.patchFrom)) {
     throw new Error(`Claude Code environment anchor is absent in ${claudeConfig.app.patchFile}; stop instead of fuzzy-patching`);
   }
   if (!labelSource?.includes(claudeConfig.app.modelLabelPatchFrom)) {
     throw new Error(`Claude picker anchor is absent in ${claudeConfig.app.modelLabelPatchFile}; stop instead of fuzzy-patching`);
   }
-  return "both exact anchors are present";
+  if (!userDataDirSource?.includes(claudeConfig.app.userDataDirPatchFrom)) {
+    throw new Error(`Claude userDataDir anchor is absent in ${claudeConfig.app.userDataDirPatchFile}; stop instead of fuzzy-patching`);
+  }
+  return "all exact anchors are present";
 });
 
 await check("Claude extra slot contract", async () => {
@@ -98,6 +102,10 @@ await check("Claude extra slot contract", async () => {
   }
   if (!fromLabels.includes("Opus 4.7") || !fromLabels.includes("Opus 4.6") || !fromLabels.includes("Sonnet 4.6")) {
     throw new Error("DeepSeek label rewrites must target Opus 4.7, Opus 4.6, and Sonnet 4.6");
+  }
+  const fallbackIds = (claudeConfig.models.nativeFallback ?? []).map((entry) => entry.id);
+  if (fallbackIds[0] !== "claude-fable-5") {
+    throw new Error("nativeFallback must lead with claude-fable-5 so Fable stays visible when Anthropic omits it");
   }
   return "4.7+4.6 DeepSeek; Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku stay native";
 });

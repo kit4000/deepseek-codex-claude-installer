@@ -25,7 +25,7 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 
 ## Proven update pattern
 
-This is the formal end-to-end pattern verified on Claude `1.46388.4` / patch `2026-09-18.1`.
+This is the formal end-to-end pattern verified on Claude `2.2553.1` / patch `2026-09-18.3`.
 
 1. Read the public feed:
    `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json`
@@ -56,16 +56,17 @@ This is the formal end-to-end pattern verified on Claude `1.46388.4` / patch `20
 1. Run `update-claude-hybrid --check`.
 2. Read its structured `status`, `summary`, `root_cause_hint`, `next_actions`, and `artifacts`.
 3. If status is `success`, report that no rebuild is needed. Do not apply again.
-4. If the official signature or either exact patch anchor fails, stop and report that the installer needs a version-specific update.
+4. If the official signature or any exact patch anchor fails, stop and report that the installer needs a version-specific update.
 5. If Claude is running, ask the user to fully quit both apps. Do not terminate them yourself.
 6. When the check reports a rebuild and the apps are closed, run `update-claude-hybrid --apply`.
+   If the Hybrid app is already current, `--apply` still refreshes the managed router and `nativeFallback` without rebuilding the app; Claude may stay open. Start a new Code session so the picker refetches `/v1/models`.
 7. Require the built-in non-billable verification to pass.
 8. Run `prefer-claude-hybrid`.
 9. Ask the user to open `/Applications/Claude.app` and confirm the UI checks above.
 
 ## Anchor maintenance
 
-When a Claude release changes either exact anchor:
+When a Claude release changes any exact anchor:
 
 1. Extract Official `Contents/Resources/app.asar`.
 2. Find exactly one `ANTHROPIC_BASE_URL:e.apiHost` hit → `app.patchFile` / `app.patchFrom`.
@@ -73,17 +74,21 @@ When a Claude release changes either exact anchor:
    `function <name>(e){return <VAR>=new <OBJ>.WebContentsView(e),<FN>(<VAR>.webContents,<CONST>.CLAUDE_AI_WEB),<VAR>.webContents.setMaxListeners(<N>),<VAR>}`
    hit → `app.modelLabelPatchFile` / `app.modelLabelPatchFrom`.
    The function name, object, helper, constant, and listener count vary per build.
-4. Bump `app.patchVersion` (example: `2026-09-18.1`).
-5. Update `CHANGE_SPEC-claude-app-layout-and-updates.md` history table, tests, and `INSTALLER_MANIFEST.json`.
-6. Rebuild Hybrid with `--check` / `--apply`. Never fuzzy-patch.
+4. Find exactly one packaged-startup `delete process.env.CLAUDE_USER_DATA_DIR` hit →
+   `app.userDataDirPatchFile` / `app.userDataDirPatchFrom`.
+5. Bump `app.patchVersion` (example: `2026-09-18.3`).
+6. Update `CHANGE_SPEC-claude-app-layout-and-updates.md` history table, tests, and `INSTALLER_MANIFEST.json`.
+7. Rebuild Hybrid with `--check` / `--apply`. Never fuzzy-patch.
 
-Current verified anchors for Claude `1.46388.4`:
+Current verified anchors for Claude `2.2553.1`:
 
-- `patchFile`: `/.vite/build/index.chunk-CMJVFTis.js`
+- `patchFile`: `/.vite/build/index.chunk-ChZ67Jhw.js`
 - `patchFrom`: `ANTHROPIC_BASE_URL:e.apiHost`
-- `modelLabelPatchFile`: `/.vite/build/index.chunk-CMJVFTis.js`
-- `modelLabelPatchFrom`: `function qge(e){return B=new o.WebContentsView(e),ri(B.webContents,ni.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}`
-- `patchVersion`: `2026-09-18.1`
+- `modelLabelPatchFile`: `/.vite/build/index.chunk-ChZ67Jhw.js`
+- `modelLabelPatchFrom`: `function yxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),jo=!1,B.webContents.on("enter-html-full-screen",(()=>{jo=!0})),B.webContents.on("leave-html-full-screen",(()=>{jo=!1})),B.webContents.setMaxListeners(30),B}`
+- `userDataDirPatchFile`: `/.vite/build/index.pre.js`
+- `userDataDirPatchFrom`: `T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)`
+- `patchVersion`: `2026-09-18.3`
 
 ## Recovery
 

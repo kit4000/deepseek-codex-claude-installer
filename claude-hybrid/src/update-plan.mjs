@@ -1,3 +1,16 @@
+export function overlayInstallerModels(runtimeConfig, installerConfig) {
+  if (!runtimeConfig || typeof runtimeConfig !== "object") {
+    throw new Error("runtime config is required");
+  }
+  if (!installerConfig?.models) {
+    throw new Error("installer config is missing models");
+  }
+  return {
+    ...runtimeConfig,
+    models: structuredClone(installerConfig.models),
+  };
+}
+
 export function decideClaudeHybridUpdate(state, mode = "check") {
   const artifacts = {
     sourceApp: state.sourceApp,
@@ -19,7 +32,7 @@ export function decideClaudeHybridUpdate(state, mode = "check") {
       artifacts,
     };
   }
-  if (!state.environmentAnchorPresent || !state.labelAnchorPresent) {
+  if (!state.environmentAnchorPresent || !state.labelAnchorPresent || !state.userDataDirAnchorPresent) {
     return {
       status: "error",
       summary: "This Claude build is not compatible with the current Hybrid patch anchors.",

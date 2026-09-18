@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decideClaudeHybridUpdate } from "../src/update-plan.mjs";
+import { decideClaudeHybridUpdate, overlayInstallerModels } from "../src/update-plan.mjs";
 
 const baseline = {
   sourceApp: "/Users/test/Applications/Claude Official.app",
@@ -15,6 +15,7 @@ const baseline = {
   sourceSignatureValid: true,
   environmentAnchorPresent: true,
   labelAnchorPresent: true,
+  userDataDirAnchorPresent: true,
   credentialAvailable: true,
   openaiCredentialAvailable: true,
   claudeRunning: false,
@@ -41,9 +42,11 @@ test("detects official app and installer patch updates", () => {
 });
 
 test("stops safely when exact anchors changed", () => {
-  const result = decideClaudeHybridUpdate({ ...baseline, labelAnchorPresent: false }, "apply");
-  assert.equal(result.status, "error");
-  assert.match(result.root_cause_hint, /fuzzy patching is intentionally disabled/);
+  const missingLabel = decideClaudeHybridUpdate({ ...baseline, labelAnchorPresent: false }, "apply");
+  assert.equal(missingLabel.status, "error");
+  assert.match(missingLabel.root_cause_hint, /fuzzy patching is intentionally disabled/);
+  const missingUserDataDir = decideClaudeHybridUpdate({ ...baseline, userDataDirAnchorPresent: false }, "apply");
+  assert.equal(missingUserDataDir.status, "error");
 });
 
 test("requires apps to be closed and a per-user credential before apply", () => {
@@ -56,4 +59,27 @@ test("requires apps to be closed and a per-user credential before apply", () => 
     openaiRequired: true,
     openaiCredentialAvailable: false,
   }, "apply").status, "error");
+});
+
+test("overlayInstallerModels replaces nativeFallback without touching runtime paths", () => {
+  const runtime = {
+    router: { socketPath: "/tmp/router.sock" },
+    models: {
+      nativeFallback: [{ id: "claude-opus-5", displayName: "Claude Opus 5" }],
+    },
+  };
+  const installer = {
+    models: {
+      external: [{ id: "deepseek-flash", aliases: ["claude-sonnet-4-6"] }],
+      nativeFallback: [
+        { id: "claude-fable-5", displayName: "Claude Fable 5" },
+        { id: "claude-opus-5", displayName: "Claude Opus 5" },
+      ],
+    },
+  };
+  const overlayed = overlayInstallerModels(runtime, installer);
+  assert.equal(overlayed.router.socketPath, "/tmp/router.sock");
+  assert.equal(overlayed.models.nativeFallback[0].id, "claude-fable-5");
+  assert.deepEqual(overlayed.models.external, installer.models.external);
+  assert.notEqual(overlayed.models, installer.models);
 });

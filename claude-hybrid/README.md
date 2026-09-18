@@ -28,7 +28,8 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
   Fable 5 / Opus 4.8 / Opus 5 と、純正の Sonnet 5 / Haiku 4.5 / Opus 4.5 / Sonnet 4.5
   はそのまま残ります。
 - `CLAUDE_USER_DATA_DIR` を `~/Library/Application Support/Claude` に固定し、
-  以前の 3P 設定（`Claude-3p`）に引きずられず公式アカウント・セッションを共有。
+  Claude 2.x が packaged 起動でこの環境変数を消して `Claude-3p` へ切り替える処理も
+  exact パッチで止める。以前の 3P 設定に引きずられず公式アカウント・セッションを共有。
 - asar は正しいヘッダー位置・パディングで再パックし、`ElectronAsarIntegrity` を再計算。
 - アプリ複製はAPFSのコピーオンライトを使い、インストール時の一時容量を抑制。
 
@@ -43,7 +44,7 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
   - `qwen-3.8-2.7b` → LAN Ollama `POST http://192.168.0.27:11434/v1/chat/completions`
     （4.6 ピッカー枠は使わない。Claude Code のモデル一覧と `qwen-3-8-2-7b` エージェント）
 - APIキーはファイルへ保存せず、macOS キーチェーンから credential helper 経由で読み出し。
-- `/v1/models` は公式一覧に外部エントリを追加して返却。
+- `/v1/models` は公式一覧に、Anthropic が省略した `nativeFallback`（先頭は Fable 5）と外部エントリを足して返却。
 - 上流の `content-encoding` は fetch が展開済みボディを渡すため除去して転送。
 
 ## インストール
@@ -90,15 +91,18 @@ update-claude-hybrid --apply   # または: npm run update
 prefer-claude-hybrid
 ```
 
-公式署名、バージョン固有の2つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
+公式署名、バージョン固有の3つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
-現行確認済みは Claude `1.46388.4` / patch `2026-09-18.1` です。
+現行確認済みは Claude `2.2553.1` / patch `2026-09-18.3` です。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを
 再署名せず、検証済みアプリのメタデータだけをAPFSステージ経由で移行します。
 それ以外は従来どおり純正アプリから完全再構築します。
+Hybrid アプリが現行でも `--apply` は managed ルーターと `nativeFallback` を再配置します。
+アプリ再構築はしないので Claude を終了する必要はありません。新しい Code セッションで
+ピッカーを取り直してください。
 
 両アプリを先に完全終了してください。その後 `/Applications/Claude.app` を開きます。
 純正をフルパスで開いた後などにランチャーがずれた場合は `prefer-claude-hybrid` を実行します。
@@ -133,6 +137,7 @@ Cursor Grok 4.6 と Composer 2.5 はピッカー枠ではなく、`/cursor-grok-
 - ルーター /v1/models に外部モデルが含まれる
 - LaunchAgent が running
 - `CLAUDE_USER_DATA_DIR` が公式 Claude データディレクトリを指す
+- packaged 起動が `CLAUDE_USER_DATA_DIR` を削除しない
 
 `npm run smoke -- --allow-billing` はルーター経由で実通信し、純正ルートは 401（認証なし）、
 DeepSeek ルートは `DEEPSEEK_HYBRID_OK` の完全応答を確認します。

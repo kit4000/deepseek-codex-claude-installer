@@ -7,6 +7,7 @@ import {
 import {
   buildEnvironmentPatch,
   buildModelLabelPatch,
+  buildUserDataDirPatch,
 } from "../src/app-patch.mjs";
 
 const baseline = {
@@ -118,6 +119,21 @@ test("model label patch rewrites only the DeepSeek slots and leaves native names
   assert.doesNotMatch(patch.to, /\["Opus 5"/);
   assert.doesNotMatch(patch.to, /\["Sonnet 5"/);
   assert.doesNotMatch(patch.to, /\["Haiku 4\.5"/);
+});
+
+test("userDataDir patch keeps LSEnvironment CLAUDE_USER_DATA_DIR on packaged Claude 2.x", () => {
+  const from = "T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)";
+  const patch = buildUserDataDirPatch("/.vite/build/index.pre.js", from);
+  assert.equal(
+    patch.to,
+    "T.app.isPackaged&&!q1&&(delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
+  );
+  assert.doesNotMatch(patch.to, /CLAUDE_USER_DATA_DIR/);
+  assert.match(patch.to, /SSLKEYLOGFILE/);
+  assert.throws(
+    () => buildUserDataDirPatch("/.vite/build/index.pre.js", "T.app.isPackaged&&!q1"),
+    /unexpected shape/,
+  );
 });
 
 test("model label patch rejects a non-exact anchor shape", () => {

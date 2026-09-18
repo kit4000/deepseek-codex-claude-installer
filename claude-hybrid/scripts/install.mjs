@@ -198,11 +198,15 @@ const inspectionSource = targetCanBecomeOfficial ? targetApp : sourceApp;
 const inspectionAsar = join(inspectionSource, "Contents/Resources/app.asar");
 const environmentSource = await readAsarFile(inspectionAsar, config.app.patchFile);
 const labelSource = await readAsarFile(inspectionAsar, config.app.modelLabelPatchFile);
+const userDataDirSource = await readAsarFile(inspectionAsar, config.app.userDataDirPatchFile);
 if (!environmentSource?.includes(config.app.patchFrom)) {
   throw new Error(`Claude Code environment anchor is absent in ${config.app.patchFile}; stop instead of fuzzy-patching`);
 }
 if (!labelSource?.includes(config.app.modelLabelPatchFrom)) {
   throw new Error(`Claude picker anchor is absent in ${config.app.modelLabelPatchFile}; stop instead of fuzzy-patching`);
+}
+if (!userDataDirSource?.includes(config.app.userDataDirPatchFrom)) {
+  throw new Error(`Claude userDataDir anchor is absent in ${config.app.userDataDirPatchFile}; stop instead of fuzzy-patching`);
 }
 
 const layout = await prepareClaudeAppLayout({ sourceApp, targetApp, home });
@@ -277,6 +281,8 @@ const patchResult = await patchClaudeApp({
   patchFrom: config.app.patchFrom,
   modelLabelPatchFile: config.app.modelLabelPatchFile,
   modelLabelPatchFrom: config.app.modelLabelPatchFrom,
+  userDataDirPatchFile: config.app.userDataDirPatchFile,
+  userDataDirPatchFrom: config.app.userDataDirPatchFrom,
   userDataDir: expand(config.app.userDataDir),
   patchVersion: config.app.patchVersion,
 });

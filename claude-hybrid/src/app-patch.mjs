@@ -65,6 +65,21 @@ export function buildEnvironmentPatch(options) {
   return environmentPatchEntries(options).join(",");
 }
 
+export function buildUserDataDirPatch(file, from) {
+  const needle = "delete process.env.CLAUDE_USER_DATA_DIR,";
+  if (!from.includes(needle)) {
+    throw new Error("Claude userDataDir patch anchor has an unexpected shape");
+  }
+  const to = from.replace(needle, "");
+  if (to === from || to.includes("delete process.env.CLAUDE_USER_DATA_DIR")) {
+    throw new Error("Claude userDataDir patch did not remove the CLAUDE_USER_DATA_DIR strip");
+  }
+  if (!to.includes("delete process.env.SSLKEYLOGFILE")) {
+    throw new Error("Claude userDataDir patch must keep the SSLKEYLOGFILE strip");
+  }
+  return { file, from, to };
+}
+
 export function buildModelLabelPatch(file, from) {
   const script = `(()=>{if(globalThis.__CLAUDE_HYBRID_MODEL_LABELS__)return;globalThis.__CLAUDE_HYBRID_MODEL_LABELS__=!0;const labels=new Map(${JSON.stringify(MODEL_LABEL_REWRITES)});const rewriteText=node=>{const current=node.nodeValue??"",trimmed=current.trim(),replacement=labels.get(trimmed);if(replacement)node.nodeValue=current.replace(trimmed,replacement)};const rewrite=root=>{if(!root)return;if(root.nodeType===Node.TEXT_NODE){rewriteText(root);return}const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);for(let node=walker.nextNode();node;node=walker.nextNode())rewriteText(node)};const start=()=>{rewrite(document.body);new MutationObserver(records=>{for(const record of records){if(record.type==="characterData")rewriteText(record.target);for(const node of record.addedNodes)rewrite(node)}}).observe(document.body,{subtree:!0,childList:!0,characterData:!0})};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start,{once:!0}):start()})()`;
   const match = from.match(/,([A-Za-z_$][\w$]*)\}$/);
@@ -168,6 +183,8 @@ export async function patchClaudeApp({
   patchFrom,
   modelLabelPatchFile,
   modelLabelPatchFrom,
+  userDataDirPatchFile,
+  userDataDirPatchFrom,
   userDataDir,
   patchVersion,
 }) {
@@ -200,6 +217,7 @@ export async function patchClaudeApp({
         to: environmentPatch,
       },
       buildModelLabelPatch(modelLabelPatchFile, modelLabelPatchFrom),
+      buildUserDataDirPatch(userDataDirPatchFile, userDataDirPatchFrom),
     ];
     const repackResult = await repackAsar({
       asarPath: stageAsar,

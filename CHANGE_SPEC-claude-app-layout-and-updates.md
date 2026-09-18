@@ -324,6 +324,7 @@ prefer-claude-hybrid
    - `ANTHROPIC_BASE_URL:e.apiHost` → `patchFile` / `patchFrom`
    - `WebContentsView(e),t.c(<VAR>.webContents,t.n.CLAUDE_AI_WEB),<VAR>.webContents.setMaxListeners(20),<VAR>}`  
      → `modelLabelPatchFile` / `modelLabelPatchFrom`（関数名・変数名は版ごとに変わる）
+   - packaged 起動の `delete process.env.CLAUDE_USER_DATA_DIR` → `userDataDirPatchFile` / `userDataDirPatchFrom`
 2. `claude-hybrid/config/claude-hybrid.json` を更新し、`patchVersion` を上げる。
 3. repo / `~/Applications/deepseek-codex-claude-installer` の両方に反映する。
 4. `npm test` / `npm run verify:bundle` を通し、`--check` → `--apply` を再実行する。
@@ -343,16 +344,29 @@ prefer-claude-hybrid
 | 1.44121.0 | 2026-09-02.1 | `index.chunk-CjUl9Ys6.js` | `index.chunk-CjUl9Ys6.js` | `B` |
 | 1.46388.4 | 2026-09-07.1 | `index.chunk-CMJVFTis.js` | `index.chunk-CMJVFTis.js` | `B` |
 | 1.46388.4 | 2026-09-18.1 | `index.chunk-CMJVFTis.js` | `index.chunk-CMJVFTis.js` | `B` |
+| 2.2553.1 | 2026-09-18.2 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
+| 2.2553.1 | 2026-09-18.3 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
 
-現行（1.46388.4 / 2026-09-18.1）:
+現行（2.2553.1 / 2026-09-18.3）:
 
 ```text
-patchFile: /.vite/build/index.chunk-CMJVFTis.js
+patchFile: /.vite/build/index.chunk-ChZ67Jhw.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-CMJVFTis.js
-modelLabelPatchFrom: function qge(e){return B=new o.WebContentsView(e),ri(B.webContents,ni.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}
-patchVersion: 2026-09-18.1
+modelLabelPatchFile: /.vite/build/index.chunk-ChZ67Jhw.js
+modelLabelPatchFrom: function yxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),jo=!1,B.webContents.on("enter-html-full-screen",(()=>{jo=!0})),B.webContents.on("leave-html-full-screen",(()=>{jo=!1})),B.webContents.setMaxListeners(30),B}
+userDataDirPatchFile: /.vite/build/index.pre.js
+userDataDirPatchFrom: T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
+patchVersion: 2026-09-18.3
 ```
+
+2026-09-18.3 は Claude 2.x が packaged 起動時に `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を
+削除し、既存 `Claude-3p` へ切り替わるのを exact パッチで止める。公式アカウントと
+Fable / Opus / Haiku の純正行を維持したまま、借り枠だけ DeepSeek に出す。
+
+2026-09-18.2 は Claude `2.2553.1` の exact アンカーへ更新する。Web ピッカー関数は
+フルスクリーン listener を挟む形になった。2.x の JS は `ANTHROPIC_CUSTOM_MODEL_OPTION`
+を許可リスト文字列として含むため、検証は代入形 `ANTHROPIC_CUSTOM_MODEL_OPTION:` だけを禁ずる。
+`nativeFallback` 先頭の `claude-fable-5` を公式 `/v1/models` へマージし、Fable 5 を純正のまま出す。
 
 2026-09-18.1 は Flash upstream を公式 `deepseek-flash`（V4.1 Flash）へ切り替え、
 Opus 4.7 ピッカー枠を DeepSeek V4.1 Flash へルート/ラベル差し替え（Sonnet 4.6 と同枠）。

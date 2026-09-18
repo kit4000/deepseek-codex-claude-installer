@@ -49,6 +49,7 @@ const config = {
       },
     ],
     nativeFallback: [
+      { id: "claude-fable-5", displayName: "Claude Fable 5" },
       { id: "claude-opus-5", displayName: "Claude Opus 5" },
       { id: "claude-sonnet-5", displayName: "Claude Sonnet 5" },
       { id: "claude-haiku-4-5", displayName: "Claude Haiku 4.5" },
@@ -102,16 +103,12 @@ test("unlisted gpt and deepseek ids stay native unless configured", () => {
 });
 
 test("model list combines native discovery with external models", async () => {
-  const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(url);
-    return jsonResponse(200, {
-      data: [
-        { id: "claude-opus-4-5", display_name: "Claude Opus 4.5" },
-        { id: "claude-sonnet-4-5", display_name: "Claude Sonnet 4.5" },
-      ],
-    });
-  };
+  const fetchImpl = async () => jsonResponse(200, {
+    data: [
+      { id: "claude-opus-4-5", display_name: "Claude Opus 4.5" },
+      { id: "claude-sonnet-4-5", display_name: "Claude Sonnet 4.5" },
+    ],
+  });
   const router = createHybridRouter({ config, fetchImpl, logger: { info() {}, error() {} } });
   const { server } = router;
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -120,11 +117,123 @@ test("model list combines native discovery with external models", async () => {
     const response = await fetch(`http://127.0.0.1:${address.port}/v1/models`);
     assert.equal(response.status, 200);
     const payload = await response.json();
-    assert.equal(payload.data.length, 6);
-    assert.equal(payload.data[2].id, "deepseek-v4-pro[1m]");
-    assert.equal(payload.data[3].id, "deepseek-flash");
-    assert.equal(payload.data[4].id, "gpt-5.6-sol");
-    assert.equal(payload.data[5].id, "gpt-5.6-luna");
+    const ids = payload.data.map((entry) => entry.id);
+    assert.deepEqual(ids, [
+      "claude-fable-5",
+      "claude-opus-5",
+      "claude-sonnet-5",
+      "claude-haiku-4-5",
+      "claude-opus-4-5",
+      "claude-sonnet-4-5",
+      "deepseek-v4-pro[1m]",
+      "deepseek-flash",
+      "gpt-5.6-sol",
+      "gpt-5.6-luna",
+    ]);
+    assert.equal(payload.data[0].display_name, "Claude Fable 5");
+    assert.equal(payload.data[0].owned_by, "anthropic");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("model list keeps Fable native when Anthropic omits it", async () => {
+  const fetchImpl = async () => jsonResponse(200, {
+    data: [
+      { id: "claude-opus-5", display_name: "Claude Opus 5" },
+      { id: "claude-sonnet-5", display_name: "Claude Sonnet 5" },
+      { id: "claude-haiku-4-5", display_name: "Claude Haiku 4.5" },
+    ],
+  });
+  const router = createHybridRouter({ config, fetchImpl, logger: { info() {}, error() {} } });
+  const { server } = router;
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  try {
+    const payload = await (await fetch(`http://127.0.0.1:${address.port}/v1/models`)).json();
+    const fable = payload.data.find((entry) => entry.id === "claude-fable-5");
+    assert.ok(fable);
+    assert.equal(fable.display_name, "Claude Fable 5");
+    assert.equal(fable.owned_by, "anthropic");
+    assert.equal(isExternalModel(config, "claude-fable-5"), false);
+    assert.equal(payload.data.filter((entry) => entry.id === "claude-fable-5").length, 1);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("model list does not duplicate nativeFallback ids already returned upstream", async () => {
+  const fetchImpl = async () => jsonResponse(200, {
+    data: [
+      { id: "claude-fable-5", display_name: "Claude Fable 5" },
+      { id: "claude-opus-5", display_name: "Claude Opus 5" },
+    ],
+  });
+  const router = createHybridRouter({ config, fetchImpl, logger: { info() {}, error() {} } });
+  const { server } = router;
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  try {
+    const payload = await (await fetch(`http://127.0.0.1:${address.port}/v1/models`)).json();
+    const ids = payload.data.map((entry) => entry.id);
+    assert.equal(ids.filter((id) => id === "claude-fable-5").length, 1);
+    assert.equal(ids.filter((id) => id === "claude-opus-5").length, 1);
+    assert.ok(ids.includes("claude-sonnet-5"));
+    assert.ok(ids.includes("claude-haiku-4-5"));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("model list uses nativeFallback including Fable when Anthropic is unavailable", async () => {
+  const fetchImpl = async () => {
+    throw new Error("upstream unavailable");
+  };
+  const router = createHybridRouter({ config, fetchImpl, logger: { info() {}, error() {} } });
+  const { server } = router;
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  try {
+    const payload = await (await fetch(`http://127.0.0.1:${address.port}/v1/models`)).json();
+    assert.deepEqual(payload.data.map((entry) => entry.id), [
+      "claude-fable-5",
+      "claude-opus-5",
+      "claude-sonnet-5",
+      "claude-haiku-4-5",
+      "deepseek-v4-pro[1m]",
+      "deepseek-flash",
+      "gpt-5.6-sol",
+      "gpt-5.6-luna",
+    ]);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("nativeFallback does not reintroduce borrowed external aliases", async () => {
+  const borrowedFallback = {
+    ...config,
+    models: {
+      ...config.models,
+      nativeFallback: [
+        { id: "claude-fable-5", displayName: "Claude Fable 5" },
+        { id: "claude-opus-4-8", displayName: "Claude Opus 4.8" },
+      ],
+    },
+  };
+  const fetchImpl = async () => jsonResponse(200, {
+    data: [{ id: "claude-opus-5", display_name: "Claude Opus 5" }],
+  });
+  const router = createHybridRouter({ config: borrowedFallback, fetchImpl, logger: { info() {}, error() {} } });
+  const { server } = router;
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  try {
+    const payload = await (await fetch(`http://127.0.0.1:${address.port}/v1/models`)).json();
+    const ids = payload.data.map((entry) => entry.id);
+    assert.ok(ids.includes("claude-fable-5"));
+    assert.equal(ids.filter((id) => id === "claude-opus-4-8").length, 0);
+    assert.ok(ids.includes("gpt-5.6-sol"));
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

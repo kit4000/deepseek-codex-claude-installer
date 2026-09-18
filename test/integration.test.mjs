@@ -74,6 +74,8 @@ test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude nativ
   assert.equal(qwen?.target, "qwen3.8:27b");
   assert.deepEqual(qwen?.aliases ?? [], []);
   assert.equal(config.ollama?.baseUrl, "http://192.168.0.27:11434/v1");
+  assert.equal(config.models.nativeFallback[0]?.id, "claude-fable-5");
+  assert.ok(config.models.nativeFallback.every((entry) => !aliases.includes(entry.id)));
   const patch = await readFile(resolve(claudeRoot, "src/app-patch.mjs"), "utf8");
   assert.match(patch, /\["Opus 4\.7", "DeepSeek V4\.1 Flash"\]/);
   assert.match(patch, /\["Sonnet 4\.6", "DeepSeek V4\.1 Flash"\]/);
@@ -112,6 +114,10 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   assert.match(handoff, /replace Official source.*update-claude-hybrid --check.*update-claude-hybrid --apply.*prefer-claude-hybrid/s);
   assert.match(handoff, /1\.28929\.0/);
   assert.match(handoff, /2026-08-18\.3/);
+  assert.match(handoff, /2\.2553\.1/);
+  assert.match(handoff, /2026-09-18\.3/);
+  assert.match(handoff, /CLAUDE_USER_DATA_DIR/);
+  assert.match(handoff, /厳密な3つのアンカー/);
   assert.match(handoff, /ANTHROPIC_UNIX_SOCKET/);
   assert.match(handoff, /Fable 5 と Opus 4\.8、Opus 5/);
   assert.match(handoff, /GitHub URL だけを渡されたエージェントは、この文書を全文読んでから導入します/);
@@ -128,12 +134,17 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   const skill = await readFile(resolve(projectRoot, "skills/claude-hybrid-update/SKILL.md"), "utf8");
   const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
-  assert.equal(config.app.patchVersion, "2026-09-18.1");
-  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-CMJVFTis.js");
-  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-CMJVFTis.js");
+  assert.equal(config.app.patchVersion, "2026-09-18.3");
+  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-ChZ67Jhw.js");
+  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-ChZ67Jhw.js");
+  assert.equal(config.app.userDataDirPatchFile, "/.vite/build/index.pre.js");
   assert.equal(
     config.app.modelLabelPatchFrom,
-    "function qge(e){return B=new o.WebContentsView(e),ri(B.webContents,ni.CLAUDE_AI_WEB),B.webContents.setMaxListeners(30),B}",
+    "function yxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),jo=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{jo=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{jo=!1})),B.webContents.setMaxListeners(30),B}",
+  );
+  assert.equal(
+    config.app.userDataDirPatchFrom,
+    "T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
   );
   assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
   assert.match(changeSpec, /実証済みアップデートパターン/);
@@ -141,8 +152,12 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   assert.match(skill, /Proven update pattern/);
   assert.match(skill, /RELEASES\.json/);
   assert.match(hybridReadme, /RELEASES\.json/);
-  assert.match(hybridReadme, /1\.46388\.4/);
+  assert.match(hybridReadme, /2\.2553\.1/);
+  assert.match(hybridReadme, /2026-09-18\.3/);
   assert.match(hybridReadme, /--allow-billing/);
+  assert.match(skill, /userDataDirPatchFile/);
+  const handoff = await readFile(resolve(projectRoot, "AGENT_HANDOFF.md"), "utf8");
+  assert.match(handoff, /Claude-3p/);
   assert.doesNotMatch(hybridReadme, /npm run smoke\s+# DeepSeek/);
 });
 
@@ -238,4 +253,6 @@ test("installer defaults to the promoted Hybrid layout and verifies both roles",
   assert.match(verifier, /displayName/);
   assert.match(verifier, /autoUpdaterDisabled/);
   assert.match(installer, /preferClaudeHybrid/);
+  const updater = await readFile(resolve(claudeRoot, "scripts/update.mjs"), "utf8");
+  assert.match(updater, /refresh-router\.mjs/);
 });

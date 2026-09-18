@@ -6,6 +6,7 @@
   "scripts/install.mjs",
   "scripts/verify.mjs",
   "scripts/update.mjs",
+  "scripts/refresh-router.mjs",
   "scripts/smoke.mjs",
   "scripts/store-deepseek-key.mjs",
   "scripts/patch-app.mjs",
