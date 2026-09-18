@@ -153,18 +153,19 @@ try {
     } else if (plan.status !== "success") {
       runManagedScript("install.mjs");
     }
+    runManagedScript("refresh-router.mjs");
     runManagedScript("verify.mjs");
     const launchServices = preferClaudeHybrid({ officialApp: sourceApp, hybridApp: targetApp });
     console.log(JSON.stringify({
       status: "success",
       summary: plan.status === "success"
-        ? "Claude Hybrid was already current and passed verification."
+        ? "Claude Hybrid app was already current; managed router files were refreshed and verification passed."
         : migration
           ? "Claude Hybrid metadata was migrated without rewriting its verified app patch."
           : "Claude Hybrid was rebuilt from the signed official app and passed verification.",
       next_actions: [
         "Open Claude from /Applications and approve the Claude Safe Storage prompt if macOS shows it.",
-        "Confirm Fable 5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 remain native.",
+        "Start a new Code session so the picker refetches /v1/models, then confirm Fable 5 is listed and native.",
         "Confirm Opus 4.7 / Sonnet 4.6 show DeepSeek V4.1 Flash and Opus 4.6 shows DeepSeek Pro.",
         "Start a Code session and confirm it appears in claude.ai/code or the mobile app.",
       ],

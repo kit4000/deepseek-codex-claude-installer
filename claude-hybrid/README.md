@@ -99,6 +99,9 @@ Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを
 再署名せず、検証済みアプリのメタデータだけをAPFSステージ経由で移行します。
 それ以外は従来どおり純正アプリから完全再構築します。
+Hybrid アプリが現行でも `--apply` は managed ルーターと `nativeFallback` を再配置します。
+アプリ再構築はしないので Claude を終了する必要はありません。新しい Code セッションで
+ピッカーを取り直してください。
 
 両アプリを先に完全終了してください。その後 `/Applications/Claude.app` を開きます。
 純正をフルパスで開いた後などにランチャーがずれた場合は `prefer-claude-hybrid` を実行します。

@@ -59,6 +59,7 @@ This is the formal end-to-end pattern verified on Claude `1.46388.4` / patch `20
 4. If the official signature or either exact patch anchor fails, stop and report that the installer needs a version-specific update.
 5. If Claude is running, ask the user to fully quit both apps. Do not terminate them yourself.
 6. When the check reports a rebuild and the apps are closed, run `update-claude-hybrid --apply`.
+   If the Hybrid app is already current, `--apply` still refreshes the managed router and `nativeFallback` without rebuilding the app; Claude may stay open. Start a new Code session so the picker refetches `/v1/models`.
 7. Require the built-in non-billable verification to pass.
 8. Run `prefer-claude-hybrid`.
 9. Ask the user to open `/Applications/Claude.app` and confirm the UI checks above.

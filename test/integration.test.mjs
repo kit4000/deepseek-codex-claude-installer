@@ -240,4 +240,6 @@ test("installer defaults to the promoted Hybrid layout and verifies both roles",
   assert.match(verifier, /displayName/);
   assert.match(verifier, /autoUpdaterDisabled/);
   assert.match(installer, /preferClaudeHybrid/);
+  const updater = await readFile(resolve(claudeRoot, "scripts/update.mjs"), "utf8");
+  assert.match(updater, /refresh-router\.mjs/);
 });

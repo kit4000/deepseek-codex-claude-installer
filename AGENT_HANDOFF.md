@@ -110,6 +110,7 @@ UPDATE CONTRACT
 - Pristine source: `~/Applications/Claude Official.app` (Apple-signed, never ASAR-patched)
 - Do not use in-app updater on Hybrid
 - Update = download official zip from RELEASES.json → replace Official source → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
+- `--apply` は Hybrid アプリが現行でも managed ルーターと `nativeFallback` を再配置する（Fable 5 を `/v1/models` に足す修正など）。アプリ再構築が不要なら Claude を終了しなくてよい。新しい Code セッションでピッカーを取り直す。
 - On exact-anchor failure: stop; do not fuzzy-patch; update `claude-hybrid/config/claude-hybrid.json` anchors and `patchVersion` first
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
 
