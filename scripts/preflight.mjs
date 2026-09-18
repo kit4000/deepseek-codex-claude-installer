@@ -99,6 +99,10 @@ await check("Claude extra slot contract", async () => {
   if (!fromLabels.includes("Opus 4.7") || !fromLabels.includes("Opus 4.6") || !fromLabels.includes("Sonnet 4.6")) {
     throw new Error("DeepSeek label rewrites must target Opus 4.7, Opus 4.6, and Sonnet 4.6");
   }
+  const fallbackIds = (claudeConfig.models.nativeFallback ?? []).map((entry) => entry.id);
+  if (fallbackIds[0] !== "claude-fable-5") {
+    throw new Error("nativeFallback must lead with claude-fable-5 so Fable stays visible when Anthropic omits it");
+  }
   return "4.7+4.6 DeepSeek; Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku stay native";
 });
 

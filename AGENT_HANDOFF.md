@@ -94,6 +94,7 @@ native GPT（`gpt-5.6-sol` など）の remote compact / 親ターンも同じ�
   橋は `wss://bridge.claudeusercontent.com` のままなので、外部モデル選択と共存する。
 - Webピッカーの表示は Opus 4.7 / Sonnet 4.6→DeepSeek V4.1 Flash、Opus 4.6→DeepSeek V4 Pro (1M)。
 - Fable、Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5、Opus 4.5 / Sonnet 4.5 は純正経路のまま。
+  Anthropic の `/v1/models` が Fable 等を省略しても、ルーターは `nativeFallback` の欠けた ID を公式一覧へ足す（先頭は `claude-fable-5`）。借りた DeepSeek 枠は足さない。
 - `model: "haiku"` のサブエージェントは DeepSeek V4.1 Flash（upstream `deepseek-flash`）。名前付きエージェント
   `deepseek-v4-flash` / `deepseek-v4-pro` も呼べる。
   グローバルなサブエージェント既定は変更しない。

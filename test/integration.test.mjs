@@ -74,6 +74,8 @@ test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude nativ
   assert.equal(qwen?.target, "qwen3.8:27b");
   assert.deepEqual(qwen?.aliases ?? [], []);
   assert.equal(config.ollama?.baseUrl, "http://192.168.0.27:11434/v1");
+  assert.equal(config.models.nativeFallback[0]?.id, "claude-fable-5");
+  assert.ok(config.models.nativeFallback.every((entry) => !aliases.includes(entry.id)));
   const patch = await readFile(resolve(claudeRoot, "src/app-patch.mjs"), "utf8");
   assert.match(patch, /\["Opus 4\.7", "DeepSeek V4\.1 Flash"\]/);
   assert.match(patch, /\["Sonnet 4\.6", "DeepSeek V4\.1 Flash"\]/);

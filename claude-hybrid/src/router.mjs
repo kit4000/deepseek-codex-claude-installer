@@ -113,14 +113,42 @@ function externalModelRecord(entry, index) {
   };
 }
 
+function borrowedModelIds(config) {
+  const ids = new Set();
+  for (const entry of externalModelEntries(config)) {
+    if (entry.id) ids.add(entry.id);
+    for (const alias of entry.aliases ?? []) ids.add(alias);
+  }
+  return ids;
+}
+
 function nativeFallbackRecords(config) {
-  return (config.models?.nativeFallback ?? []).map((entry) => ({
+  const borrowed = borrowedModelIds(config);
+  return (config.models?.nativeFallback ?? [])
+    .filter((entry) => typeof entry.id === "string" && entry.id.length > 0 && !borrowed.has(entry.id))
+    .map((entry) => ({
+      type: "model",
+      id: entry.id,
+      display_name: entry.displayName ?? entry.id,
+      created_at: "2025-01-01T00:00:00.000Z",
+      owned_by: "anthropic",
+    }));
+}
+
+function toNativeModelRecord(entry) {
+  return {
     type: "model",
     id: entry.id,
-    display_name: entry.displayName ?? entry.id,
-    created_at: "2025-01-01T00:00:00.000Z",
-    owned_by: "anthropic",
-  }));
+    display_name: entry.display_name ?? entry.id,
+    created_at: entry.created_at ?? "2025-01-01T00:00:00.000Z",
+    owned_by: entry.owned_by ?? "anthropic",
+  };
+}
+
+function mergeNativeFallback(discovered, config) {
+  const existing = new Set(discovered.map((entry) => entry.id));
+  const missing = nativeFallbackRecords(config).filter((entry) => !existing.has(entry.id));
+  return [...missing, ...discovered];
 }
 
 async function collectModelList(config, incomingHeaders, fetchImpl) {
@@ -135,13 +163,7 @@ async function collectModelList(config, incomingHeaders, fetchImpl) {
     if (upstream.ok) {
       const payload = await upstream.json();
       if (Array.isArray(payload.data) && payload.data.length > 0) {
-        return payload.data.map((entry) => ({
-          type: "model",
-          id: entry.id,
-          display_name: entry.display_name ?? entry.id,
-          created_at: entry.created_at ?? "2025-01-01T00:00:00.000Z",
-          owned_by: entry.owned_by ?? "anthropic",
-        }));
+        return mergeNativeFallback(payload.data.map(toNativeModelRecord), config);
       }
     }
   } catch {}

@@ -43,7 +43,7 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
   - `qwen-3.8-2.7b` → LAN Ollama `POST http://192.168.0.27:11434/v1/chat/completions`
     （4.6 ピッカー枠は使わない。Claude Code のモデル一覧と `qwen-3-8-2-7b` エージェント）
 - APIキーはファイルへ保存せず、macOS キーチェーンから credential helper 経由で読み出し。
-- `/v1/models` は公式一覧に外部エントリを追加して返却。
+- `/v1/models` は公式一覧に、Anthropic が省略した `nativeFallback`（先頭は Fable 5）と外部エントリを足して返却。
 - 上流の `content-encoding` は fetch が展開済みボディを渡すため除去して転送。
 
 ## インストール

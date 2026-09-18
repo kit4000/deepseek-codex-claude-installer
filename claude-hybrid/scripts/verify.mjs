@@ -127,8 +127,10 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
   });
   const models = modelsResponse.ok ? await modelsResponse.json() : { data: [] };
   const externalIds = config.models.external.map((entry) => entry.id);
+  const requiredNativeIds = ["claude-fable-5"];
   report.checks.modelList = {
-    ok: externalIds.every((id) => models.data?.some((entry) => entry.id === id)),
+    ok: requiredNativeIds.every((id) => models.data?.some((entry) => entry.id === id))
+      && externalIds.every((id) => models.data?.some((entry) => entry.id === id)),
     ids: models.data?.map((entry) => entry.id) ?? [],
   };
 
