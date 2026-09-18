@@ -12,7 +12,7 @@ Use this skill when the user explicitly asks to delegate a bounded task to DeepS
 
 1. Confirm the requested delegation is bounded and that external API billing is intended or already approved.
 2. Spawn `agent_type="deepseek-v4"` with a concrete task, explicit file or responsibility ownership, and the reminder that it is not alone in the codebase.
-3. Do not override the model: the installed agent profile selects `deepseek/deepseek-v4-flash` with `max` reasoning through the loopback router.
+3. Do not override the model: the installed agent profile selects `deepseek/deepseek-flash` with `max` reasoning through the loopback router.
 4. Continue useful parent work while it runs when tasks are independent.
 5. Inspect its evidence and any diff before integrating the result. The parent remains responsible for final design and verification.
 

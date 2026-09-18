@@ -12,7 +12,7 @@ if (codexOnly && claudeOnly) throw new Error("Choose only one of --codex-only or
 
 runNode(projectRoot, "scripts/verify.mjs");
 if (!claudeOnly) {
-  runNode(codexRoot, "scripts/smoke.mjs", ["deepseek/deepseek-v4-flash", "max"]);
+  runNode(codexRoot, "scripts/smoke.mjs", ["deepseek/deepseek-flash", "max"]);
 }
 if (!codexOnly) runNode(claudeRoot, "scripts/smoke.mjs", ["--allow-billing"]);
 

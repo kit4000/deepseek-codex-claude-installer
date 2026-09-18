@@ -58,13 +58,13 @@ await check("deepseekSubagentProfile", async () => {
   const source = await readFile(profilePath, "utf8");
   if (!source.startsWith(EXTENSION_MARKER)) throw new Error("Agent profile is not managed by this installer");
   for (const expected of [
-    'model = "deepseek/deepseek-v4-flash"',
+    'model = "deepseek/deepseek-flash"',
     'model_provider = "openai"',
     'model_reasoning_effort = "max"',
   ]) {
     if (!source.includes(expected)) throw new Error(`Agent profile is missing: ${expected}`);
   }
-  return "DeepSeek V4 Flash through the existing loopback router at max effort";
+  return "DeepSeek V4.1 Flash through the existing loopback router at max effort";
 });
 
 await check("qwenSubagentRegistration", async () => {

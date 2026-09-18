@@ -80,6 +80,7 @@ await check("Claude extra slot contract", async () => {
     "claude-haiku-4-5-external-flash",
     "claude-opus-4-5-external-pro",
     "claude-opus-4-6",
+    "claude-opus-4-7",
     "claude-sonnet-4-6",
   ];
   if (JSON.stringify(aliases) !== JSON.stringify(expected)) {
@@ -90,15 +91,15 @@ await check("Claude extra slot contract", async () => {
   }
   const { MODEL_LABEL_REWRITES } = await import(pathToFileURL(resolve(claudeRoot, "src/app-patch.mjs")));
   const fromLabels = MODEL_LABEL_REWRITES.map(([from]) => from);
-  for (const forbidden of ["Fable 5", "Opus 5", "Sonnet 5", "Haiku 4.5", "Opus 4.5", "Sonnet 4.5", "Opus 4.8", "Opus 4.7"]) {
+  for (const forbidden of ["Fable 5", "Opus 5", "Sonnet 5", "Haiku 4.5", "Opus 4.5", "Sonnet 4.5", "Opus 4.8"]) {
     if (fromLabels.includes(forbidden)) {
       throw new Error(`${forbidden} is targeted by the label patch`);
     }
   }
-  if (!fromLabels.includes("Opus 4.6") || !fromLabels.includes("Sonnet 4.6")) {
-    throw new Error("DeepSeek label rewrites must target Opus 4.6 and Sonnet 4.6");
+  if (!fromLabels.includes("Opus 4.7") || !fromLabels.includes("Opus 4.6") || !fromLabels.includes("Sonnet 4.6")) {
+    throw new Error("DeepSeek label rewrites must target Opus 4.7, Opus 4.6, and Sonnet 4.6");
   }
-  return "4.6 DeepSeek only; Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku stay native";
+  return "4.7+4.6 DeepSeek; Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku stay native";
 });
 
 await check("Claude app layout", async () => {

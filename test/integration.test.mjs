@@ -51,18 +51,20 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   assert.match(rootReadme, /GPT-6 Astra など native GPT の remote compact/);
 });
 
-test("Claude Hybrid uses 4.6 DeepSeek slots and keeps newer Claude native", async () => {
+test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude native", async () => {
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
   const aliases = config.models.external.flatMap((entry) => entry.aliases ?? []).sort();
   assert.deepEqual(aliases, [
     "claude-haiku-4-5-external-flash",
     "claude-opus-4-5-external-pro",
     "claude-opus-4-6",
+    "claude-opus-4-7",
     "claude-sonnet-4-6",
   ]);
   const byTarget = Object.fromEntries(config.models.external.map((entry) => [entry.target, entry]));
   assert.equal(byTarget["deepseek-v4-pro[1m]"].provider, "deepseek");
-  assert.equal(byTarget["deepseek-v4-flash"].provider, "deepseek");
+  assert.equal(byTarget["deepseek-flash"].provider, "deepseek");
+  assert.equal(byTarget["deepseek-flash"].agentName, "deepseek-v4-flash");
   assert.equal(byTarget["gpt-5.6-sol"], undefined);
   assert.equal(byTarget["gpt-5.6-luna"], undefined);
   assert.ok(!config.models.external.some((entry) => entry.provider === "openai"));
@@ -73,14 +75,14 @@ test("Claude Hybrid uses 4.6 DeepSeek slots and keeps newer Claude native", asyn
   assert.deepEqual(qwen?.aliases ?? [], []);
   assert.equal(config.ollama?.baseUrl, "http://192.168.0.27:11434/v1");
   const patch = await readFile(resolve(claudeRoot, "src/app-patch.mjs"), "utf8");
-  assert.match(patch, /\["Sonnet 4\.6", "DeepSeek V4 Flash"\]/);
+  assert.match(patch, /\["Opus 4\.7", "DeepSeek V4\.1 Flash"\]/);
+  assert.match(patch, /\["Sonnet 4\.6", "DeepSeek V4\.1 Flash"\]/);
   assert.match(patch, /\["Opus 4\.6", "DeepSeek V4 Pro \(1M\)"\]/);
   assert.doesNotMatch(patch, /\["Opus 4\.8"/);
-  assert.doesNotMatch(patch, /\["Opus 4\.7"/);
   assert.doesNotMatch(patch, /GPT-5\.6 Sol/);
   assert.doesNotMatch(patch, /GPT-5\.6 Luna/);
   assert.match(patch, /ANTHROPIC_UNIX_SOCKET/);
-  assert.match(patch, /ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-v4-flash"/);
+  assert.match(patch, /ANTHROPIC_DEFAULT_HAIKU_MODEL:"deepseek-flash"/);
   assert.doesNotMatch(patch, /ANTHROPIC_CUSTOM_MODEL_OPTION/);
   assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_OPUS_MODEL/);
   assert.doesNotMatch(patch, /ANTHROPIC_DEFAULT_SONNET_MODEL/);
@@ -126,7 +128,7 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   const skill = await readFile(resolve(projectRoot, "skills/claude-hybrid-update/SKILL.md"), "utf8");
   const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
-  assert.equal(config.app.patchVersion, "2026-09-07.1");
+  assert.equal(config.app.patchVersion, "2026-09-18.1");
   assert.equal(config.app.patchFile, "/.vite/build/index.chunk-CMJVFTis.js");
   assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-CMJVFTis.js");
   assert.equal(

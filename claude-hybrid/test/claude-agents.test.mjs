@@ -9,7 +9,7 @@ const config = {
   models: {
     external: [
       { id: "deepseek-v4-pro[1m]", target: "deepseek-v4-pro[1m]", displayName: "DeepSeek V4 Pro (1M)" },
-      { id: "deepseek-v4-flash", target: "deepseek-v4-flash", displayName: "DeepSeek V4 Flash" },
+      { id: "deepseek-flash", agentName: "deepseek-v4-flash", target: "deepseek-flash", displayName: "DeepSeek V4.1 Flash" },
       { id: "gpt-5.6-sol", target: "gpt-5.6-sol", displayName: "GPT-5.6 Sol" },
       { id: "gpt-5.6-luna", target: "gpt-5.6-luna", displayName: "GPT-5.6 Luna" },
     ],
@@ -26,7 +26,7 @@ test("renders four named Claude Code agents without changing global subagent def
   ]);
   assert.deepEqual(agents.map((entry) => entry.model), [
     "deepseek-v4-pro[1m]",
-    "deepseek-v4-flash",
+    "deepseek-flash",
     "gpt-5.6-sol",
     "gpt-5.6-luna",
   ]);

@@ -14,7 +14,7 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
 
 - `gpt-*` など名前空間のないモデルは ChatGPT Codex upstream へそのまま転送します。ChatGPT 側で追加された
   GPT-6 Astra などのネイティブモデルも、インストール時に最新カタログを取り込んで同じ一覧へ残します。
-- `deepseek/deepseek-v4-flash` は DeepSeek 公式 Responses API へ直接転送し、upstream では
+- `deepseek/deepseek-flash` は DeepSeek 公式 Responses API へ直接転送し、upstream では
   `deepseek/` 名前空間だけを除きます。
 - Flash の reasoning effort は公式Codex向け定義に合わせて `low` / `high` / `max` を表示し、
   既定値は `high` です。
@@ -63,8 +63,8 @@ npm test
 npm run store-deepseek-key
 npm run install
 npm run smoke -- gpt-5.6-sol
-npm run smoke -- deepseek/deepseek-v4-flash
-npm run smoke -- deepseek/deepseek-v4-flash max
+npm run smoke -- deepseek/deepseek-flash
+npm run smoke -- deepseek/deepseek-flash max
 ```
 
 インストーラーは先にカタログと LaunchAgent を準備し、`/healthz` 成功後に
@@ -75,7 +75,7 @@ npm run smoke -- deepseek/deepseek-v4-flash max
 model_provider = "openai"
 model_catalog_json = "/Users/.../.codex/model-catalogs/native-plus-external.json"
 openai_base_url = "http://127.0.0.1:10100/v1"
-model = "deepseek/deepseek-v4-flash"
+model = "deepseek/deepseek-flash"
 ```
 
 CodexのHTTPリクエスト圧縮はループバックルーターでは不要なため、インストーラーは
@@ -93,7 +93,7 @@ DeepSeek用CLIプロファイルは
 `router-config.json` の `supportsParallelToolCalls` だけを参照します。外部モデルで未指定の場合は
 `false` になります。
 
-DeepSeek V4 Flash は `priority: 0` を明示し、生成後の `model/list` で `isDefault: true` にします。
+DeepSeek V4.1 Flash は `priority: 0` を明示し、生成後の `model/list` で `isDefault: true` にします。
 Codex Desktop の簡易モデル選択は選択後に `isDefault` モデルへ状態を戻すため、この値が欠けると
 DeepSeek を選択できても GPT-6 Astra へ戻ります。`pending` または `not enabled` と記載された
 未対応モデルは、API 実装が完了するまでメインピッカーへ追加しません。
@@ -131,7 +131,7 @@ DeepSeek API キーは `config.toml` や plist には保存せず、macOS キー
 ```bash
 npm run install:claude
 claude-deepseek                         # DeepSeek V4 Pro (1M), max effort
-claude-deepseek --deepseek-model flash # DeepSeek V4 Flash
+claude-deepseek --deepseek-model flash # DeepSeek V4.1 Flash
 claude-deepseek --deepseek-print-config
 ```
 
@@ -142,7 +142,7 @@ npm run install:claude-desktop
 ```
 
 インストーラーは `~/Library/Application Support/Claude-3p/configLibrary/` へ固定モデル一覧
-（`claude-opus-4-5` → DeepSeek V4 Pro (1M)、`claude-haiku-4-5` → DeepSeek V4 Flash）を書き、
+（`claude-opus-4-5` → DeepSeek V4 Pro (1M)、`claude-haiku-4-5` → DeepSeek V4.1 Flash）を書き、
 `~/.local/bin/claude-desktop-credential-helper` から
 macOS キーチェーンの DeepSeek キーを読み出します。キーはファイルや設定 JSON へ埋め込まれません。
 Claude Desktop を完全終了して再起動すると third-party inference が有効になり、モデル選択と

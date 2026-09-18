@@ -62,7 +62,7 @@ ChatGPT 上流の compact API は 404 です。ルーターは次を行います
 
 ### DeepSeek経路の remote compact と tool call 正規化
 
-Codex Desktop が DeepSeek V4 Flash を使うとき、ルーターは次を行います。
+Codex Desktop が DeepSeek V4.1 Flash を使うとき、ルーターは次を行います。
 
 1. `/v1/responses/compact` を DeepSeek の通常 Responses 要約へマップし、結果を
    ルーター密封の JSON `compaction` へ戻す。
@@ -86,15 +86,15 @@ native GPT（`gpt-5.6-sol` など）の remote compact / 親ターンも同じ�
 
 - Codeタブが子プロセスへ `ANTHROPIC_BASE_URL=http://127.0.0.1:10102` と
   `ANTHROPIC_UNIX_SOCKET`（Hybrid ルーターの Unix ソケット）を渡す。
-- 通常のClaudeモデルはAnthropicへ転送し、4.6 の2エイリアスだけを外部APIへ振り分け。
+- 通常のClaudeモデルはAnthropicへ転送し、Opus 4.7 / Sonnet 4.6 / Opus 4.6 の DeepSeek エイリアスだけを外部APIへ振り分け。
   DeepSeek は公式 Anthropic 互換。ChatGPT サブスクリプションは Claude.app のピッカー枠に載せない。
   Qwen 3.8 2.7B は `qwen-3.8-2.7b` としてモデル一覧と名前付きエージェントに追加し、
   LAN Ollama の `/v1/chat/completions` へ変換する。4.6 枠は使わない。
 - `ANTHROPIC_UNIX_SOCKET` は Claude Code の Remote Control 判定用。
   橋は `wss://bridge.claudeusercontent.com` のままなので、外部モデル選択と共存する。
-- Webピッカーの表示は Sonnet 4.6→DeepSeek V4 Flash、Opus 4.6→DeepSeek V4 Pro (1M)。
-- Fable、Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5は純正経路のまま。Opus 4.5 / Sonnet 4.5 / Opus 4.7 も純正。
-- `model: "haiku"` のサブエージェントは DeepSeek Flash。名前付きエージェント
+- Webピッカーの表示は Opus 4.7 / Sonnet 4.6→DeepSeek V4.1 Flash、Opus 4.6→DeepSeek V4 Pro (1M)。
+- Fable、Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5、Opus 4.5 / Sonnet 4.5 は純正経路のまま。
+- `model: "haiku"` のサブエージェントは DeepSeek V4.1 Flash（upstream `deepseek-flash`）。名前付きエージェント
   `deepseek-v4-flash` / `deepseek-v4-pro` も呼べる。
   グローバルなサブエージェント既定は変更しない。
 - 公式ユーザーデータディレクトリを共有し、セッションを共存。
@@ -141,7 +141,7 @@ UPDATE CONTRACT
 ### DeepSeek V4の追加サブエージェント
 
 `[agents.deepseek-v4]` が端末固有のagent profileを参照し、その子だけを
-`deepseek/deepseek-v4-flash`、`max`へ切り替えます。親がGPTでも明示的に呼び出せます。
+`deepseek/deepseek-flash`、`max`へ切り替えます。親がGPTでも明示的に呼び出せます。
 DeepSeekはメインピッカーにも残り、全サブエージェントの既定モデルは変更しません。実API課金を
 伴うため、利用者がDeepSeek委譲を明示した場合または課金委譲を承認した場合だけ呼び出します。
 
@@ -300,7 +300,7 @@ UI確認を静的なモデルカタログの存在だけで代替しません。
 npm run smoke -- --allow-billing
 ```
 
-Codexは `deepseek/deepseek-v4-flash` を `max` で呼び `ROUTER_OK` を、Claude Hybridは
+Codexは `deepseek/deepseek-flash` を `max` で呼び `ROUTER_OK` を、Claude Hybridは
 4.6 Flashエイリアス経由で `DEEPSEEK_HYBRID_OK` を確認します。Claudeの純正経路はダミー
 トークンによる401／403等を期待し、実ユーザーのOAuthトークンを抽出しません。
 

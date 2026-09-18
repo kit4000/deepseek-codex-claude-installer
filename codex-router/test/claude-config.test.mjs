@@ -49,10 +49,10 @@ test("scopes DeepSeek routing to the child process and keeps the session directo
   assert.equal(environment.ANTHROPIC_API_KEY, undefined);
   assert.equal(environment.CLAUDE_CODE_USE_BEDROCK, undefined);
   assert.equal(environment.ANTHROPIC_BEDROCK_BASE_URL, undefined);
-  assert.equal(environment.ANTHROPIC_MODEL, "deepseek-v4-flash");
+  assert.equal(environment.ANTHROPIC_MODEL, "deepseek-flash");
   assert.equal(environment.ANTHROPIC_DEFAULT_OPUS_MODEL, "deepseek-v4-pro[1m]");
-  assert.equal(environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash");
-  assert.equal(environment.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash");
+  assert.equal(environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-flash");
+  assert.equal(environment.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-flash");
   assert.equal(environment.CLAUDE_CODE_EFFORT_LEVEL, "max");
   assert.equal(environment.CLAUDE_CONFIG_DIR, "/tmp/existing-claude-sessions");
 });

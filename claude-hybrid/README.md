@@ -23,7 +23,7 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
 - Code タブが Claude Code 子プロセスへ渡す `ANTHROPIC_BASE_URL` を
   `http://127.0.0.1:10102` に書き換え、同じ子プロセスへ `ANTHROPIC_UNIX_SOCKET` も渡す。
   Unix ソケットは Remote Control を first-party 扱いしたまま、推論だけローカルルーターへ向ける。
-- Code タブのWebピッカーで Sonnet 4.6 を DeepSeek V4 Flash、Opus 4.6 を
+- Code タブのWebピッカーで Opus 4.7 / Sonnet 4.6 を DeepSeek V4.1 Flash、Opus 4.6 を
   DeepSeek V4 Pro (1M) と表示し、選択時はルーターが対応する外部モデルへ振り分けます。
   Fable 5 / Opus 4.8 / Opus 5 と、純正の Sonnet 5 / Haiku 4.5 / Opus 4.5 / Sonnet 4.5
   はそのまま残ります。
@@ -39,7 +39,7 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
 - 通常モデル（`claude-*` のうち借りていない ID）は `api.anthropic.com` へ OAuth のまま転送。
 - 外部モデル:
   - `claude-opus-4-6` → `deepseek-v4-pro[1m]`（DeepSeek 公式 Anthropic 互換）
-  - `claude-sonnet-4-6` → `deepseek-v4-flash`
+  - `claude-opus-4-7` / `claude-sonnet-4-6` → `deepseek-flash`（DeepSeek V4.1 Flash）
   - `qwen-3.8-2.7b` → LAN Ollama `POST http://192.168.0.27:11434/v1/chat/completions`
     （4.6 ピッカー枠は使わない。Claude Code のモデル一覧と `qwen-3-8-2-7b` エージェント）
 - APIキーはファイルへ保存せず、macOS キーチェーンから credential helper 経由で読み出し。
@@ -93,7 +93,7 @@ prefer-claude-hybrid
 公式署名、バージョン固有の2つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
-現行確認済みは Claude `1.46388.4` / patch `2026-09-07.1` です。
+現行確認済みは Claude `1.46388.4` / patch `2026-09-18.1` です。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを
@@ -108,9 +108,9 @@ Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検
 入力し「常に許可」を選んでください（再署名後の一度きりの確認です）。
 
 Code タブのモデルピッカーには、よく使うモデル（Fable / Opus / Sonnet / Haiku）と
-借り枠の DeepSeek V4 Pro / Flash が並びます。
-Claude Code のサブエージェントとしては `deepseek-v4-flash`、`deepseek-v4-pro`
-を名前で呼べます。`model: "haiku"` は DeepSeek Flash です。
+借り枠の DeepSeek V4 Pro / V4.1 Flash が並びます。
+Claude Code のサブエージェントとしては `deepseek-v4-flash`（upstream `deepseek-flash`）、`deepseek-v4-pro`
+を名前で呼べます。`model: "haiku"` は DeepSeek V4.1 Flash です。
 Cursor Grok 4.6 と Composer 2.5 はピッカー枠ではなく、`/cursor-grok-4-6` と
 `/cursor-composer-2-5` がログイン済み Cursor CLI に委譲します。GPT-5.6 Sol / Luna も
 ピッカー枠ではなく、`/gpt-5-6-sol` と `/gpt-5-6-luna` がログイン済み Codex CLI

@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readAsarFile, readAsarHeader } from "../src/asar-repack.mjs";
 import { hasHybridMarker, inspectAppleSignature } from "../src/app-layout.mjs";
-import { environmentPatchEntries } from "../src/app-patch.mjs";
+import { environmentPatchEntries, resolvePython3 } from "../src/app-patch.mjs";
 import { requestUnix } from "../src/router.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -47,7 +47,7 @@ with open(sys.argv[1], "rb") as f:
     data = plistlib.load(f)
 print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
 `;
-  const plistHash = run("/usr/bin/python3", ["-c", plistScript, join(targetApp, "Contents/Info.plist")]);
+  const plistHash = run(resolvePython3(), ["-c", plistScript, join(targetApp, "Contents/Info.plist")]);
   report.checks.asarIntegrity = {
     ok: plistHash.status === 0 && plistHash.stdout.trim() === header.headerSha256,
     headerSha256: header.headerSha256,
@@ -72,7 +72,8 @@ print(data["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"])
       uiPatch?.includes("__CLAUDE_HYBRID_MODEL_LABELS__")
       && uiPatch?.includes("Sonnet 4.6")
       && uiPatch?.includes("Opus 4.6")
-      && uiPatch?.includes("DeepSeek V4 Flash")
+      && uiPatch?.includes("Opus 4.7")
+      && uiPatch?.includes("DeepSeek V4.1 Flash")
       && uiPatch?.includes("DeepSeek V4 Pro (1M)")
       && !uiPatch?.includes("GPT-5.6 Luna")
       && !uiPatch?.includes("GPT-5.6 Sol"),
@@ -142,7 +143,7 @@ with open(sys.argv[1], "rb") as f:
     data = plistlib.load(f)
 print(data["LSEnvironment"].get("CLAUDE_USER_DATA_DIR", ""))
 `;
-  const envPlist = run("/usr/bin/python3", ["-c", envPlistScript, join(targetApp, "Contents/Info.plist")]);
+  const envPlist = run(resolvePython3(), ["-c", envPlistScript, join(targetApp, "Contents/Info.plist")]);
   report.checks.userDataDir = {
     ok: envPlist.status === 0 && envPlist.stdout.trim() === userDataDir,
     value: envPlist.stdout.trim(),

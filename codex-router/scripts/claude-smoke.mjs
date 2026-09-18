@@ -25,7 +25,7 @@ try {
   const output = result.stdout.trim().split(/\r?\n/).filter(Boolean).at(-1) ?? "";
   const completed = result.status === 0 && output === "CLAUDE_DEEPSEEK_OK";
   report = {
-    model: "deepseek-v4-flash",
+    model: "deepseek-flash",
     status: result.status,
     completed,
     output,

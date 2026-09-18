@@ -12,7 +12,7 @@ const configPath = process.env.CLAUDE_HYBRID_CONFIG ?? resolve(projectRoot, "con
 const config = JSON.parse(await readFile(configPath, "utf8"));
 const expand = (value) => String(value).replaceAll("<home>", home);
 const routerBase = `http://127.0.0.1:${config.router.port}`;
-const flashAlias = config.models.external.find((entry) => entry.target === "deepseek-v4-flash")?.aliases?.[0];
+const flashAlias = config.models.external.find((entry) => entry.target === "deepseek-flash")?.aliases?.[0];
 
 if (!flashAlias) throw new Error("DeepSeek Flash alias is not configured");
 

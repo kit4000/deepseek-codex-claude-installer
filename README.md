@@ -10,7 +10,7 @@ https://github.com/kit4000/deepseek-codex-claude-installer
 macOS上で次を共存させます。
 
 - Codex Desktop / CLI の純正GPTモデル、既存タスク、ChatGPT認証
-- CodexのDeepSeek V4 Flash / Pro経路
+- CodexのDeepSeek V4.1 Flash / Pro経路
 - ローカル Ollama の Qwen 3.8 2.7B（`http://192.168.0.27:11434/v1/chat/completions`）
 - DeepSeekで作った暗号化コンパクションをGPTへ戻す際の安全な復号・要約変換
 - GPT-6 Astra など native GPT の remote compact。ChatGPT に `/responses/compact`
@@ -73,7 +73,7 @@ GPT-6 Astra などの新しいネイティブモデルを、DeepSeek / Qwen の�
 `base_instructions` と `supports_parallel_tool_calls` が新しいキャッシュに無い場合も、
 `model_messages.instructions_template` などから自動補完します。
 
-DeepSeek V4 Flash は `priority: 0` として生成し、Codex app-server の `model/list` で
+DeepSeek V4.1 Flash は `priority: 0` として生成し、Codex app-server の `model/list` で
 `isDefault: true` になるようにします。未提供の Responses API や `pending` と明記されたモデルは
 メインピッカーへ載せません。ローカルルーターはリモート SSH ホストから利用できないため、
 Codex Desktop でリモートプロジェクトが選択されている場合、`handoff:verify` は失敗します。
@@ -81,7 +81,7 @@ Codex Desktop でリモートプロジェクトが選択されている場合、
 
 再発確認では、モデル名の表示だけでなく、次をすべて満たす必要があります。
 
-1. `~/.codex/config.toml` が `model = "deepseek/deepseek-v4-flash"` かつ
+1. `~/.codex/config.toml` が `model = "deepseek/deepseek-flash"` かつ
    `external_migration = false`。
 2. `model/list` が DeepSeek を `isDefault: true` として返す。
 3. Desktop ログの `thread/start` が `hostId=local`。
@@ -120,7 +120,7 @@ prefer-claude-hybrid           # ランチャーが純正を選ぶ場合
 
 アンカー不一致時は停止が正常です。近似パッチせず、Official ASAR から
 `patchFile` / `modelLabelPatchFile` を取り直し、`patchVersion` を上げてから再実行します。
-現行確認済み: Claude `1.46388.4` / Hybrid patch `2026-09-07.1`。詳細は
+現行確認済み: Claude `1.46388.4` / Hybrid patch `2026-09-18.1`。詳細は
 `CHANGE_SPEC-claude-app-layout-and-updates.md` §5。
 
 Codexには `claude-hybrid-update`、`deepseek-v4-delegation`、`cursor-cli-delegation`、
@@ -128,7 +128,7 @@ Codexには `claude-hybrid-update`、`deepseek-v4-delegation`、`cursor-cli-dele
 選べるほか、Claude Code では `deepseek-v4-flash` / `deepseek-v4-pro` / `qwen-3-8-2-7b` として、Codex では明示的な
 `agent_type="deepseek-v4"` と `agent_type="qwen-3-8-2-7b"` としても呼び出せます。Qwen 3.8 2.7B は
 Codex ピッカーの `qwen/qwen-3.8-2.7b` と Claude Code のモデル一覧 `qwen-3.8-2.7b` からも選べます。
-4.6 の DeepSeek 枠は変更しません。ChatGPT サブスクリプションの GPT-5.6 Sol /
+Opus 4.7 / Sonnet 4.6 / Opus 4.6 の DeepSeek 枠は上記のとおりです。ChatGPT サブスクリプションの GPT-5.6 Sol /
 Luna は Claude.app のピッカー枠ではなく、ログイン済み Codex CLI のラッパーです。Cursor Grok 4.6
 と Composer 2.5 もピッカー枠ではなく、ログイン済み Cursor CLI のラッパーです。Claude Code では
 新しいセッションで `/cursor-grok-4-6`、`/cursor-composer-2-5`、`/gpt-5-6-sol`、
