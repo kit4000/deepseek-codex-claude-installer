@@ -346,18 +346,26 @@ prefer-claude-hybrid
 | 1.46388.4 | 2026-09-18.1 | `index.chunk-CMJVFTis.js` | `index.chunk-CMJVFTis.js` | `B` |
 | 2.2553.1 | 2026-09-18.2 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
 | 2.2553.1 | 2026-09-18.3 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
+| 2.7032.0 | 2026-09-23.1 | `index.chunk-D3OyLXgG.js` | `index.chunk-D3OyLXgG.js` | `B` |
 
-現行（2.2553.1 / 2026-09-18.3）:
+現行（2.7032.0 / 2026-09-23.1）:
 
 ```text
-patchFile: /.vite/build/index.chunk-ChZ67Jhw.js
+patchFile: /.vite/build/index.chunk-D3OyLXgG.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-ChZ67Jhw.js
-modelLabelPatchFrom: function yxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),jo=!1,B.webContents.on("enter-html-full-screen",(()=>{jo=!0})),B.webContents.on("leave-html-full-screen",(()=>{jo=!1})),B.webContents.setMaxListeners(30),B}
+modelLabelPatchFile: /.vite/build/index.chunk-D3OyLXgG.js
+modelLabelPatchFrom: function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}
 userDataDirPatchFile: /.vite/build/index.pre.js
-userDataDirPatchFrom: T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
-patchVersion: 2026-09-18.3
+userDataDirPatchFrom: T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
+patchVersion: 2026-09-23.1
 ```
+
+2026-09-23.1 は公式フィード現行の Claude `2.7032.0`（pub_date 2026-09-22）の exact アンカー。
+zip は `https://downloads.claude.ai/releases/darwin/universal/2.7032.0/Claude-6c468ab6ed862a68c9555cce34f11186c35f526d.zip`、
+SHA-256 は `f616a119258c78406d6c576cf98851108a59754c766bdb73bb2e37759b71aacd`。
+`patchFrom` は `ANTHROPIC_BASE_URL:e.apiHost` のまま。Web ピッカー関数は `wxe`、
+フルスクリーンフラグは `Ao`、表示ビュー変数は `B`。`CLAUDE_USER_DATA_DIR` の削除停止は
+`index.pre.js` の `!o2`。各アンカー文字列は展開した ASAR 内で 1 箇所。
 
 2026-09-18.3 は Claude 2.x が packaged 起動時に `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を
 削除し、既存 `Claude-3p` へ切り替わるのを exact パッチで止める。公式アカウントと
