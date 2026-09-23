@@ -121,12 +121,19 @@ test("model label patch rewrites only the DeepSeek slots and leaves native names
   assert.doesNotMatch(patch.to, /\["Haiku 4\.5"/);
 });
 
-test("model label patch accepts the Claude 2.7032.0 fullscreen view anchor", () => {
-  const from = "function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{Ao=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}";
-  const patch = buildModelLabelPatch("/.vite/build/index.chunk-D3OyLXgG.js", from);
-  assert.equal(patch.file, "/.vite/build/index.chunk-D3OyLXgG.js");
-  assert.match(patch.to, /B\.webContents\.on\("dom-ready"/);
-  assert.ok(patch.to.endsWith(",B}"));
+test("Claude 2.7032.0 anchors keep the picker return variable and the user-data strip", () => {
+  const labelFrom = "function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{Ao=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}";
+  const label = buildModelLabelPatch("/.vite/build/index.chunk-D3OyLXgG.js", labelFrom);
+  assert.equal(label.file, "/.vite/build/index.chunk-D3OyLXgG.js");
+  assert.match(label.to, /B\.webContents\.on\("dom-ready"/);
+  assert.ok(label.to.endsWith(",B}"));
+  assert.ok(label.to.includes("DeepSeek V4.1 Flash"));
+  const userFrom = "T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)";
+  const user = buildUserDataDirPatch("/.vite/build/index.pre.js", userFrom);
+  assert.equal(
+    user.to,
+    "T.app.isPackaged&&!o2&&(delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
+  );
 });
 
 test("userDataDir patch keeps LSEnvironment CLAUDE_USER_DATA_DIR on packaged Claude 2.x", () => {

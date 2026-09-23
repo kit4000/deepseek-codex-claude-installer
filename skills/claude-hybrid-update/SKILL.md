@@ -17,7 +17,8 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 - Never kill Claude processes. Ask the user to fully quit official Claude and Claude Hybrid when required.
 - Never fuzzy-patch a new Claude build. An exact-anchor failure is a stop condition.
 - Do not run the billable smoke test as part of an update unless the user separately approves billing.
-- Preserve Fable 5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 as native models.
+- Preserve Fable 5, Fable 5.1, Opus 5.5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 as native models.
+- If Claude Official.app shows only DeepSeek, it has entered the managed `Claude-3p` gateway. `--apply` sets that gateway's `deploymentMode` back to `1p` without deleting sessions, so Official and Hybrid can both use the first-party account. DeepSeek borrowed slots stay on Hybrid.
 - Relabel/route Opus 4.7, Opus 4.6, and Sonnet 4.6 to DeepSeek (Flash in 4.7/4.6 Sonnet slots; Pro in 4.6 Opus).
 - Do not treat ChatGPT subscription as an OpenAI API picker slot.
   GPT-5.6 Sol / Luna are `/gpt-5-6-sol` and `/gpt-5-6-luna` via the logged-in Codex CLI.

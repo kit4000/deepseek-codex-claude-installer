@@ -95,7 +95,7 @@ await check("Claude extra slot contract", async () => {
   }
   const { MODEL_LABEL_REWRITES } = await import(pathToFileURL(resolve(claudeRoot, "src/app-patch.mjs")));
   const fromLabels = MODEL_LABEL_REWRITES.map(([from]) => from);
-  for (const forbidden of ["Fable 5", "Opus 5", "Sonnet 5", "Haiku 4.5", "Opus 4.5", "Sonnet 4.5", "Opus 4.8"]) {
+  for (const forbidden of ["Fable 5", "Fable 5.1", "Opus 5", "Opus 5.5", "Sonnet 5", "Haiku 4.5", "Opus 4.5", "Sonnet 4.5", "Opus 4.8"]) {
     if (fromLabels.includes(forbidden)) {
       throw new Error(`${forbidden} is targeted by the label patch`);
     }
@@ -107,7 +107,10 @@ await check("Claude extra slot contract", async () => {
   if (fallbackIds[0] !== "claude-fable-5") {
     throw new Error("nativeFallback must lead with claude-fable-5 so Fable stays visible when Anthropic omits it");
   }
-  return "4.7+4.6 DeepSeek; Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku stay native";
+  for (const id of ["claude-fable-5-1", "claude-opus-5-5", "claude-opus-5"]) {
+    if (!fallbackIds.includes(id)) throw new Error(`nativeFallback is missing ${id}`);
+  }
+  return "4.7+4.6 DeepSeek; Fable 5.1 / Opus 5.5 / Opus 5 stay native";
 });
 
 await check("Claude app layout", async () => {

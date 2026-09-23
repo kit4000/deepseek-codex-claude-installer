@@ -17,9 +17,11 @@
   "src/asar-repack.mjs",
   "src/app-patch.mjs",
   "src/app-layout.mjs",
+  "src/official-account.mjs",
   "src/update-plan.mjs",
   "test/app-layout.test.mjs",
   "test/router.test.mjs",
+  "test/official-account.test.mjs",
   "test/openai-messages.test.mjs",
   "test/claude-agents.test.mjs",
   "test/update-plan.test.mjs"

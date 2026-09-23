@@ -80,6 +80,8 @@ test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude nativ
   assert.deepEqual(qwen?.aliases ?? [], []);
   assert.equal(config.ollama?.baseUrl, "http://192.168.0.27:11434/v1");
   assert.equal(config.models.nativeFallback[0]?.id, "claude-fable-5");
+  assert.ok(config.models.nativeFallback.some((entry) => entry.id === "claude-fable-5-1"));
+  assert.ok(config.models.nativeFallback.some((entry) => entry.id === "claude-opus-5-5"));
   assert.ok(config.models.nativeFallback.every((entry) => !aliases.includes(entry.id)));
   const patch = await readFile(resolve(claudeRoot, "src/app-patch.mjs"), "utf8");
   assert.match(patch, /\["Opus 4\.7", "DeepSeek V4\.1 Flash"\]/);
@@ -97,6 +99,8 @@ test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude nativ
   assert.doesNotMatch(patch, /\["Opus 4\.5"/);
   assert.doesNotMatch(patch, /\["Sonnet 4\.5"/);
   assert.doesNotMatch(patch, /\["Opus 5"/);
+  assert.doesNotMatch(patch, /\["Opus 5\.5"/);
+  assert.doesNotMatch(patch, /\["Fable 5\.1"/);
   assert.doesNotMatch(patch, /\["Sonnet 5"/);
   assert.doesNotMatch(patch, /\["Haiku 4\.5"/);
   const agents = renderClaudeHybridAgents(config);
@@ -121,10 +125,13 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   assert.match(handoff, /2026-08-18\.3/);
   assert.match(handoff, /2\.2553\.1/);
   assert.match(handoff, /2026-09-18\.3/);
+  assert.match(handoff, /2\.7032\.0/);
+  assert.match(handoff, /2026-09-23\.1/);
   assert.match(handoff, /CLAUDE_USER_DATA_DIR/);
   assert.match(handoff, /厳密な3つのアンカー/);
   assert.match(handoff, /ANTHROPIC_UNIX_SOCKET/);
-  assert.match(handoff, /Fable 5 と Opus 4\.8、Opus 5/);
+  assert.match(handoff, /Fable 5、Fable 5\.1、Opus 5\.5、Opus 4\.8、Opus 5/);
+  assert.match(handoff, /claude-opus-5-5/);
   assert.match(handoff, /GitHub URL だけを渡されたエージェントは、この文書を全文読んでから導入します/);
   assert.match(handoff, /git clone https:\/\/github\.com\/kit4000\/deepseek-codex-claude-installer\.git/);
   assert.match(readme, /https:\/\/github\.com\/kit4000\/deepseek-codex-claude-installer/);
@@ -166,8 +173,8 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   assert.match(skill, /Proven update pattern/);
   assert.match(skill, /RELEASES\.json/);
   assert.match(hybridReadme, /RELEASES\.json/);
-  assert.match(hybridReadme, /2\.2553\.1/);
-  assert.match(hybridReadme, /2026-09-18\.3/);
+  assert.match(hybridReadme, /2\.7032\.0/);
+  assert.match(hybridReadme, /2026-09-23\.1/);
   assert.match(hybridReadme, /--allow-billing/);
   assert.match(skill, /userDataDirPatchFile/);
   const handoff = await readFile(resolve(projectRoot, "AGENT_HANDOFF.md"), "utf8");
