@@ -346,18 +346,26 @@ prefer-claude-hybrid
 | 1.46388.4 | 2026-09-18.1 | `index.chunk-CMJVFTis.js` | `index.chunk-CMJVFTis.js` | `B` |
 | 2.2553.1 | 2026-09-18.2 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
 | 2.2553.1 | 2026-09-18.3 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
+| 2.7032.0 | 2026-09-23.1 | `index.chunk-D3OyLXgG.js` | `index.chunk-D3OyLXgG.js` | `B` |
 
-現行（2.2553.1 / 2026-09-18.3）:
+現行（2.7032.0 / 2026-09-23.1）:
 
 ```text
-patchFile: /.vite/build/index.chunk-ChZ67Jhw.js
+patchFile: /.vite/build/index.chunk-D3OyLXgG.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-ChZ67Jhw.js
-modelLabelPatchFrom: function yxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),jo=!1,B.webContents.on("enter-html-full-screen",(()=>{jo=!0})),B.webContents.on("leave-html-full-screen",(()=>{jo=!1})),B.webContents.setMaxListeners(30),B}
+modelLabelPatchFile: /.vite/build/index.chunk-D3OyLXgG.js
+modelLabelPatchFrom: function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}
 userDataDirPatchFile: /.vite/build/index.pre.js
-userDataDirPatchFrom: T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
-patchVersion: 2026-09-18.3
+userDataDirPatchFrom: T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
+patchVersion: 2026-09-23.1
 ```
+
+2026-09-23.1 は Claude `2.7032.0` の exact アンカーへ更新する。Web ピッカー関数は
+`wxe`、フルスクリーンフラグは `Ao`、戻り値変数は `B` のまま。packaged 起動の
+ユーザーデータ削除条件は `q1` から `o2` に変わった。消すのは `CLAUDE_USER_DATA_DIR`
+だけで、`SSLKEYLOGFILE` の削除は残す。Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 /
+Haiku 4.5 の純正枠と、Opus 4.7 / Sonnet 4.6（DeepSeek V4.1 Flash）、Opus 4.6
+（DeepSeek Pro）の借り枠は変えない。
 
 2026-09-18.3 は Claude 2.x が packaged 起動時に `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を
 削除し、既存 `Claude-3p` へ切り替わるのを exact パッチで止める。公式アカウントと
