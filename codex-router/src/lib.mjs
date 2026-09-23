@@ -713,12 +713,14 @@ const CHATGPT_APP_MODELS = [
     display_name: "GPT-6 Sol",
     description: "GPT-6 Sol for complex coding and agentic workflows in ChatGPT Work and Codex.",
     templateSlugs: ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna"],
+    reasoningEfforts: ["low", "medium", "high", "xhigh", "max", "ultra"],
   },
   {
     slug: "gpt-6-luna",
     display_name: "GPT-6 Luna",
     description: "GPT-6 Luna for focused, high-volume tasks in ChatGPT Work and Codex.",
     templateSlugs: ["gpt-6-astra", "gpt-5.6-luna", "gpt-5.6-sol"],
+    reasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
   },
 ];
 
@@ -737,6 +739,29 @@ function chooseChatGptAppTemplate(models, spec) {
   return models.find((model) => !String(model.slug ?? "").includes("/")) ?? models[0];
 }
 
+function applyChatGptAppReasoning(entry, spec) {
+  // Astra's cache uses default "low" and includes "ultra". Official Sol and
+  // Luna both default to medium, and Luna does not offer ultra.
+  entry.default_reasoning_level = "medium";
+  const allowed = spec.reasoningEfforts;
+  const inherited = Array.isArray(entry.supported_reasoning_levels) ? entry.supported_reasoning_levels : [];
+  const byEffort = new Map();
+  for (const level of inherited) {
+    const effort = typeof level === "string" ? level : level?.effort;
+    if (typeof effort !== "string" || !allowed.includes(effort) || byEffort.has(effort)) continue;
+    byEffort.set(
+      effort,
+      typeof level === "object" && level
+        ? { ...level, effort }
+        : { effort, description: `${spec.display_name} ${effort} reasoning` },
+    );
+  }
+  entry.supported_reasoning_levels = allowed.map((effort) => byEffort.get(effort) ?? ({
+    effort,
+    description: `${spec.display_name} ${effort} reasoning`,
+  }));
+}
+
 function cloneChatGptAppModel(template, spec, priority) {
   const entry = structuredClone(template);
   const previousName = entry.display_name;
@@ -744,6 +769,7 @@ function cloneChatGptAppModel(template, spec, priority) {
   entry.display_name = spec.display_name;
   entry.description = spec.description;
   entry.priority = priority;
+  applyChatGptAppReasoning(entry, spec);
   delete entry.upgrade;
   delete entry.comp_hash;
   entry.base_instructions = retargetInstructions(entry.base_instructions, previousName, spec.display_name);
@@ -773,7 +799,8 @@ function ensureChatGptAppModels(models) {
     if (existing) {
       revealChatGptAppModel(existing);
       // priority 0 is reserved for the configured external default.
-      if (Number(existing.priority) === 0) existing.priority = 1;
+      const numericPriority = Number(existing.priority);
+      if (!Number.isFinite(numericPriority) || numericPriority === 0) existing.priority = 1;
       continue;
     }
     next.push(cloneChatGptAppModel(chooseChatGptAppTemplate(next, spec), spec, priority));

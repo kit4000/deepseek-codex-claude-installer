@@ -773,6 +773,15 @@ test("lists GPT-6 Sol and Luna for ChatGPT.app when the cache omits them", () =>
       max_context_window: 872000,
       base_instructions: "You are Codex, an agent based on GPT-5.",
       supports_parallel_tool_calls: true,
+      default_reasoning_level: "low",
+      supported_reasoning_levels: [
+        { effort: "low", description: "Astra low" },
+        { effort: "medium", description: "Astra medium" },
+        { effort: "high", description: "Astra high" },
+        { effort: "xhigh", description: "Astra xhigh" },
+        { effort: "max", description: "Astra max" },
+        { effort: "ultra", description: "Astra ultra" },
+      ],
       comp_hash: "astra-hash",
       upgrade: { model: "gpt-6-astra", retirement_at: "2026-12-01T00:00:00Z" },
     }],
@@ -788,6 +797,18 @@ test("lists GPT-6 Sol and Luna for ChatGPT.app when the cache omits them", () =>
   assert.match(sol.base_instructions, /powered by GPT-6 Sol/);
   assert.equal(sol.comp_hash, undefined);
   assert.equal(sol.upgrade, undefined);
+  assert.equal(sol.default_reasoning_level, "medium");
+  assert.equal(luna.default_reasoning_level, "medium");
+  assert.deepEqual(
+    sol.supported_reasoning_levels.map(({ effort }) => effort),
+    ["low", "medium", "high", "xhigh", "max", "ultra"],
+  );
+  assert.equal(sol.supported_reasoning_levels.find(({ effort }) => effort === "medium").description, "Astra medium");
+  assert.deepEqual(
+    luna.supported_reasoning_levels.map(({ effort }) => effort),
+    ["low", "medium", "high", "xhigh", "max"],
+  );
+  assert.equal(luna.supported_reasoning_levels.some(({ effort }) => effort === "ultra"), false);
   assert.ok(sol.priority > 0);
   assert.equal(luna.display_name, "GPT-6 Luna");
   assert.equal(luna.visibility, "list");
@@ -807,6 +828,8 @@ test("keeps official GPT-6 Sol and Luna entries visible in ChatGPT.app", () => {
       context_window: 1050000,
       base_instructions: "official sol instructions",
       supports_parallel_tool_calls: true,
+      default_reasoning_level: "xhigh",
+      supported_reasoning_levels: [{ effort: "ultra", description: "official ultra" }],
     }, {
       slug: "gpt-6-luna",
       display_name: "GPT-6-Luna",
@@ -825,6 +848,8 @@ test("keeps official GPT-6 Sol and Luna entries visible in ChatGPT.app", () => {
   assert.equal(sol.base_instructions, "official sol instructions");
   assert.equal(sol.context_window, 1050000);
   assert.equal(sol.priority, 4);
+  assert.equal(sol.default_reasoning_level, "xhigh");
+  assert.deepEqual(sol.supported_reasoning_levels, [{ effort: "ultra", description: "official ultra" }]);
   assert.equal(luna.display_name, "GPT-6-Luna");
   assert.equal(luna.supports_parallel_tool_calls, false);
   assert.equal(merged.models.filter((model) => model.slug === "gpt-6-sol").length, 1);

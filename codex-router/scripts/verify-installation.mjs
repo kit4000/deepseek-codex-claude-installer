@@ -88,7 +88,8 @@ await verify("merged Codex model catalog", async () => {
     if (typeof model.supports_parallel_tool_calls !== "boolean") {
       throw new Error(`${slug} is missing supports_parallel_tool_calls required by ChatGPT.app`);
     }
-    if (Number(model.priority) === 0) {
+    const numericPriority = Number(model.priority);
+    if (!Number.isFinite(numericPriority) || numericPriority === 0) {
       throw new Error(`${slug} must not replace the DeepSeek default`);
     }
   }
