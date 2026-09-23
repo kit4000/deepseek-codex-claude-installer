@@ -362,12 +362,15 @@ patchVersion: 2026-09-23.1
 
 2026-09-23.1 のモデル一覧は、公式の Opus 5.5（`claude-opus-5-5`）と Fable 5.1（`claude-fable-5-1`）を `nativeFallback` に足す。DeepSeek へは振り分けない。未パッチの Official が `Claude-3p` の DeepSeek 専用ゲートウェイへ入って DeepSeek しか出ない場合、`--apply` はその `deploymentMode` を `1p` に戻す。セッションと Keychain は残し、DeepSeek の借り枠は Hybrid に残す。これで両方のアプリが公式アカウントで共存し、Opus 5.5 を使える。
 
-2026-09-23.1 は Claude `2.7032.0` の exact アンカーへ更新する。Web ピッカー関数は
-`wxe`、フルスクリーンフラグは `Ao`、戻り値変数は `B` のまま。packaged 起動の
-ユーザーデータ削除条件は `q1` から `o2` に変わった。消すのは `CLAUDE_USER_DATA_DIR`
-だけで、`SSLKEYLOGFILE` の削除は残す。Fable 5 / Opus 4.8 / Opus 5 / Sonnet 5 /
-Haiku 4.5 の純正枠と、Opus 4.7 / Sonnet 4.6（DeepSeek V4.1 Flash）、Opus 4.6
-（DeepSeek Pro）の借り枠は変えない。
+2026-09-23.1 は公式フィード現行の Claude `2.7032.0`（pub_date 2026-09-22）の exact アンカー。
+zip は `https://downloads.claude.ai/releases/darwin/universal/2.7032.0/Claude-6c468ab6ed862a68c9555cce34f11186c35f526d.zip`、
+SHA-256 は `f616a119258c78406d6c576cf98851108a59754c766bdb73bb2e37759b71aacd`。
+`patchFrom` は `ANTHROPIC_BASE_URL:e.apiHost` のまま。Web ピッカー関数は `wxe`、
+フルスクリーンフラグは `Ao`、表示ビュー変数は `B`。`CLAUDE_USER_DATA_DIR` の削除停止は
+`index.pre.js` の `!o2`。各アンカー文字列は展開した ASAR 内で 1 箇所。
+消すのは `CLAUDE_USER_DATA_DIR` だけで、`SSLKEYLOGFILE` の削除は残す。Fable 5 /
+Fable 5.1 / Opus 5.5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5 の純正枠と、
+Opus 4.7 / Sonnet 4.6（DeepSeek V4.1 Flash）、Opus 4.6（DeepSeek Pro）の借り枠は変えない。
 
 2026-09-18.3 は Claude 2.x が packaged 起動時に `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を
 削除し、既存 `Claude-3p` へ切り替わるのを exact パッチで止める。公式アカウントと

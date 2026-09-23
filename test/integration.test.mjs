@@ -49,6 +49,11 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   assert.match(routerReadme, /JSON の Responses オブジェクト/);
   const rootReadme = await readFile(resolve(projectRoot, "README.md"), "utf8");
   assert.match(rootReadme, /GPT-6 Astra など native GPT の remote compact/);
+  assert.match(library, /slug: "gpt-6-sol"/);
+  assert.match(library, /slug: "gpt-6-luna"/);
+  assert.match(rootReadme, /gpt-6-sol/);
+  assert.match(rootReadme, /ChatGPT\.app の Work と Codex/);
+  assert.match(handoff, /ChatGPT\.app の GPT-6 Sol \/ Luna/);
 });
 
 test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude native", async () => {
@@ -153,6 +158,15 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
     config.app.userDataDirPatchFrom,
     "T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
   );
+  assert.match(readme, /2\.7032\.0/);
+  assert.match(readme, /2026-09-23\.1/);
+  assert.match(changeSpec, /2\.7032\.0/);
+  assert.match(changeSpec, /2026-09-23\.1/);
+  assert.match(changeSpec, /f616a119258c78406d6c576cf98851108a59754c766bdb73bb2e37759b71aacd/);
+  assert.match(skill, /2\.7032\.0/);
+  assert.match(skill, /2026-09-23\.1/);
+  assert.match(hybridReadme, /2\.7032\.0/);
+  assert.match(hybridReadme, /2026-09-23\.1/);
   assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
   assert.match(changeSpec, /実証済みアップデートパターン/);
   assert.match(changeSpec, /1\.28929\.0/);

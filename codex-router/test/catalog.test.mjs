@@ -52,5 +52,12 @@ test("refreshes the native snapshot so newly launched models are included", asyn
   await generateCatalog({ codexHome, routerConfigPath, outputPath });
 
   const refreshed = JSON.parse(await readFile(outputPath, "utf8"));
-  assert.deepEqual(refreshed.models.map(({ slug }) => slug), ["gpt-6-astra", "gpt-7-nova"]);
+  assert.deepEqual(refreshed.models.map(({ slug }) => slug), [
+    "gpt-6-astra",
+    "gpt-7-nova",
+    "gpt-6-sol",
+    "gpt-6-luna",
+  ]);
+  assert.equal(refreshed.models.find((model) => model.slug === "gpt-6-sol").visibility, "list");
+  assert.equal(refreshed.models.find((model) => model.slug === "gpt-6-luna").display_name, "GPT-6 Luna");
 });

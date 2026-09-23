@@ -26,7 +26,7 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 
 ## Proven update pattern
 
-This is the formal end-to-end pattern verified on Claude `2.7032.0` / patch `2026-09-23.1`.
+This is the formal end-to-end pattern. Current feed verified on Claude `2.7032.0` / patch `2026-09-23.1`. The same steps were used for Claude `2.2553.1` / patch `2026-09-18.3`.
 
 1. Read the public feed:
    `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json`

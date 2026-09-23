@@ -695,6 +695,120 @@ function genericInstructions(text, displayName) {
     .replace(/You are Codex, a coding agent based on GPT-5\./g, `You are Codex, a coding agent powered by ${displayName}.`);
 }
 
+function retargetInstructions(text, previousName, displayName) {
+  const generic = genericInstructions(text, displayName);
+  if (typeof generic !== "string") return generic;
+  if (typeof previousName === "string" && previousName.length > 0 && previousName !== displayName) {
+    return generic.replaceAll(previousName, displayName);
+  }
+  return generic;
+}
+
+// ChatGPT.app lists Work and Codex models from this catalog. Sol and Luna
+// shipped after some caches were snapshotted, so a missing entry would hide
+// them even when the account can call the slug.
+const CHATGPT_APP_MODELS = [
+  {
+    slug: "gpt-6-sol",
+    display_name: "GPT-6 Sol",
+    description: "GPT-6 Sol for complex coding and agentic workflows in ChatGPT Work and Codex.",
+    templateSlugs: ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna"],
+    reasoningEfforts: ["low", "medium", "high", "xhigh", "max", "ultra"],
+  },
+  {
+    slug: "gpt-6-luna",
+    display_name: "GPT-6 Luna",
+    description: "GPT-6 Luna for focused, high-volume tasks in ChatGPT Work and Codex.",
+    templateSlugs: ["gpt-6-astra", "gpt-5.6-luna", "gpt-5.6-sol"],
+    reasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
+  },
+];
+
+function revealChatGptAppModel(model) {
+  model.visibility = "list";
+  model.supported_in_api = true;
+  if ("hidden" in model) model.hidden = false;
+  return addBackwardCompatibleFields(model);
+}
+
+function chooseChatGptAppTemplate(models, spec) {
+  for (const slug of spec.templateSlugs) {
+    const found = models.find((model) => model.slug === slug);
+    if (found) return found;
+  }
+  return models.find((model) => !String(model.slug ?? "").includes("/")) ?? models[0];
+}
+
+function applyChatGptAppReasoning(entry, spec) {
+  // Astra's cache uses default "low" and includes "ultra". Official Sol and
+  // Luna both default to medium, and Luna does not offer ultra.
+  entry.default_reasoning_level = "medium";
+  const allowed = spec.reasoningEfforts;
+  const inherited = Array.isArray(entry.supported_reasoning_levels) ? entry.supported_reasoning_levels : [];
+  const byEffort = new Map();
+  for (const level of inherited) {
+    const effort = typeof level === "string" ? level : level?.effort;
+    if (typeof effort !== "string" || !allowed.includes(effort) || byEffort.has(effort)) continue;
+    byEffort.set(
+      effort,
+      typeof level === "object" && level
+        ? { ...level, effort }
+        : { effort, description: `${spec.display_name} ${effort} reasoning` },
+    );
+  }
+  entry.supported_reasoning_levels = allowed.map((effort) => byEffort.get(effort) ?? ({
+    effort,
+    description: `${spec.display_name} ${effort} reasoning`,
+  }));
+}
+
+function cloneChatGptAppModel(template, spec, priority) {
+  const entry = structuredClone(template);
+  const previousName = entry.display_name;
+  entry.slug = spec.slug;
+  entry.display_name = spec.display_name;
+  entry.description = spec.description;
+  entry.priority = priority;
+  applyChatGptAppReasoning(entry, spec);
+  delete entry.upgrade;
+  delete entry.comp_hash;
+  entry.base_instructions = retargetInstructions(entry.base_instructions, previousName, spec.display_name);
+  if (entry.model_messages && typeof entry.model_messages === "object") {
+    entry.model_messages.instructions_template = retargetInstructions(
+      entry.model_messages.instructions_template,
+      previousName,
+      spec.display_name,
+    );
+  }
+  if (typeof entry.base_instructions !== "string" || entry.base_instructions.length === 0) {
+    entry.base_instructions = `You are Codex, powered by ${spec.display_name}.`;
+  }
+  if (entry.model_messages && typeof entry.model_messages === "object"
+    && (typeof entry.model_messages.instructions_template !== "string"
+      || entry.model_messages.instructions_template.length === 0)) {
+    entry.model_messages.instructions_template = entry.base_instructions;
+  }
+  return revealChatGptAppModel(entry);
+}
+
+function ensureChatGptAppModels(models) {
+  const next = models.slice();
+  let priority = Math.max(0, ...next.map((model) => Number(model.priority) || 0)) + 1;
+  for (const spec of CHATGPT_APP_MODELS) {
+    const existing = next.find((model) => model.slug === spec.slug);
+    if (existing) {
+      revealChatGptAppModel(existing);
+      // priority 0 is reserved for the configured external default.
+      const numericPriority = Number(existing.priority);
+      if (!Number.isFinite(numericPriority) || numericPriority === 0) existing.priority = 1;
+      continue;
+    }
+    next.push(cloneChatGptAppModel(chooseChatGptAppTemplate(next, spec), spec, priority));
+    priority += 1;
+  }
+  return next;
+}
+
 function cloneExternalModel(template, route, model, priority) {
   const displayName = model.displayName ?? model.id;
   const entry = structuredClone(template);
@@ -778,6 +892,7 @@ export function mergeCatalog(nativeCatalog, config, now = new Date()) {
     }
   }
 
+  catalog.models = ensureChatGptAppModels(catalog.models);
   catalog.fetched_at = now.toISOString();
   catalog.etag = `W/\"router-${createHash("sha256")
     .update(JSON.stringify(catalog.models.map(({ slug, display_name: displayName }) => ({ slug, displayName }))))
