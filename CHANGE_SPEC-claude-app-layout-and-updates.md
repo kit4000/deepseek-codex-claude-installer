@@ -360,6 +360,8 @@ userDataDirPatchFrom: T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DAT
 patchVersion: 2026-09-23.1
 ```
 
+2026-09-23.1 のモデル一覧は、公式の Opus 5.5（`claude-opus-5-5`）と Fable 5.1（`claude-fable-5-1`）を `nativeFallback` に足す。DeepSeek へは振り分けない。未パッチの Official が `Claude-3p` の DeepSeek 専用ゲートウェイへ入って DeepSeek しか出ない場合、`--apply` はその `deploymentMode` を `1p` に戻す。セッションと Keychain は残し、DeepSeek の借り枠は Hybrid に残す。これで両方のアプリが公式アカウントで共存し、Opus 5.5 を使える。
+
 2026-09-23.1 は Claude `2.7032.0` の exact アンカーへ更新する。Web ピッカー関数は
 `wxe`、フルスクリーンフラグは `Ao`、戻り値変数は `B` のまま。packaged 起動の
 ユーザーデータ削除条件は `q1` から `o2` に変わった。消すのは `CLAUDE_USER_DATA_DIR`

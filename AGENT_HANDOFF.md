@@ -16,7 +16,7 @@ tar.gz や別端末のキー、会話から推測した秘密は使いません�
    Apple署名・未パッチのまま保持します。パッチ対象の日常アプリは `/Applications/Claude.app` です。
 3. `~/.codex/auth.json`、CodexのタスクDB／セッション、`~/.claude`、Claudeのユーザーデータ、
    Keychain項目を移送、削除、全面置換しません。
-4. Fable 5 と Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5 は純正Claudeとして維持します。
+4. Fable 5、Fable 5.1、Opus 5.5、Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5 は純正Claudeとして維持します。
    外部APIへ割り当てるのは Opus 4.7 / Sonnet 4.6（DeepSeek V4.1 Flash）と
    Opus 4.6（DeepSeek Pro）の借り枠だけです。
    ローカル Ollama の Qwen 3.8 2.7B は 4.6 枠を借りず、Codex カタログと Claude Code の
@@ -94,8 +94,9 @@ native GPT（`gpt-5.6-sol` など）の remote compact / 親ターンも同じ�
 - `ANTHROPIC_UNIX_SOCKET` は Claude Code の Remote Control 判定用。
   橋は `wss://bridge.claudeusercontent.com` のままなので、外部モデル選択と共存する。
 - Webピッカーの表示は Opus 4.7 / Sonnet 4.6→DeepSeek V4.1 Flash、Opus 4.6→DeepSeek V4 Pro (1M)。
-- Fable、Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5、Opus 4.5 / Sonnet 4.5 は純正経路のまま。
-  Anthropic の `/v1/models` が Fable 等を省略しても、ルーターは `nativeFallback` の欠けた ID を公式一覧へ足す（先頭は `claude-fable-5`）。借りた DeepSeek 枠は足さない。
+- Fable 5、Fable 5.1、Opus 5.5、Opus 4.8、Opus 5、Sonnet 5、Haiku 4.5、Opus 4.5 / Sonnet 4.5 は純正経路のまま。
+  Anthropic の `/v1/models` がこれらを省略しても、ルーターは `nativeFallback` の欠けた ID を公式一覧へ足す（先頭は `claude-fable-5`。Opus 5.5 は `claude-opus-5-5`、Fable 5.1 は `claude-fable-5-1`）。借りた DeepSeek 枠は足さない。
+- 未パッチの Official は、`Claude-3p` にこのインストーラーの DeepSeek 専用ゲートウェイがあるとそこへ入り、DeepSeek しか出なくなる。`--apply` はその `deploymentMode` だけを `1p` に戻し、公式アカウントの Opus 5.5 を使えるようにする。セッション、Keychain、設定ライブラリは消さない。DeepSeek の借り枠は Hybrid に残る。
 - `model: "haiku"` のサブエージェントは DeepSeek V4.1 Flash（upstream `deepseek-flash`）。名前付きエージェント
   `deepseek-v4-flash` / `deepseek-v4-pro` も呼べる。
   グローバルなサブエージェント既定は変更しない。

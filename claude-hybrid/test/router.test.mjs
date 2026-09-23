@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -132,6 +132,34 @@ test("model list combines native discovery with external models", async () => {
     ]);
     assert.equal(payload.data[0].display_name, "Claude Fable 5");
     assert.equal(payload.data[0].owned_by, "anthropic");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("Opus 5.5 and Fable 5.1 stay on Anthropic when the upstream list omits them", async () => {
+  const installer = JSON.parse(await readFile(new URL("../config/claude-hybrid.json", import.meta.url), "utf8"));
+  assert.equal(isExternalModel(installer, "claude-opus-5-5"), false);
+  assert.equal(isExternalModel(installer, "claude-fable-5-1"), false);
+  assert.equal(providerForModel(installer, "claude-opus-5-5"), "native");
+  const router = createHybridRouter({
+    config: installer,
+    fetchImpl: async () => jsonResponse(200, {
+      data: [{ id: "claude-opus-5", display_name: "Claude Opus 5" }],
+    }),
+    logger: { info() {}, error() {} },
+  });
+  const { server } = router;
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  try {
+    const payload = await (await fetch(`http://127.0.0.1:${address.port}/v1/models`)).json();
+    for (const id of ["claude-opus-5-5", "claude-fable-5-1", "claude-opus-5"]) {
+      const entry = payload.data.find((item) => item.id === id);
+      assert.ok(entry, id);
+      assert.equal(entry.owned_by, "anthropic");
+    }
+    assert.ok(payload.data.some((entry) => entry.id === "deepseek-flash"));
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

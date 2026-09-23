@@ -3,6 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { patchClaudeApp } from "../src/app-patch.mjs";
+import { releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
 import { readAsarFile, readAsarHeader } from "../src/asar-repack.mjs";
 import { requestUnix } from "../src/router.mjs";
 import {
@@ -293,6 +294,7 @@ if (header.headerSha256 !== patchResult.headerSha256) {
 }
 
 const launchServices = preferClaudeHybrid({ officialApp: sourceApp, hybridApp: targetApp });
+const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
 
 console.log(JSON.stringify({
   layout,
@@ -308,6 +310,7 @@ console.log(JSON.stringify({
   routerSocketPath,
   patch: patchResult,
   launchServices,
+  officialAccount,
   keychain: {
     deepseek: config.deepseek.keychain,
     ...(config.openai?.keychain ? { openai: config.openai.keychain } : {}),
