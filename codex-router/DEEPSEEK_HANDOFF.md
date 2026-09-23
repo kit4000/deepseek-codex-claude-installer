@@ -8,7 +8,7 @@
 - DeepSeek のストリーム応答に含まれる生の推論表示とメッセージ種別の揺れを整形し、Codex Desktop の再描画とスクロール位置のリセットを抑止する。
 
 > [!IMPORTANT]
-> この文書でいう「ChatGPT」は、ChatGPT アカウント認証を利用する **Codex Desktop / CLI** を指します。一般向け ChatGPT Web / ChatGPT Desktop のモデルピッカーへ外部モデルを追加する手順ではありません。
+> この文書でいう「ChatGPT」は、ChatGPT アカウント認証を利用する **Codex Desktop / CLI** と、同じカタログを読む **ChatGPT.app の Work / Codex** を指します。一般向け ChatGPT の通常チャットへ外部モデルを追加する手順ではありません。GPT-6 Sol（`gpt-6-sol`）と GPT-6 Luna（`gpt-6-luna`）はネイティブモデルとして一覧へ残します。
 
 ## 1. 実行者向けの厳守事項
 

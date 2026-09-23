@@ -762,6 +762,97 @@ test("defaults external parallel tool support to false unless configured", () =>
   assert.equal(merged.models[1].supports_parallel_tool_calls, false);
 });
 
+test("lists GPT-6 Sol and Luna for ChatGPT.app when the cache omits them", () => {
+  const native = {
+    models: [{
+      slug: "gpt-6-astra",
+      display_name: "GPT-6 Astra",
+      priority: 5,
+      visibility: "list",
+      context_window: 272000,
+      max_context_window: 872000,
+      base_instructions: "You are Codex, an agent based on GPT-5.",
+      supports_parallel_tool_calls: true,
+      comp_hash: "astra-hash",
+      upgrade: { model: "gpt-6-astra", retirement_at: "2026-12-01T00:00:00Z" },
+    }],
+  };
+  const merged = mergeCatalog(native, { routes: [] }, new Date("2026-09-23T00:00:00Z"));
+  const sol = merged.models.find((model) => model.slug === "gpt-6-sol");
+  const luna = merged.models.find((model) => model.slug === "gpt-6-luna");
+  assert.equal(sol.display_name, "GPT-6 Sol");
+  assert.equal(sol.visibility, "list");
+  assert.equal(sol.supported_in_api, true);
+  assert.equal(sol.supports_parallel_tool_calls, true);
+  assert.equal(sol.context_window, 272000);
+  assert.match(sol.base_instructions, /powered by GPT-6 Sol/);
+  assert.equal(sol.comp_hash, undefined);
+  assert.equal(sol.upgrade, undefined);
+  assert.ok(sol.priority > 0);
+  assert.equal(luna.display_name, "GPT-6 Luna");
+  assert.equal(luna.visibility, "list");
+  assert.match(luna.description, /high-volume/);
+  assert.equal(merged.models.filter((model) => model.slug === "gpt-6-sol").length, 1);
+  assert.equal(merged.models.filter((model) => model.slug === "gpt-6-luna").length, 1);
+});
+
+test("keeps official GPT-6 Sol and Luna entries visible in ChatGPT.app", () => {
+  const native = {
+    models: [{
+      slug: "gpt-6-sol",
+      display_name: "GPT-6-Sol",
+      visibility: "hide",
+      hidden: true,
+      priority: 4,
+      context_window: 1050000,
+      base_instructions: "official sol instructions",
+      supports_parallel_tool_calls: true,
+    }, {
+      slug: "gpt-6-luna",
+      display_name: "GPT-6-Luna",
+      visibility: "list",
+      base_instructions: "official luna instructions",
+      supports_parallel_tool_calls: false,
+    }],
+  };
+  const merged = mergeCatalog(native, config, new Date("2026-09-23T00:00:00Z"));
+  const sol = merged.models.find((model) => model.slug === "gpt-6-sol");
+  const luna = merged.models.find((model) => model.slug === "gpt-6-luna");
+  assert.equal(sol.display_name, "GPT-6-Sol");
+  assert.equal(sol.visibility, "list");
+  assert.equal(sol.hidden, false);
+  assert.equal(sol.supported_in_api, true);
+  assert.equal(sol.base_instructions, "official sol instructions");
+  assert.equal(sol.context_window, 1050000);
+  assert.equal(sol.priority, 4);
+  assert.equal(luna.display_name, "GPT-6-Luna");
+  assert.equal(luna.supports_parallel_tool_calls, false);
+  assert.equal(merged.models.filter((model) => model.slug === "gpt-6-sol").length, 1);
+  assert.equal(merged.models.find((model) => model.slug === "deepseek/deepseek-flash").priority, 0);
+});
+
+test("does not let GPT-6 Sol or Luna take the external default priority", () => {
+  const native = {
+    models: [{
+      slug: "gpt-6-sol",
+      display_name: "GPT-6 Sol",
+      priority: 0,
+      visibility: "hide",
+      base_instructions: "official sol instructions",
+    }, {
+      slug: "gpt-6-luna",
+      display_name: "GPT-6 Luna",
+      priority: 0,
+      visibility: "list",
+      base_instructions: "official luna instructions",
+    }],
+  };
+  const merged = mergeCatalog(native, config);
+  assert.equal(merged.models.find((model) => model.slug === "gpt-6-sol").priority, 1);
+  assert.equal(merged.models.find((model) => model.slug === "gpt-6-luna").priority, 1);
+  assert.equal(merged.models.find((model) => model.slug === "deepseek/deepseek-flash").priority, 0);
+});
+
 test("preserves existing Desktop-required catalog fields", () => {
   const native = {
     models: [{

@@ -44,6 +44,18 @@ Keychain資格情報から導出した鍵でルーターが復号し、平文の
 これにより、DeepSeekからGPT-5.6 Solなどへ切り替えた際の
 `invalid_encrypted_content`／`Encrypted content could not be decrypted or parsed` を防ぎます。
 
+### ChatGPT.app の GPT-6 Sol / Luna
+
+ChatGPT.app の Work と Codex は、インストーラーが書く
+`model-catalogs/native-plus-external.json` をモデル一覧として読みます。
+`models_cache.json` が GPT-6 Sol / Luna より古いと、この一覧から消えます。
+カタログ生成は `gpt-6-sol` と `gpt-6-luna` を必ず表示対象（`visibility: list`）にします。
+キャッシュに無いときは近いネイティブモデルを雛形にし、既にある公式エントリは名前や
+説明を残して非表示フラグだけ外します。ChatGPT.app が要求する `base_instructions` と
+`supports_parallel_tool_calls` も補います。DeepSeek V4.1 Flash の `priority: 0` は
+変えません。通常の Chat タブへは載せません。呼べるかどうかは ChatGPT のプランと
+ロールアウトのままです。
+
 ### native GPT の remote compact（GPT-6 Astra）
 
 Codex Desktop が `gpt-6-astra` などの native GPT で `/v1/responses/compact` を呼ぶとき、

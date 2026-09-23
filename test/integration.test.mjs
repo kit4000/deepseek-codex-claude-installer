@@ -49,6 +49,11 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   assert.match(routerReadme, /JSON の Responses オブジェクト/);
   const rootReadme = await readFile(resolve(projectRoot, "README.md"), "utf8");
   assert.match(rootReadme, /GPT-6 Astra など native GPT の remote compact/);
+  assert.match(library, /slug: "gpt-6-sol"/);
+  assert.match(library, /slug: "gpt-6-luna"/);
+  assert.match(rootReadme, /gpt-6-sol/);
+  assert.match(rootReadme, /ChatGPT\.app の Work と Codex/);
+  assert.match(handoff, /ChatGPT\.app の GPT-6 Sol \/ Luna/);
 });
 
 test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude native", async () => {

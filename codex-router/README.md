@@ -7,13 +7,17 @@ Responses API 互換の外部モデルを同じモデルメニューへ載せる
 保護、表示安定性の受け入れ確認、ロールバックは
 [`DEEPSEEK_HANDOFF.md`](DEEPSEEK_HANDOFF.md) を使用してください。
 
-ここでいう ChatGPT 連携は、ChatGPT アカウント認証を利用する Codex Desktop/CLI が対象です。
-一般向け ChatGPT Web/Desktop のモデルピッカーは変更しません。
+ここでいう ChatGPT 連携は、ChatGPT アカウント認証を利用する Codex Desktop/CLI と、
+同じカタログを読む ChatGPT.app の Work / Codex です。一般向け ChatGPT の通常チャットへ
+DeepSeek などの外部モデルは追加しません。
 
 ## Routing
 
 - `gpt-*` など名前空間のないモデルは ChatGPT Codex upstream へそのまま転送します。ChatGPT 側で追加された
   GPT-6 Astra などのネイティブモデルも、インストール時に最新カタログを取り込んで同じ一覧へ残します。
+  GPT-6 Sol（`gpt-6-sol`）と GPT-6 Luna（`gpt-6-luna`）は、キャッシュに無くても ChatGPT.app の
+  Work / Codex で選べるよう表示対象として補います。公式エントリがある場合はその中身を残し、
+  非表示だけを外します。DeepSeek の既定優先度は変えません。
 - `deepseek/deepseek-flash` は DeepSeek 公式 Responses API へ直接転送し、upstream では
   `deepseek/` 名前空間だけを除きます。
 - Flash の reasoning effort は公式Codex向け定義に合わせて `low` / `high` / `max` を表示し、
@@ -87,7 +91,8 @@ DeepSeek用CLIプロファイルは
 `router-config.json` を編集し、`npm run catalog`（`codex-router/` 内）と LaunchAgent の再起動を行います。
 `npm run catalog` は毎回 `~/.codex/models_cache.json` を読み直して
 `model-catalogs/native-pristine.json` を更新するため、ChatGPT 側で追加されたネイティブモデルを
-古いスナップショットが隠すことはありません。新しいキャッシュで欠落した
+古いスナップショットが隠すことはありません。キャッシュ自体が GPT-6 Sol / Luna より古い場合も、
+`gpt-6-sol` と `gpt-6-luna` を ChatGPT.app の Work / Codex 向けに補います。新しいキャッシュで欠落した
 `base_instructions` は `model_messages.instructions_template` から復元し、
 `supports_parallel_tool_calls` はネイティブモデルでは未指定時に `true` を補完し、外部モデルでは
 `router-config.json` の `supportsParallelToolCalls` だけを参照します。外部モデルで未指定の場合は

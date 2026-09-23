@@ -76,7 +76,23 @@ await verify("merged Codex model catalog", async () => {
   if (!catalog.models.some((entry) => !entry.slug?.startsWith("deepseek/"))) {
     throw new Error("Native Codex models are missing from the merged catalog");
   }
-  return `${catalog.models.length} models including native and DeepSeek entries`;
+  for (const slug of ["gpt-6-sol", "gpt-6-luna"]) {
+    const model = catalog.models.find((entry) => entry.slug === slug);
+    if (!model) throw new Error(`${slug} is missing from the catalog ChatGPT.app reads`);
+    if (model.visibility !== "list" || model.supported_in_api !== true) {
+      throw new Error(`${slug} is not selectable in ChatGPT.app`);
+    }
+    if (typeof model.base_instructions !== "string" || model.base_instructions.length === 0) {
+      throw new Error(`${slug} is missing base_instructions required by ChatGPT.app`);
+    }
+    if (typeof model.supports_parallel_tool_calls !== "boolean") {
+      throw new Error(`${slug} is missing supports_parallel_tool_calls required by ChatGPT.app`);
+    }
+    if (Number(model.priority) === 0) {
+      throw new Error(`${slug} must not replace the DeepSeek default`);
+    }
+  }
+  return `${catalog.models.length} models including GPT-6 Sol, GPT-6 Luna, and DeepSeek entries`;
 });
 
 await verify("Codex Desktop execution target", async () => {
