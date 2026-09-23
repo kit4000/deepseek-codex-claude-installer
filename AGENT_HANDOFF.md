@@ -44,6 +44,20 @@ Keychain資格情報から導出した鍵でルーターが復号し、平文の
 これにより、DeepSeekからGPT-5.6 Solなどへ切り替えた際の
 `invalid_encrypted_content`／`Encrypted content could not be decrypted or parsed` を防ぎます。
 
+### ChatGPT.app の GPT-6 Sol / Luna
+
+ChatGPT.app の Work と Codex は、インストーラーが書く
+`model-catalogs/native-plus-external.json` をモデル一覧として読みます。
+`models_cache.json` が GPT-6 Sol / Luna より古いと、この一覧から消えます。
+カタログ生成は `gpt-6-sol` と `gpt-6-luna` を必ず表示対象（`visibility: list`）にします。
+キャッシュに無いときは近いネイティブモデルを雛形にし、既にある公式エントリは名前や
+説明を残して非表示フラグだけ外します。ChatGPT.app が要求する `base_instructions` と
+`supports_parallel_tool_calls` も補います。DeepSeek V4.1 Flash の `priority: 0` は
+変えません。通常の Chat タブへは載せません。呼べるかどうかは ChatGPT のプランと
+ロールアウトのままです。
+
+2026-09-23、Mac mini の `~/Applications/deepseek-codex-claude-installer` へこのカタログを入れたあと、利用者が ChatGPT.app の復旧を確認した。その導入結果は modelCount 12、externalCount 2 で、Sol と Luna は公式キャッシュに既にあった。画面の確認は利用者の Mac 上のもので、作業用 Linux からは ChatGPT.app を開いていない。
+
 ### native GPT の remote compact（GPT-6 Astra）
 
 Codex Desktop が `gpt-6-astra` などの native GPT で `/v1/responses/compact` を呼ぶとき、
@@ -116,11 +130,14 @@ UPDATE CONTRACT
 - Claude 2.x packaged 起動は `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を削除し、既存 `Claude-3p` へ切り替える。Hybrid はこの削除を exact パッチで止め、公式 `~/Library/Application Support/Claude` を共有する
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
 
-#### 現行確認済み（Claude 2.2553.1 / patch 2026-09-18.3）
+#### 現行確認済み（Claude 2.7032.0 / patch 2026-09-23.1）
 
 純正ソースは `~/Applications/Claude Official.app`。日常アプリは `/Applications/Claude.app`（Hybrid）。
 Code 環境パッチ、Web ピッカー表示パッチ、`index.pre.js` の `CLAUDE_USER_DATA_DIR` 削除停止の
-3つの exact アンカーが必要。詳細は `CHANGE_SPEC-claude-app-layout-and-updates.md` §5.3。
+3つの exact アンカーが必要。公式フィードの現行は `2.7032.0`（2026-09-22 公開）。
+chunk は `index.chunk-D3OyLXgG.js`、Web ピッカー関数は `wxe`、ユーザーデータ側の条件は `!o2`。
+直前の確認済みは Claude `2.2553.1` / patch `2026-09-18.3`。詳細は
+`CHANGE_SPEC-claude-app-layout-and-updates.md` §5.3。
 
 #### 実証済み手順（Claude 1.28929.0 / patch 2026-08-18.3）
 

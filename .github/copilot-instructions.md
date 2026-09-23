@@ -6,7 +6,7 @@ Codex Desktop の DeepSeek / Ollama 対応を変更するときは、表示だ�
 
 1. Codex のメインピッカーには、実際に upstream へ送信できるモデルだけを載せる。`pending`、`not enabled`、未提供 API のモデルを選択可能にしない。
 2. 既定にする外部モデルは `router-config.json` で `priority: 0` とし、`mergeCatalog` はその値を保持する。生成後の JSON だけを手編集しない。
-3. `codex app-server` の `model/list` を呼び、DeepSeek V4.1 Flash が `isDefault: true`、GPT-6 Astra が `isDefault: false` になることを確認する。カタログ上の表示順だけでは代替できない。
+3. `codex app-server` の `model/list` を呼び、DeepSeek V4.1 Flash が `isDefault: true`、GPT-6 Astra / GPT-6 Sol / GPT-6 Luna が `isDefault: false` になることを確認する。Sol と Luna は ChatGPT.app で選べるよう `visibility: list` であること。カタログ上の表示順だけでは代替できない。
 4. インストール時は `model = "deepseek/deepseek-flash"` と `[features].external_migration = false` を原子的に設定する。
 5. ローカルルーター `127.0.0.1:10100` はリモート SSH ホストから到達できない。`.codex-global-state.json` の `selected-project.type` が `remote` なら検証を失敗させ、利用者にローカルプロジェクトを選ばせる。ユーザーのリモート接続やプロジェクト履歴を勝手に削除しない。
 6. Codex Desktop を再起動するときは、メインプロセスだけでなく補助プロセスの終了も確認する。終了前の補助プロセスが古い状態を再保存する可能性がある。

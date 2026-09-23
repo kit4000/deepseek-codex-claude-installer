@@ -49,6 +49,11 @@ test("DeepSeek router sanitizes compact and Codex custom tool pairs", async () =
   assert.match(routerReadme, /JSON の Responses オブジェクト/);
   const rootReadme = await readFile(resolve(projectRoot, "README.md"), "utf8");
   assert.match(rootReadme, /GPT-6 Astra など native GPT の remote compact/);
+  assert.match(library, /slug: "gpt-6-sol"/);
+  assert.match(library, /slug: "gpt-6-luna"/);
+  assert.match(rootReadme, /gpt-6-sol/);
+  assert.match(rootReadme, /ChatGPT\.app の Work と Codex/);
+  assert.match(handoff, /ChatGPT\.app の GPT-6 Sol \/ Luna/);
 });
 
 test("Claude Hybrid uses 4.6 and 4.7 DeepSeek slots and keeps newer Claude native", async () => {
@@ -134,18 +139,27 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   const skill = await readFile(resolve(projectRoot, "skills/claude-hybrid-update/SKILL.md"), "utf8");
   const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
-  assert.equal(config.app.patchVersion, "2026-09-18.3");
-  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-ChZ67Jhw.js");
-  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-ChZ67Jhw.js");
+  assert.equal(config.app.patchVersion, "2026-09-23.1");
+  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-D3OyLXgG.js");
+  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-D3OyLXgG.js");
   assert.equal(config.app.userDataDirPatchFile, "/.vite/build/index.pre.js");
   assert.equal(
     config.app.modelLabelPatchFrom,
-    "function yxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),jo=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{jo=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{jo=!1})),B.webContents.setMaxListeners(30),B}",
+    "function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{Ao=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}",
   );
   assert.equal(
     config.app.userDataDirPatchFrom,
-    "T.app.isPackaged&&!q1&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
+    "T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
   );
+  assert.match(readme, /2\.7032\.0/);
+  assert.match(readme, /2026-09-23\.1/);
+  assert.match(changeSpec, /2\.7032\.0/);
+  assert.match(changeSpec, /2026-09-23\.1/);
+  assert.match(changeSpec, /f616a119258c78406d6c576cf98851108a59754c766bdb73bb2e37759b71aacd/);
+  assert.match(skill, /2\.7032\.0/);
+  assert.match(skill, /2026-09-23\.1/);
+  assert.match(hybridReadme, /2\.7032\.0/);
+  assert.match(hybridReadme, /2026-09-23\.1/);
   assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
   assert.match(changeSpec, /実証済みアップデートパターン/);
   assert.match(changeSpec, /1\.28929\.0/);

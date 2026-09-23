@@ -73,6 +73,13 @@ GPT-6 Astra などの新しいネイティブモデルを、DeepSeek / Qwen の�
 `base_instructions` と `supports_parallel_tool_calls` が新しいキャッシュに無い場合も、
 `model_messages.instructions_template` などから自動補完します。
 
+ChatGPT.app の Work と Codex は、この同じ一覧からモデルを選びます。GPT-6 Sol
+（`gpt-6-sol`）と GPT-6 Luna（`gpt-6-luna`）は、キャッシュがまだ古い場合でも
+近いネイティブモデルを雛形にして表示対象へ補います。すでに公式エントリがある場合は
+名前や説明を残し、非表示フラグだけを外します。どちらも DeepSeek の既定
+（`priority: 0`）にはしません。通常の Chat タブへは追加せず、利用可否は
+ChatGPT のプランとロールアウトのままです。
+
 DeepSeek V4.1 Flash は `priority: 0` として生成し、Codex app-server の `model/list` で
 `isDefault: true` になるようにします。未提供の Responses API や `pending` と明記されたモデルは
 メインピッカーへ載せません。ローカルルーターはリモート SSH ホストから利用できないため、
@@ -120,7 +127,7 @@ prefer-claude-hybrid           # ランチャーが純正を選ぶ場合
 
 アンカー不一致時は停止が正常です。近似パッチせず、Official ASAR から
 `patchFile` / `modelLabelPatchFile` を取り直し、`patchVersion` を上げてから再実行します。
-現行確認済み: Claude `2.2553.1` / Hybrid patch `2026-09-18.3`。詳細は
+現行確認済み: Claude `2.7032.0` / Hybrid patch `2026-09-23.1`。詳細は
 `CHANGE_SPEC-claude-app-layout-and-updates.md` §5。
 
 Codexには `claude-hybrid-update`、`deepseek-v4-delegation`、`cursor-cli-delegation`、
