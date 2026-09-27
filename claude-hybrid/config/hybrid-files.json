@@ -19,11 +19,13 @@
   "src/app-layout.mjs",
   "src/official-account.mjs",
   "src/official-source.mjs",
+  "src/host-node.mjs",
   "src/update-plan.mjs",
   "test/app-layout.test.mjs",
   "test/router.test.mjs",
   "test/official-account.test.mjs",
   "test/official-source.test.mjs",
+  "test/host-node.test.mjs",
   "test/openai-messages.test.mjs",
   "test/claude-agents.test.mjs",
   "test/update-plan.test.mjs"

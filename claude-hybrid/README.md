@@ -35,6 +35,8 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
 
 ### ローカルルーター（LaunchAgent: com.local.claude-hybrid-router）
 
+- `~/Library/LaunchAgents` の `RunAtLoad` で、ログイン時と再起動後に起動する。
+- Node は `~/.local/claude-hybrid-node/node/bin/node`、次に `/opt/homebrew/bin/node` を優先する。実行できない Intel Homebrew の Node は LaunchAgent に書かない。
 - ポート `127.0.0.1:10102` と Unix ソケット
   `<home>/Library/Application Support/Claude Hybrid/router.sock`。
 - 通常モデル（`claude-*` のうち借りていない ID）は `api.anthropic.com` へ OAuth のまま転送。
