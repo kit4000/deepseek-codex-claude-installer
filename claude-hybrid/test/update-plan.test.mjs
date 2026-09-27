@@ -41,6 +41,30 @@ test("detects official app and installer patch updates", () => {
   assert.equal(rebuild.artifacts.updateKind, "rebuild");
 });
 
+test("stale official source asks for the pinned replacement before anchor edits", () => {
+  const plan = decideClaudeHybridUpdate({
+    ...baseline,
+    sourceVersion: "2.7032.0",
+    environmentAnchorPresent: false,
+    labelAnchorPresent: false,
+    userDataDirAnchorPresent: false,
+    expectedOfficialVersion: "2.9939.2",
+  });
+  assert.equal(plan.status, "error");
+  assert.match(plan.next_actions.join("\n"), /--replace-official/);
+  assert.doesNotMatch(plan.next_actions.join("\n"), /regression tests/);
+});
+
+test("anchor miss on the pinned version still stops for an installer update", () => {
+  const plan = decideClaudeHybridUpdate({
+    ...baseline,
+    sourceVersion: "2.9939.2",
+    labelAnchorPresent: false,
+    expectedOfficialVersion: "2.9939.2",
+  });
+  assert.match(plan.next_actions.join("\n"), /regression tests/);
+});
+
 test("stops safely when exact anchors changed", () => {
   const missingLabel = decideClaudeHybridUpdate({ ...baseline, labelAnchorPresent: false }, "apply");
   assert.equal(missingLabel.status, "error");

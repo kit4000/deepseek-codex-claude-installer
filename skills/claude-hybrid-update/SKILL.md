@@ -26,7 +26,7 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 
 ## Proven update pattern
 
-This is the formal end-to-end pattern. Current feed verified on Claude `2.7032.0` / patch `2026-09-23.1`. The same steps were used for Claude `2.2553.1` / patch `2026-09-18.3`.
+This is the formal end-to-end pattern. Current feed verified on Claude `2.9939.2` / patch `2026-09-27.1`. The previous verified feed was Claude `2.7032.0` / patch `2026-09-23.1`. The same steps were used for Claude `2.2553.1` / patch `2026-09-18.3`.
 
 1. Read the public feed:
    `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json`
@@ -36,7 +36,8 @@ This is the formal end-to-end pattern. Current feed verified on Claude `2.7032.0
    - notarized Developer ID via `spctl -a -vv`
 4. Ask the user to fully quit both Claude apps (`pgrep -x Claude` must be empty).
 5. Timestamp-backup and replace `~/Applications/Claude Official.app` with the staged app (`ditto` or equivalent). Do not ASAR-patch Official.
-6. Run `update-claude-hybrid --check`.
+   For the pinned release, quit both apps and run `update-claude-hybrid --replace-official`. It downloads only `app.officialZipUrl`, checks `app.officialZipSha256`, `codesign --verify --deep --strict`, and notarization, then moves the previous Official app to `Claude Official.app.before-<version>-<timestamp>`. It never patches the official ASAR. A newer public feed than `app.officialVersion` still needs an anchor update first.
+6. Run `update-claude-hybrid --check`. If Official is older than the pin, `--check` stops and asks for `--replace-official`. After both apps are quit, `--apply` performs that replacement and then rebuilds Hybrid.
 7. If anchors fail (`status=error`), update installer config from the pristine Official ASAR (§ Anchor maintenance), sync the persistent installer copy, then `--check` again. Never fuzzy-patch.
 8. When `--check` reports a rebuild and apps are closed, run `update-claude-hybrid --apply`.
 9. Require the built-in non-billable verification to pass (ASAR, signature, router, model list, patch version, shared session dir, `DISABLE_AUTOUPDATER=1`).
@@ -77,19 +78,21 @@ When a Claude release changes any exact anchor:
    The function name, object, helper, constant, and listener count vary per build.
 4. Find exactly one packaged-startup `delete process.env.CLAUDE_USER_DATA_DIR` hit →
    `app.userDataDirPatchFile` / `app.userDataDirPatchFrom`.
-5. Bump `app.patchVersion` (example: `2026-09-23.1`).
+5. Bump `app.patchVersion` (example: `2026-09-27.1`).
 6. Update `CHANGE_SPEC-claude-app-layout-and-updates.md` history table, tests, and `INSTALLER_MANIFEST.json`.
 7. Rebuild Hybrid with `--check` / `--apply`. Never fuzzy-patch.
 
-Current verified anchors for Claude `2.7032.0`:
+Current verified anchors for Claude `2.9939.2`:
 
-- `patchFile`: `/.vite/build/index.chunk-D3OyLXgG.js`
+- `patchFile`: `/.vite/build/index.chunk-DzZc-q0x.js`
 - `patchFrom`: `ANTHROPIC_BASE_URL:e.apiHost`
-- `modelLabelPatchFile`: `/.vite/build/index.chunk-D3OyLXgG.js`
-- `modelLabelPatchFrom`: `function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}`
+- `modelLabelPatchFile`: `/.vite/build/index.chunk-DzZc-q0x.js`
+- `modelLabelPatchFrom`: `function Pxe(e){return B=new a.WebContentsView(e),Ni(B.webContents,Mi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}`
 - `userDataDirPatchFile`: `/.vite/build/index.pre.js`
-- `userDataDirPatchFrom`: `T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)`
-- `patchVersion`: `2026-09-23.1`
+- `userDataDirPatchFrom`: `T.app.isPackaged&&!Y2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)`
+- `patchVersion`: `2026-09-27.1`
+
+The desktop bundle still has no `claude-opus-5-5` string. Keep Opus 5.5 in `nativeFallback` so the picker lists it on Anthropic. Do not relabel Opus 5.5 or Fable 5.1.
 
 ## Recovery
 

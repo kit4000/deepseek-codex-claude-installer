@@ -108,26 +108,20 @@ EOF
 作成時のモデルを保持することがあるため、既存スレッドで以前のモデル名が残る場合は新しい
 チャットで確認してください。
 
-Hybrid のアプリ内「更新」は使いません。正式なアップデートパターンは次のとおりです。
+Hybrid のアプリ内「更新」は使いません。固定した公式版への入れ替えはインストーラが行います。公開フィードは `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json` です。フィードが固定版より新しいときは、アンカーを更新するまでその zip は使いません。
 
 ```bash
-# 1) 公式最新を取得
-curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
-# 2) zip を展開し、codesign / 公証を確認
-# 3) 両アプリを完全終了
-# 4) Official をバックアップして置換
-mv "$HOME/Applications/Claude Official.app" \
-  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
-ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
-# 5) Hybrid 再構築
+update-claude-hybrid --replace-official
 update-claude-hybrid --check
-update-claude-hybrid --apply   # 両方のClaudeを完全終了してから
-prefer-claude-hybrid           # ランチャーが純正を選ぶ場合
+update-claude-hybrid --apply
+prefer-claude-hybrid
 ```
+
+`--replace-official` は固定 zip の SHA-256、codesign、公証を確認してから、既存の Official を `Claude Official.app.before-<version>-<timestamp>` へ退避します。公式 ASAR は書き換えません。両アプリを終了したあとの `--apply` も、公式ソースが固定版と違うときは同じ置換をしてから Hybrid を再構築します。
 
 アンカー不一致時は停止が正常です。近似パッチせず、Official ASAR から
 `patchFile` / `modelLabelPatchFile` を取り直し、`patchVersion` を上げてから再実行します。
-現行確認済み: Claude `2.7032.0` / Hybrid patch `2026-09-23.1`。Opus 5.5（`claude-opus-5-5`）と Fable 5.1 は公式のまま、DeepSeek は Opus 4.7 / Sonnet 4.6 / Opus 4.6 の借り枠だけです。公式アプリが DeepSeek だけになる場合は、`Claude-3p` の専用設定へ入っているので `--apply` が公式アカウントへ戻します。詳細は
+現行確認済み: Claude `2.9939.2` / Hybrid patch `2026-09-27.1`。直前は Claude `2.7032.0` / patch `2026-09-23.1`。Opus 5.5（`claude-opus-5-5`）と Fable 5.1 は公式のまま、DeepSeek は Opus 4.7 / Sonnet 4.6 / Opus 4.6 の借り枠だけです。公式アプリが DeepSeek だけになる場合は、`Claude-3p` の専用設定へ入っているので `--apply` が公式アカウントへ戻します。詳細は
 `CHANGE_SPEC-claude-app-layout-and-updates.md` §5。
 
 Codexには `claude-hybrid-update`、`deepseek-v4-delegation`、`cursor-cli-delegation`、
