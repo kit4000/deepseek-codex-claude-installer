@@ -347,22 +347,35 @@ prefer-claude-hybrid
 | 2.2553.1 | 2026-09-18.2 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
 | 2.2553.1 | 2026-09-18.3 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
 | 2.7032.0 | 2026-09-23.1 | `index.chunk-D3OyLXgG.js` | `index.chunk-D3OyLXgG.js` | `B` |
+| 2.9939.2 | 2026-09-27.1 | `index.chunk-DzZc-q0x.js` | `index.chunk-DzZc-q0x.js` | `B` |
 
-現行（2.7032.0 / 2026-09-23.1）:
+現行（2.9939.2 / 2026-09-27.1）:
 
 ```text
-patchFile: /.vite/build/index.chunk-D3OyLXgG.js
+patchFile: /.vite/build/index.chunk-DzZc-q0x.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-D3OyLXgG.js
-modelLabelPatchFrom: function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}
+modelLabelPatchFile: /.vite/build/index.chunk-DzZc-q0x.js
+modelLabelPatchFrom: function Pxe(e){return B=new a.WebContentsView(e),Ni(B.webContents,Mi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}
 userDataDirPatchFile: /.vite/build/index.pre.js
-userDataDirPatchFrom: T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
-patchVersion: 2026-09-23.1
+userDataDirPatchFrom: T.app.isPackaged&&!Y2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
+patchVersion: 2026-09-27.1
 ```
+
+2026-09-27.1 は公式フィード現行の Claude `2.9939.2`（pub_date 2026-09-24）の exact アンカー。
+zip は `https://downloads.claude.ai/releases/darwin/universal/2.9939.2/Claude-d3e50475d5d6bb0c317560310200249dd61b87d8.zip`、
+SHA-256 は `6acf8c42a60eda212841ba66a6439c7140c59c4022220a177d9cd44b5a94913c`。
+`patchFrom` は `ANTHROPIC_BASE_URL:e.apiHost` のまま。Web ピッカー関数は `Pxe`、
+ヘルパーは `Ni` / `Mi`、フルスクリーンフラグは `Ao`、表示ビュー変数は `B`。
+`CLAUDE_USER_DATA_DIR` の削除停止は `index.pre.js` の `!Y2`。各アンカー文字列は展開した ASAR 内で 1 箇所。
+消すのは `CLAUDE_USER_DATA_DIR` だけで、`SSLKEYLOGFILE` の削除は残す。デスクトップ本体には
+`claude-opus-5-5` の文字列が無いので、Opus 5.5 は `nativeFallback` で公式一覧に残す。DeepSeek へは振り分けない。
+Fable 5 / Fable 5.1 / Opus 5.5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5 の純正枠と、
+Opus 4.7 / Sonnet 4.6（DeepSeek V4.1 Flash）、Opus 4.6（DeepSeek Pro）の借り枠は変えない。
+未パッチの Official が `Claude-3p` の DeepSeek 専用ゲートウェイへ入って DeepSeek しか出ない場合、`--apply` はその `deploymentMode` を `1p` に戻す。セッションと Keychain は残す。
 
 2026-09-23.1 のモデル一覧は、公式の Opus 5.5（`claude-opus-5-5`）と Fable 5.1（`claude-fable-5-1`）を `nativeFallback` に足す。DeepSeek へは振り分けない。未パッチの Official が `Claude-3p` の DeepSeek 専用ゲートウェイへ入って DeepSeek しか出ない場合、`--apply` はその `deploymentMode` を `1p` に戻す。セッションと Keychain は残し、DeepSeek の借り枠は Hybrid に残す。これで両方のアプリが公式アカウントで共存し、Opus 5.5 を使える。
 
-2026-09-23.1 は公式フィード現行の Claude `2.7032.0`（pub_date 2026-09-22）の exact アンカー。
+2026-09-23.1 は直前の確認済み Claude `2.7032.0`（pub_date 2026-09-22）の exact アンカー。
 zip は `https://downloads.claude.ai/releases/darwin/universal/2.7032.0/Claude-6c468ab6ed862a68c9555cce34f11186c35f526d.zip`、
 SHA-256 は `f616a119258c78406d6c576cf98851108a59754c766bdb73bb2e37759b71aacd`。
 `patchFrom` は `ANTHROPIC_BASE_URL:e.apiHost` のまま。Web ピッカー関数は `wxe`、

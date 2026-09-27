@@ -121,6 +121,23 @@ test("model label patch rewrites only the DeepSeek slots and leaves native names
   assert.doesNotMatch(patch.to, /\["Haiku 4\.5"/);
 });
 
+test("Claude 2.9939.2 anchors keep the picker return variable and the user-data strip", () => {
+  const labelFrom = "function Pxe(e){return B=new a.WebContentsView(e),Ni(B.webContents,Mi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{Ao=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}";
+  const label = buildModelLabelPatch("/.vite/build/index.chunk-DzZc-q0x.js", labelFrom);
+  assert.equal(label.file, "/.vite/build/index.chunk-DzZc-q0x.js");
+  assert.match(label.to, /B\.webContents\.on\("dom-ready"/);
+  assert.ok(label.to.endsWith(",B}"));
+  assert.ok(label.to.includes("DeepSeek V4.1 Flash"));
+  assert.doesNotMatch(label.to, /\["Opus 5\.5"/);
+  assert.doesNotMatch(label.to, /\["Fable 5\.1"/);
+  const userFrom = "T.app.isPackaged&&!Y2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)";
+  const user = buildUserDataDirPatch("/.vite/build/index.pre.js", userFrom);
+  assert.equal(
+    user.to,
+    "T.app.isPackaged&&!Y2&&(delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
+  );
+});
+
 test("Claude 2.7032.0 anchors keep the picker return variable and the user-data strip", () => {
   const labelFrom = "function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{Ao=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}";
   const label = buildModelLabelPatch("/.vite/build/index.chunk-D3OyLXgG.js", labelFrom);
@@ -149,13 +166,21 @@ test("userDataDir patch keeps LSEnvironment CLAUDE_USER_DATA_DIR on packaged Cla
     () => buildUserDataDirPatch("/.vite/build/index.pre.js", "T.app.isPackaged&&!q1"),
     /unexpected shape/,
   );
-  const current = buildUserDataDirPatch(
+  const previous = buildUserDataDirPatch(
     "/.vite/build/index.pre.js",
     "T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
   );
   assert.equal(
-    current.to,
+    previous.to,
     "T.app.isPackaged&&!o2&&(delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
+  );
+  const current = buildUserDataDirPatch(
+    "/.vite/build/index.pre.js",
+    "T.app.isPackaged&&!Y2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
+  );
+  assert.equal(
+    current.to,
+    "T.app.isPackaged&&!Y2&&(delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
   );
 });
 
