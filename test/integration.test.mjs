@@ -147,6 +147,11 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
   assert.equal(config.app.patchVersion, "2026-09-27.1");
+  assert.equal(config.app.officialVersion, "2.9939.2");
+  assert.equal(
+    config.app.officialZipSha256,
+    "6acf8c42a60eda212841ba66a6439c7140c59c4022220a177d9cd44b5a94913c",
+  );
   assert.equal(config.app.patchFile, "/.vite/build/index.chunk-DzZc-q0x.js");
   assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-DzZc-q0x.js");
   assert.equal(config.app.userDataDirPatchFile, "/.vite/build/index.pre.js");
@@ -186,6 +191,10 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   assert.match(hybridReadme, /2026-09-27\.1/);
   assert.match(hybridReadme, /--allow-billing/);
   assert.match(skill, /userDataDirPatchFile/);
+  assert.match(skill, /--replace-official/);
+  assert.match(readme, /--replace-official/);
+  assert.match(changeSpec, /--replace-official/);
+  assert.match(hybridReadme, /--replace-official/);
   const handoff = await readFile(resolve(projectRoot, "AGENT_HANDOFF.md"), "utf8");
   assert.match(handoff, /2\.9939\.2/);
   assert.match(handoff, /Pxe/);
@@ -287,5 +296,8 @@ test("installer defaults to the promoted Hybrid layout and verifies both roles",
   assert.match(verifier, /autoUpdaterDisabled/);
   assert.match(installer, /preferClaudeHybrid/);
   const updater = await readFile(resolve(claudeRoot, "scripts/update.mjs"), "utf8");
+  const packageJson = JSON.parse(await readFile(resolve(projectRoot, "package.json"), "utf8"));
   assert.match(updater, /refresh-router\.mjs/);
+  assert.match(updater, /--replace-official/);
+  assert.equal(packageJson.scripts["update:claude:official"], "node scripts/update-claude.mjs --replace-official");
 });

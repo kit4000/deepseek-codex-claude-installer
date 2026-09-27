@@ -96,6 +96,9 @@
   },
   "app": {
     "patchVersion": "2026-09-27.1",
+    "officialVersion": "2.9939.2",
+    "officialZipUrl": "https://downloads.claude.ai/releases/darwin/universal/2.9939.2/Claude-d3e50475d5d6bb0c317560310200249dd61b87d8.zip",
+    "officialZipSha256": "6acf8c42a60eda212841ba66a6439c7140c59c4022220a177d9cd44b5a94913c",
     "source": "<home>/Applications/Claude Official.app",
     "target": "/Applications/Claude.app",
     "userDataDir": "<home>/Library/Application Support/Claude",

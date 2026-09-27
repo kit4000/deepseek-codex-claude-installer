@@ -36,7 +36,8 @@ This is the formal end-to-end pattern. Current feed verified on Claude `2.9939.2
    - notarized Developer ID via `spctl -a -vv`
 4. Ask the user to fully quit both Claude apps (`pgrep -x Claude` must be empty).
 5. Timestamp-backup and replace `~/Applications/Claude Official.app` with the staged app (`ditto` or equivalent). Do not ASAR-patch Official.
-6. Run `update-claude-hybrid --check`.
+   For the pinned release, quit both apps and run `update-claude-hybrid --replace-official`. It downloads only `app.officialZipUrl`, checks `app.officialZipSha256`, `codesign --verify --deep --strict`, and notarization, then moves the previous Official app to `Claude Official.app.before-<version>-<timestamp>`. It never patches the official ASAR. A newer public feed than `app.officialVersion` still needs an anchor update first.
+6. Run `update-claude-hybrid --check`. If Official is older than the pin, `--check` stops and asks for `--replace-official`. After both apps are quit, `--apply` performs that replacement and then rebuilds Hybrid.
 7. If anchors fail (`status=error`), update installer config from the pristine Official ASAR (§ Anchor maintenance), sync the persistent installer copy, then `--check` again. Never fuzzy-patch.
 8. When `--check` reports a rebuild and apps are closed, run `update-claude-hybrid --apply`.
 9. Require the built-in non-billable verification to pass (ASAR, signature, router, model list, patch version, shared session dir, `DISABLE_AUTOUPDATER=1`).

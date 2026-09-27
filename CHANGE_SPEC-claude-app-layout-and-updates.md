@@ -373,6 +373,8 @@ Fable 5 / Fable 5.1 / Opus 5.5 / Opus 4.8 / Opus 5 / Sonnet 5 / Haiku 4.5 の純
 Opus 4.7 / Sonnet 4.6（DeepSeek V4.1 Flash）、Opus 4.6（DeepSeek Pro）の借り枠は変えない。
 未パッチの Official が `Claude-3p` の DeepSeek 専用ゲートウェイへ入って DeepSeek しか出ない場合、`--apply` はその `deploymentMode` を `1p` に戻す。セッションと Keychain は残す。
 
+2026-09-28 に Mac mini で、この zip への Official 置換と Hybrid `--apply` が成功した。インストーラは同じ zip を `officialVersion` / `officialZipUrl` / `officialZipSha256` に固定する。公式ソースがこの版でないとき、`update-claude-hybrid --replace-official` が SHA-256、codesign、公証を確認してから既存 Official を `Claude Official.app.before-<version>-<timestamp>` へ退避して置換する。公式 ASAR は書き換えない。両アプリ終了後の `--apply` も、固定版と違う公式ソースなら同じ置換をしてから Hybrid を再構築する。公開フィードが固定版より新しいときは、アンカーを更新するまでその zip は使わない。
+
 2026-09-23.1 のモデル一覧は、公式の Opus 5.5（`claude-opus-5-5`）と Fable 5.1（`claude-fable-5-1`）を `nativeFallback` に足す。DeepSeek へは振り分けない。未パッチの Official が `Claude-3p` の DeepSeek 専用ゲートウェイへ入って DeepSeek しか出ない場合、`--apply` はその `deploymentMode` を `1p` に戻す。セッションと Keychain は残し、DeepSeek の借り枠は Hybrid に残す。これで両方のアプリが公式アカウントで共存し、Opus 5.5 を使える。
 
 2026-09-23.1 は直前の確認済み Claude `2.7032.0`（pub_date 2026-09-22）の exact アンカー。

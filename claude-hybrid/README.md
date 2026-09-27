@@ -73,15 +73,13 @@ npm run update:check
 
 Hybrid のアプリ内更新は使いません。公式が新しい版を出したら、先に純正ソースを入れ替えます。
 
+公開フィードは `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json` です。インストーラが固定した版へ入れるときは、両アプリを終了してから次を実行します。
+
 ```bash
-# 最新公式
-curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
-# zip 展開 → codesign --verify --deep --strict
-# 両アプリ終了後、Official をバックアップして置換
-mv "$HOME/Applications/Claude Official.app" \
-  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
-ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
+update-claude-hybrid --replace-official
 ```
+
+このコマンドは固定 zip の SHA-256、`codesign --verify --deep --strict`、公証を確認し、既存 Official を `Claude Official.app.before-<version>-<timestamp>` へ退避してから置換します。公式 ASAR は書き換えません。
 
 その後、どのディレクトリからでも再構築できます。
 

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { constants } from "node:fs";
-import { access, readFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readAsarFile } from "../src/asar-repack.mjs";
@@ -8,13 +9,16 @@ import { migrateClaudeHybridPatchVersion } from "../src/app-patch.mjs";
 import { decideClaudeHybridUpdate } from "../src/update-plan.mjs";
 import { hasHybridMarker, inspectAppleSignature, preferClaudeHybrid } from "../src/app-layout.mjs";
 import { releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
+import { installPinnedOfficialApp, localStamp, pinnedOfficialRelease } from "../src/official-source.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const home = process.env.HOME;
 if (!home) throw new Error("HOME is required");
 const args = new Set(process.argv.slice(2));
 const apply = args.has("--apply");
-if (apply && args.has("--check")) throw new Error("Choose either --check or --apply");
+const replaceOfficial = args.has("--replace-official");
+const selectedModes = [apply, replaceOfficial, args.has("--check")].filter(Boolean).length;
+if (selectedModes > 1) throw new Error("Choose only one of --check, --apply, or --replace-official");
 const mode = apply ? "apply" : "check";
 const configPath = process.env.CLAUDE_HYBRID_CONFIG ?? resolve(projectRoot, "config/claude-hybrid.json");
 const config = JSON.parse(await readFile(configPath, "utf8"));
@@ -128,7 +132,51 @@ async function inspectState() {
     openaiRequired: (config.models?.external ?? []).some((entry) => entry.provider === "openai"),
     claudeRunning: running.status === 0,
     targetPatchCompatible: targetExists ? inspectInstalledCompatibility() : false,
+    expectedOfficialVersion: config.app.officialVersion,
   };
+}
+
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+async function replacePinnedSource(state, release) {
+  if (state.claudeRunning) {
+    return {
+      status: "warning",
+      summary: "Claude is running; the official source was not replaced.",
+      root_cause_hint: "Replacing Claude Official.app while Claude is running is unsafe.",
+      next_actions: ["Ask the user to fully quit both Claude apps, then rerun update-claude-hybrid --replace-official."],
+      artifacts: { sourceApp, expectedOfficialVersion: release.version, sourceVersion: state.sourceVersion ?? null },
+    };
+  }
+  if (state.sourceVersion === release.version && state.sourceSignatureValid) {
+    return {
+      status: "success",
+      summary: "Claude Official.app already matches the pinned release.",
+      next_actions: ["Run update-claude-hybrid --check."],
+      artifacts: { sourceApp, expectedOfficialVersion: release.version },
+    };
+  }
+  const stageRoot = await mkdtemp(join(tmpdir(), "claude-official-"));
+  try {
+    const replaced = await installPinnedOfficialApp({
+      release,
+      sourceApp,
+      stageRoot,
+      stamp: localStamp(),
+      fromVersion: state.sourceVersion,
+      sourceExists: state.sourceVersion !== undefined || await exists(sourceApp),
+    });
+    return {
+      status: "success",
+      summary: "Claude Official.app was replaced with the pinned Apple-signed release.",
+      next_actions: ["Run update-claude-hybrid --check, then --apply."],
+      artifacts: replaced,
+    };
+  } finally {
+    await rm(stageRoot, { recursive: true, force: true });
+  }
 }
 
 function runManagedScript(name) {
@@ -141,43 +189,59 @@ function runManagedScript(name) {
 }
 
 try {
-  const state = await inspectState();
-  const plan = decideClaudeHybridUpdate(state, mode);
-  if (mode === "check") {
-    console.log(JSON.stringify(plan, null, 2));
-    if (plan.status === "error") process.exitCode = 1;
-  } else if (plan.status === "error" || (plan.status === "warning" && state.claudeRunning)) {
-    console.log(JSON.stringify(plan, null, 2));
-    process.exitCode = 1;
-  } else {
-    let migration;
-    if (plan.status !== "success" && plan.artifacts.updateKind === "metadata-migration") {
-      migration = await migrateClaudeHybridPatchVersion({
-        targetApp,
-        patchVersion: config.app.patchVersion,
-      });
-    } else if (plan.status !== "success") {
-      runManagedScript("install.mjs");
+  const release = pinnedOfficialRelease(config.app);
+  let state = await inspectState();
+  let officialReplacement;
+  if (replaceOfficial || (apply && state.sourceVersion !== release.version)) {
+    const replacement = await replacePinnedSource(state, release);
+    if (replacement.status !== "success") {
+      printJson(replacement);
+      process.exitCode = 1;
+    } else if (replaceOfficial) {
+      printJson(replacement);
+    } else {
+      officialReplacement = replacement.artifacts;
+      state = await inspectState();
     }
-    runManagedScript("refresh-router.mjs");
-    const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
-    runManagedScript("verify.mjs");
-    const launchServices = preferClaudeHybrid({ officialApp: sourceApp, hybridApp: targetApp });
-    console.log(JSON.stringify({
-      status: "success",
-      summary: plan.status === "success"
-        ? "Claude Hybrid app was already current; managed router files were refreshed and verification passed."
-        : migration
-          ? "Claude Hybrid metadata was migrated without rewriting its verified app patch."
-          : "Claude Hybrid was rebuilt from the signed official app and passed verification.",
-      next_actions: [
-        "Open Claude from /Applications and approve the Claude Safe Storage prompt if macOS shows it.",
-        "Start a new Code session so the picker refetches /v1/models, then confirm Opus 5.5 and Fable 5.1 are listed and native.",
-        "Confirm Opus 4.7 / Sonnet 4.6 show DeepSeek V4.1 Flash and Opus 4.6 shows DeepSeek Pro.",
-        "Start a Code session and confirm it appears in claude.ai/code or the mobile app.",
-      ],
-      artifacts: { sourceApp, targetApp, expectedPatchVersion: config.app.patchVersion, migration, launchServices, officialAccount },
-    }, null, 2));
+  }
+  if (!replaceOfficial && !process.exitCode) {
+    const plan = decideClaudeHybridUpdate(state, mode);
+    if (mode === "check") {
+      console.log(JSON.stringify(plan, null, 2));
+      if (plan.status === "error") process.exitCode = 1;
+    } else if (plan.status === "error" || (plan.status === "warning" && state.claudeRunning)) {
+      console.log(JSON.stringify(plan, null, 2));
+      process.exitCode = 1;
+    } else {
+      let migration;
+      if (plan.status !== "success" && plan.artifacts.updateKind === "metadata-migration") {
+        migration = await migrateClaudeHybridPatchVersion({
+          targetApp,
+          patchVersion: config.app.patchVersion,
+        });
+      } else if (plan.status !== "success") {
+        runManagedScript("install.mjs");
+      }
+      runManagedScript("refresh-router.mjs");
+      const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
+      runManagedScript("verify.mjs");
+      const launchServices = preferClaudeHybrid({ officialApp: sourceApp, hybridApp: targetApp });
+      console.log(JSON.stringify({
+        status: "success",
+        summary: plan.status === "success"
+          ? "Claude Hybrid app was already current; managed router files were refreshed and verification passed."
+          : migration
+            ? "Claude Hybrid metadata was migrated without rewriting its verified app patch."
+            : "Claude Hybrid was rebuilt from the signed official app and passed verification.",
+        next_actions: [
+          "Open Claude from /Applications and approve the Claude Safe Storage prompt if macOS shows it.",
+          "Start a new Code session so the picker refetches /v1/models, then confirm Opus 5.5 and Fable 5.1 are listed and native.",
+          "Confirm Opus 4.7 / Sonnet 4.6 show DeepSeek V4.1 Flash and Opus 4.6 shows DeepSeek Pro.",
+          "Start a Code session and confirm it appears in claude.ai/code or the mobile app.",
+        ],
+        artifacts: { sourceApp, targetApp, expectedPatchVersion: config.app.patchVersion, migration, launchServices, officialAccount, officialReplacement },
+      }, null, 2));
+    }
   }
 } catch (error) {
   console.log(JSON.stringify({

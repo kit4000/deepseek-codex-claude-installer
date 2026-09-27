@@ -21,25 +21,40 @@ export function decideClaudeHybridUpdate(state, mode = "check") {
     targetBuild: state.targetBuild ?? null,
     installedPatchVersion: state.installedPatchVersion ?? null,
     expectedPatchVersion: state.expectedPatchVersion,
+    expectedOfficialVersion: state.expectedOfficialVersion ?? null,
   };
+  const officialIsPinned = !state.expectedOfficialVersion || state.sourceVersion === state.expectedOfficialVersion;
 
   if (!state.sourceSignatureValid) {
     return {
       status: "error",
       summary: "Claude source signature verification failed.",
       root_cause_hint: "The configured source app is missing, damaged, or not an official signed build.",
-      next_actions: ["Install or replace ~/Applications/Claude Official.app with a pristine Apple-signed build, then run --check again."],
+      next_actions: state.expectedOfficialVersion
+        ? ["Quit both Claude apps, then run update-claude-hybrid --replace-official."]
+        : ["Install or replace ~/Applications/Claude Official.app with a pristine Apple-signed build, then run --check again."],
       artifacts,
     };
   }
   if (!state.environmentAnchorPresent || !state.labelAnchorPresent || !state.userDataDirAnchorPresent) {
-    return {
-      status: "error",
-      summary: "This Claude build is not compatible with the current Hybrid patch anchors.",
-      root_cause_hint: "Claude changed its bundled JavaScript layout; fuzzy patching is intentionally disabled.",
-      next_actions: ["Update the installer source and regression tests for this Claude version before applying."],
-      artifacts,
-    };
+    return officialIsPinned
+      ? {
+        status: "error",
+        summary: "This Claude build is not compatible with the current Hybrid patch anchors.",
+        root_cause_hint: "Claude changed its bundled JavaScript layout; fuzzy patching is intentionally disabled.",
+        next_actions: ["Update the installer source and regression tests for this Claude version before applying."],
+        artifacts,
+      }
+      : {
+        status: "error",
+        summary: "The official Claude source does not match the pinned Hybrid release.",
+        root_cause_hint: "Hybrid anchors belong to the pinned official build. Fuzzy patching is intentionally disabled.",
+        next_actions: [
+          "Quit both Claude apps, then run update-claude-hybrid --replace-official.",
+          "Rerun update-claude-hybrid --check, then --apply.",
+        ],
+        artifacts,
+      };
   }
 
   const upToDate = state.targetExists
