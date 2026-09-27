@@ -76,11 +76,11 @@
     "codex-router/test/handoff.test.mjs": "cae4936128d2459e690a979ac12d955794bf8f43acfc8a4ccaf56ea60c67a9a0",
     "codex-router/test/router.test.mjs": "0f0a45706a3c5daef2c668cd84772a9fa3f1246527c24c101b75a398f9dfb53b",
     "codex-router/test/sse-filter.test.mjs": "7aba6513892a617ca280f8b59816d945cf264dddd06fc821d0584dbeb3bdcbfe",
-    "claude-hybrid/README.md": "298e6eaee3efac036c120f6d76593bba8641cb18d57497eb269417e41fbb71d6",
+    "claude-hybrid/README.md": "a098ab0fdb47b548274ec55aa43d4da878437531a87a842a787d18d1bae79347",
     "claude-hybrid/package.json": "006b560a22b718f8a241f1adf65e2328934489271a8a45b9da66c34661752b34",
     "claude-hybrid/config/claude-hybrid.json": "310b591f7b42745045d8ae443742dc1bf5e8576f6851efcdbed72b699731eeba",
-    "claude-hybrid/config/hybrid-files.json": "1188929338488b1016d87efcfca66555c110392e4b0c1c7e57d62a52d86fb5b0",
-    "claude-hybrid/scripts/install.mjs": "7519b9b2922a1e9a16ef83f8e0a40349fb777dc352d41d21ac713209bf4447a7",
+    "claude-hybrid/config/hybrid-files.json": "421c7c759b530380ccfa29352f2a051c56376a76c35615d3b3870e86b9e69f95",
+    "claude-hybrid/scripts/install.mjs": "6bd91cdd9a97bfb61663289bf653b8ff9b993f5912e27fe874e31f6ed8c0701a",
     "claude-hybrid/scripts/verify.mjs": "5e44fad5444c751b6acff5af8f57a7411bffafe1f205f817e7d9e74f788700e3",
     "claude-hybrid/scripts/update.mjs": "dfafe7c698f2548d72c206d890ac7cc3730e933ccf09070806b54239ded2539b",
     "claude-hybrid/scripts/refresh-router.mjs": "a4118455a4ad0b66642ead8263ab8baf27afeac46a7e8a20bb549833b699681d",
@@ -103,6 +103,8 @@
     "claude-hybrid/src/official-account.mjs": "c7c40fb3f3ef053e98bf7426cbb0fbc2f438bcf5d4744036da2758347bb5d89d",
     "claude-hybrid/test/official-account.test.mjs": "bdd72974fcaf9e202add94e2fe32cc9513cec66a5b0ad86237a78cf835b6dc94",
     "claude-hybrid/src/official-source.mjs": "5adda02f54dfe7be230d5b38b3d7494eebf6afcfe0905cf80e443bc2346831db",
-    "claude-hybrid/test/official-source.test.mjs": "471f373117bcdc46e4fc4c7970ab0bac79238203b4513127ae6397e4f17e2bb2"
+    "claude-hybrid/src/host-node.mjs": "0eb6dee042a6d340a0dc9f8c1dfd33cb61c0563464807604f960e5bfd48daf2e",
+    "claude-hybrid/test/official-source.test.mjs": "471f373117bcdc46e4fc4c7970ab0bac79238203b4513127ae6397e4f17e2bb2",
+    "claude-hybrid/test/host-node.test.mjs": "f54b276e7a1ca20eafe633b75479c72290bfbc294823cf60a72aac877e77b5cb"
   }
 }

@@ -3,6 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { patchClaudeApp } from "../src/app-patch.mjs";
+import { resolveLaunchNode } from "../src/host-node.mjs";
 import { releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
 import { readAsarFile, readAsarHeader } from "../src/asar-repack.mjs";
 import { requestUnix } from "../src/router.mjs";
@@ -256,11 +257,13 @@ await rename(preferTemporaryPath, preferHelperPath);
 await chmod(preferHelperPath, 0o700);
 
 await mkdir(launchAgentsDir, { recursive: true });
+const launchNode = resolveLaunchNode({ home });
 const plistTemporaryPath = `${plistPath}.tmp-${process.pid}`;
-await writeFile(plistTemporaryPath, renderLaunchAgentPlist(process.execPath, routerPath, runtimeConfigPath, logDirectory), { mode: 0o644 });
+await writeFile(plistTemporaryPath, renderLaunchAgentPlist(launchNode, routerPath, runtimeConfigPath, logDirectory), { mode: 0o644 });
 await rename(plistTemporaryPath, plistPath);
 
 run("launchctl", ["bootout", domain, plistPath], { stdio: "ignore" });
+run("launchctl", ["enable", `${domain}/${label}`], { stdio: "ignore" });
 const bootstrap = run("launchctl", ["bootstrap", domain, plistPath]);
 if (bootstrap.status !== 0) {
   const message = `${bootstrap.stderr ?? ""}${bootstrap.stdout ?? ""}`;
@@ -305,6 +308,7 @@ console.log(JSON.stringify({
   openaiHelperPath,
   preferHelperPath,
   plistPath,
+  launchNode,
   routerPort: config.router.port,
   routerBaseUrl,
   routerSocketPath,
