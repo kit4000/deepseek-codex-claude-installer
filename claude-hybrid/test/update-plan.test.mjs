@@ -3,7 +3,7 @@ import test from "node:test";
 import { decideClaudeHybridUpdate, overlayInstallerModels } from "../src/update-plan.mjs";
 
 const baseline = {
-  sourceApp: "/Users/test/Applications/Claude Official.app",
+  sourceApp: "/Users/test/Applications/Cloud.app",
   targetApp: "/Applications/Claude.app",
   sourceVersion: "1.2.3",
   sourceBuild: "123",

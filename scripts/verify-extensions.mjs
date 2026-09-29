@@ -101,7 +101,7 @@ await check("preferClaudeHybrid", async () => {
   await access(preferPath, constants.R_OK | constants.X_OK);
   const source = await readFile(preferPath, "utf8");
   if (!source.includes("# Managed by deepseek-codex-claude-installer.")) throw new Error("Launch Services helper is unmanaged");
-  if (!source.includes('OFFICIAL="${HOME}/Applications/Claude Official.app"')) throw new Error("Official source path is stale");
+  if (!source.includes('OFFICIAL="${HOME}/Applications/Cloud.app"')) throw new Error("Official source path is stale");
   if (!source.includes('HYBRID="/Applications/Claude.app"')) throw new Error("Hybrid path is stale");
   return preferPath;
 });

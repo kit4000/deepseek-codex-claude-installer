@@ -13,7 +13,9 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
   Code セッションも Claude Hybrid から開けます。
 - 日常アプリは `/Applications/Claude.app`（表示名 `Claude`）です。これは純正ソースから
   構築した Hybrid で、ad-hoc 再署名のため hardened runtime は外れます。
-- 純正ソースは `~/Applications/Claude Official.app` に未パッチ・Apple署名のまま保持します。
+- 純正ソースは `~/Applications/Cloud.app` に未パッチ・Apple署名のまま保持します。
+  Finder から `Cloud.app` を開けばノーマル（純正）Claude が起動します。
+  旧名 `Claude Official.app` がある場合、導入／更新時に `Cloud.app` へ自動リネームします。
 
 ## 構成
 
@@ -65,7 +67,7 @@ npm run smoke -- --allow-billing
 ## 公式Claude更新後のHybrid更新
 
 Hybrid自身のアプリ内更新は使いません。Apple署名を検証した純正アプリで
-`~/Applications/Claude Official.app` を更新し、次で互換性だけを読み取り確認します。
+`~/Applications/Cloud.app` を更新し、次で互換性だけを読み取り確認します。
 
 ```bash
 npm run update:check
@@ -78,9 +80,9 @@ Hybrid のアプリ内更新は使いません。公式が新しい版を出し�
 curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
 # zip 展開 → codesign --verify --deep --strict
 # 両アプリ終了後、Official をバックアップして置換
-mv "$HOME/Applications/Claude Official.app" \
-  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
-ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
+mv "$HOME/Applications/Cloud.app" \
+  "$HOME/Applications/Cloud.app.before-<version>-<timestamp>"
+ditto /path/to/staged/Claude.app "$HOME/Applications/Cloud.app"
 ```
 
 その後、どのディレクトリからでも再構築できます。
@@ -151,5 +153,5 @@ DeepSeek ルートは `DEEPSEEK_HYBRID_OK` の完全応答を確認します。
 launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.local.claude-hybrid-router.plist
 ```
 
-純正ソースは `Claude Official.app.before-*` の対象バックアップから戻せます。
+純正ソースは `Cloud.app.before-*` の対象バックアップから戻せます。
 DeepSeek キー、セッション、Application Support は削除しません。

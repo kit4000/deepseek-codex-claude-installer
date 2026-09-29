@@ -293,7 +293,11 @@ if (header.headerSha256 !== patchResult.headerSha256) {
   throw new Error("Patched app asar header hash verification failed");
 }
 
-const launchServices = preferClaudeHybrid({ officialApp: sourceApp, hybridApp: targetApp });
+const launchServices = preferClaudeHybrid({
+  officialApp: sourceApp,
+  hybridApp: targetApp,
+  legacyOfficialApp: `${home}/Applications/Claude Official.app`,
+});
 const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
 
 console.log(JSON.stringify({
@@ -315,5 +319,5 @@ console.log(JSON.stringify({
     deepseek: config.deepseek.keychain,
     ...(config.openai?.keychain ? { openai: config.openai.keychain } : {}),
   },
-  note: "Open Claude from /Applications. It is the daily Hybrid app; keep Claude Official.app only as the pristine update source.",
+  note: "Open Claude from /Applications (Hybrid). Open Cloud.app for pristine Official; keep it only as the update source.",
 }, null, 2));

@@ -117,7 +117,7 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   const smoke = await readFile(resolve(projectRoot, "scripts/smoke.mjs"), "utf8");
   const hybridSmoke = await readFile(resolve(claudeRoot, "scripts/smoke.mjs"), "utf8");
   assert.match(handoff, /APIキーを推測・抽出・コピーしない/);
-  assert.match(handoff, /純正実体は `~\/Applications\/Claude Official\.app`/);
+  assert.match(handoff, /純正実体は `~\/Applications\/Cloud\.app`/);
   assert.match(handoff, /Do not use in-app updater on Hybrid/);
   assert.match(handoff, /RELEASES\.json/);
   assert.match(handoff, /replace Official source.*update-claude-hybrid --check.*update-claude-hybrid --apply.*prefer-claude-hybrid/s);
@@ -196,7 +196,7 @@ test("installer exposes safe updater and optional DeepSeek delegation without re
   assert.match(verifier, /scripts\/verify-extensions\.mjs/);
   assert.match(verifier, /ChatGPT Codex CLI wrapper/);
   assert.match(updaterSkill, /Daily app: `\/Applications\/Claude\.app`.*Hybrid/);
-  assert.match(updaterSkill, /Pristine source: `~\/Applications\/Claude Official\.app`/);
+  assert.match(updaterSkill, /Pristine source: `~\/Applications\/Cloud\.app`/);
   assert.match(updaterSkill, /Do not use the in-app updater on Hybrid/);
   assert.match(updaterSkill, /prefer-claude-hybrid/);
   assert.match(updaterSkill, /Never fuzzy-patch/);
@@ -267,7 +267,7 @@ test("installer defaults to the promoted Hybrid layout and verifies both roles",
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
   const verifier = await readFile(resolve(claudeRoot, "scripts/verify.mjs"), "utf8");
   const installer = await readFile(resolve(claudeRoot, "scripts/install.mjs"), "utf8");
-  assert.equal(config.app.source, "<home>/Applications/Claude Official.app");
+  assert.equal(config.app.source, "<home>/Applications/Cloud.app");
   assert.equal(config.app.target, "/Applications/Claude.app");
   assert.match(config.router.socketPath, /Claude Hybrid\/router\.sock/);
   assert.match(verifier, /sourceAppleSignature/);

@@ -87,10 +87,20 @@ test("leaves an unmarked legacy app untouched and warns", () => {
 
 test("prefer helper unregisters Official and registers /Applications Hybrid", () => {
   const script = renderPreferClaudeHybrid();
-  assert.match(script, /OFFICIAL="\$\{HOME\}\/Applications\/Claude Official\.app"/);
+  assert.match(script, /OFFICIAL="\$\{HOME\}\/Applications\/Cloud\.app"/);
+  assert.match(script, /LEGACY_OFFICIAL="\$\{HOME\}\/Applications\/Claude Official\.app"/);
   assert.match(script, /HYBRID="\/Applications\/Claude\.app"/);
   assert.match(script, /"\$LSREGISTER" -u "\$OFFICIAL"/);
+  assert.match(script, /"\$LSREGISTER" -u "\$LEGACY_OFFICIAL"/);
   assert.match(script, /"\$LSREGISTER" -f -R "\$HYBRID"/);
+});
+
+test("officialAppPath uses Cloud.app and keeps the legacy Official name", async () => {
+  const { officialAppPath, legacyOfficialAppPath, OFFICIAL_APP_NAME, LEGACY_OFFICIAL_APP_NAME } = await import("../src/app-layout.mjs");
+  assert.equal(OFFICIAL_APP_NAME, "Cloud.app");
+  assert.equal(LEGACY_OFFICIAL_APP_NAME, "Claude Official.app");
+  assert.equal(officialAppPath("/Users/test"), "/Users/test/Applications/Cloud.app");
+  assert.equal(legacyOfficialAppPath("/Users/test"), "/Users/test/Applications/Claude Official.app");
 });
 
 test("model label patch derives the WebContentsView variable from each exact anchor", () => {

@@ -96,7 +96,7 @@
   },
   "app": {
     "patchVersion": "2026-09-29.1",
-    "source": "<home>/Applications/Claude Official.app",
+    "source": "<home>/Applications/Cloud.app",
     "target": "/Applications/Claude.app",
     "userDataDir": "<home>/Library/Application Support/Claude",
     "routerBaseUrl": "http://127.0.0.1:10102",

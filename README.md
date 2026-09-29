@@ -27,7 +27,9 @@ macOS上で次を共存させます。
 - ログイン済み Codex CLI 経由で GPT-5.6 Sol / Luna を ChatGPT サブスク課金のまま外から呼ぶラッパー
 
 普段使う `/Applications/Claude.app` は、表示名 `Claude` の DeepSeek 対応 Hybrid です。
-純正実体は `~/Applications/Claude Official.app` に未パッチ・Apple署名のまま保持し、
+純正実体は `~/Applications/Cloud.app` に未パッチ・Apple署名のまま保持し、
+Finder から `Cloud.app` を開くとノーマル Official が起動します（旧 `Claude Official.app` は自動移行）。
+日常アプリは `/Applications/Claude.app`（Hybrid）です。
 ユーザー自身の `~/Library/Application Support/Claude` を共有します。DeepSeek
 APIキーはリポジトリに含まず、導入先ユーザーに非表示入力を求め、macOS Keychainへ保存します。
 
@@ -116,9 +118,9 @@ curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
 # 2) zip を展開し、codesign / 公証を確認
 # 3) 両アプリを完全終了
 # 4) Official をバックアップして置換
-mv "$HOME/Applications/Claude Official.app" \
-  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
-ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
+mv "$HOME/Applications/Cloud.app" \
+  "$HOME/Applications/Cloud.app.before-<version>-<timestamp>"
+ditto /path/to/staged/Claude.app "$HOME/Applications/Cloud.app"
 # 5) Hybrid 再構築
 update-claude-hybrid --check
 update-claude-hybrid --apply   # 両方のClaudeを完全終了してから

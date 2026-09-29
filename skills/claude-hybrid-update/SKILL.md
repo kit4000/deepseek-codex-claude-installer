@@ -11,14 +11,14 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 ## Safety contract
 
 - Daily app: `/Applications/Claude.app` is the Hybrid, displayed as Claude.
-- Pristine source: `~/Applications/Claude Official.app` is Apple-signed and must never be ASAR-patched.
+- Pristine source: `~/Applications/Cloud.app` is Apple-signed and must never be ASAR-patched.
 - Do not use the in-app updater on Hybrid. Replace the pristine Official source first, then rebuild.
 - Never copy or display API keys, Claude credentials, or session data.
 - Never kill Claude processes. Ask the user to fully quit official Claude and Claude Hybrid when required.
 - Never fuzzy-patch a new Claude build. An exact-anchor failure is a stop condition.
 - Do not run the billable smoke test as part of an update unless the user separately approves billing.
 - Preserve Fable 5, Fable 5.1, Opus 5.5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 as native models.
-- If Claude Official.app shows only DeepSeek, it has entered the managed `Claude-3p` gateway. `--apply` sets that gateway's `deploymentMode` back to `1p` without deleting sessions, so Official and Hybrid can both use the first-party account. DeepSeek borrowed slots stay on Hybrid.
+- If Cloud.app shows only DeepSeek, it has entered the managed `Claude-3p` gateway. `--apply` sets that gateway's `deploymentMode` back to `1p` without deleting sessions, so Official and Hybrid can both use the first-party account. DeepSeek borrowed slots stay on Hybrid.
 - Relabel/route Opus 4.7, Opus 4.6, and Sonnet 4.6 to DeepSeek (Flash in 4.7/4.6 Sonnet slots; Pro in 4.6 Opus).
 - Do not treat ChatGPT subscription as an OpenAI API picker slot.
   GPT-5.6 Sol / Luna are `/gpt-5-6-sol` and `/gpt-5-6-luna` via the logged-in Codex CLI.
@@ -35,7 +35,7 @@ This is the formal end-to-end pattern. Current feed verified on Claude `2.9939.4
    - `codesign --verify --deep --strict`
    - notarized Developer ID via `spctl -a -vv`
 4. Ask the user to fully quit both Claude apps (`pgrep -x Claude` must be empty).
-5. Timestamp-backup and replace `~/Applications/Claude Official.app` with the staged app (`ditto` or equivalent). Do not ASAR-patch Official.
+5. Timestamp-backup and replace `~/Applications/Cloud.app` with the staged app (`ditto` or equivalent). Do not ASAR-patch Official.
 6. Run `update-claude-hybrid --check`.
 7. If anchors fail (`status=error`), update installer config from the pristine Official ASAR (§ Anchor maintenance), sync the persistent installer copy, then `--check` again. Never fuzzy-patch.
 8. When `--check` reports a rebuild and apps are closed, run `update-claude-hybrid --apply`.

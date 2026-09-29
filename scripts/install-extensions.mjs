@@ -220,7 +220,7 @@ console.log(JSON.stringify({
   next_actions: [
     "Restart Codex Desktop so the new skills and deepseek-v4 agent type are loaded.",
     "Use update-claude-hybrid --check before update-claude-hybrid --apply.",
-    "Use prefer-claude-hybrid if Launch Services ever selects Claude Official.app.",
+    "Use prefer-claude-hybrid if Launch Services ever selects Cloud.app (Official).",
     "Invoke Claude Code agents deepseek-v4-flash, deepseek-v4-pro, or qwen-3-8-2-7b when that model is requested.",
     "Invoke agent_type deepseek-v4 only for explicitly requested or approved billable delegation.",
     "Invoke agent_type qwen-3-8-2-7b for the local Ollama Qwen 3.8 2.7B model.",

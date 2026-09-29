@@ -5,6 +5,8 @@ import { dirname, join, resolve } from "node:path";
 
 export const LSREGISTER = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
 export const PREFER_HELPER_MARKER = "# Managed by deepseek-codex-claude-installer.";
+export const OFFICIAL_APP_NAME = "Cloud.app";
+export const LEGACY_OFFICIAL_APP_NAME = "Claude Official.app";
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: "utf8", ...options });
@@ -50,8 +52,16 @@ export function inspectAppleSignature(appPath) {
   };
 }
 
+export function officialAppPath(home) {
+  return resolve(home, "Applications", OFFICIAL_APP_NAME);
+}
+
+export function legacyOfficialAppPath(home) {
+  return resolve(home, "Applications", LEGACY_OFFICIAL_APP_NAME);
+}
+
 export function isDefaultClaudeLayout({ sourceApp, targetApp, home }) {
-  return resolve(sourceApp) === resolve(home, "Applications/Claude Official.app")
+  return resolve(sourceApp) === officialAppPath(home)
     && resolve(targetApp) === "/Applications/Claude.app";
 }
 
@@ -78,7 +88,7 @@ export function decideClaudeAppLayout(state) {
     actions.push("move-target-to-official");
     sourceWillBeReplaced = true;
   } else if (!state.sourceExists) {
-    throw new Error("No Apple-signed pristine Claude source is available at ~/Applications/Claude Official.app");
+    throw new Error(`No Apple-signed pristine Claude source is available at ~/Applications/${OFFICIAL_APP_NAME}`);
   }
   if (!sourceWillBeReplaced && !state.sourceAppleSigned) {
     throw new Error("Claude Official source is not pristine and Apple-signed");
@@ -100,10 +110,23 @@ function safeVersion(appPath) {
   return (plistValue(appPath, "CFBundleShortVersionString") ?? "unknown").replace(/[^A-Za-z0-9._-]/g, "-");
 }
 
+export async function migrateLegacyOfficialSource({ sourceApp, home }) {
+  const legacyOfficial = legacyOfficialAppPath(home);
+  if (resolve(sourceApp) !== officialAppPath(home)) return undefined;
+  if (await pathExists(sourceApp) || !(await pathExists(legacyOfficial))) return undefined;
+  await mkdir(dirname(sourceApp), { recursive: true });
+  await rename(legacyOfficial, sourceApp);
+  return { from: legacyOfficial, to: sourceApp, role: "official-rename-to-cloud" };
+}
+
 export async function prepareClaudeAppLayout({ sourceApp, targetApp, home }) {
   if (resolve(sourceApp) === resolve(targetApp)) {
     throw new Error("Claude Hybrid target must not point to the pristine source app");
   }
+  const moved = [];
+  const renamed = await migrateLegacyOfficialSource({ sourceApp, home });
+  if (renamed) moved.push(renamed);
+
   const legacyTarget = resolve(home, "Applications/Claude Hybrid.app");
   const defaultLayout = isDefaultClaudeLayout({ sourceApp, targetApp, home });
   const sourceExists = await pathExists(sourceApp);
@@ -125,7 +148,6 @@ export async function prepareClaudeAppLayout({ sourceApp, targetApp, home }) {
     legacyExists,
     legacyIsHybrid,
   });
-  const moved = [];
   const suffix = timestamp();
 
   for (const action of plan.actions) {
@@ -157,9 +179,11 @@ export function renderPreferClaudeHybrid() {
     "set -e",
     PREFER_HELPER_MARKER,
     `LSREGISTER=${JSON.stringify(LSREGISTER)}`,
-    'OFFICIAL="${HOME}/Applications/Claude Official.app"',
+    `OFFICIAL="\${HOME}/Applications/${OFFICIAL_APP_NAME}"`,
+    `LEGACY_OFFICIAL="\${HOME}/Applications/${LEGACY_OFFICIAL_APP_NAME}"`,
     'HYBRID="/Applications/Claude.app"',
     '"$LSREGISTER" -u "$OFFICIAL" >/dev/null 2>&1 || true',
+    '"$LSREGISTER" -u "$LEGACY_OFFICIAL" >/dev/null 2>&1 || true',
     '"$LSREGISTER" -f -R "$HYBRID"',
     'echo "Launch Services now prefers: $HYBRID"',
     "",
@@ -170,8 +194,13 @@ export function preferClaudeHybrid({
   officialApp,
   hybridApp,
   runner = run,
+  legacyOfficialApp,
 }) {
   const unregistered = runner(LSREGISTER, ["-u", officialApp]);
+  let legacyUnregisterStatus;
+  if (legacyOfficialApp && resolve(legacyOfficialApp) !== resolve(officialApp)) {
+    legacyUnregisterStatus = runner(LSREGISTER, ["-u", legacyOfficialApp]).status;
+  }
   const registered = runner(LSREGISTER, ["-f", "-R", hybridApp]);
   if (registered.error) throw registered.error;
   if (registered.status !== 0) {
@@ -181,6 +210,7 @@ export function preferClaudeHybrid({
     officialApp,
     hybridApp,
     officialUnregisterStatus: unregistered.status,
+    legacyUnregisterStatus,
     hybridRegisterStatus: registered.status,
   };
 }
