@@ -298,7 +298,7 @@ const launchServices = preferClaudeHybrid({
   hybridApp: targetApp,
   legacyOfficialApp: `${home}/Applications/Claude Official.app`,
 });
-const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
+const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty: true });
 
 console.log(JSON.stringify({
   layout,

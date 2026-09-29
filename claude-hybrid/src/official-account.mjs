@@ -3,6 +3,10 @@ import { join } from "node:path";
 
 export const DEEPSEEK_ANTHROPIC_BASE_URL = "https://api.deepseek.com/anthropic";
 
+function gatewayLooksLikeDeepSeek(url) {
+  return typeof url === "string" && url.toLowerCase().includes("deepseek");
+}
+
 export function isManagedDeepSeekOnlyLibrary(configs) {
   if (!Array.isArray(configs) || configs.length === 0) return false;
   return configs.every((config) =>
@@ -10,6 +14,15 @@ export function isManagedDeepSeekOnlyLibrary(configs) {
     && typeof config === "object"
     && !Array.isArray(config)
     && config.inferenceGatewayBaseUrl === DEEPSEEK_ANTHROPIC_BASE_URL);
+}
+
+export function libraryHasDeepSeekGateway(configs) {
+  if (!Array.isArray(configs) || configs.length === 0) return false;
+  return configs.some((config) =>
+    config
+    && typeof config === "object"
+    && !Array.isArray(config)
+    && gatewayLooksLikeDeepSeek(config.inferenceGatewayBaseUrl));
 }
 
 export function firstPartyDesktopConfig(desktopConfig) {
@@ -36,7 +49,16 @@ async function readLibraryConfigs(libraryDir) {
   return configs;
 }
 
-export async function releaseDeepSeekOnlyOfficialAccount(home) {
+/**
+ * Move Claude Desktop out of the managed DeepSeek-only 3P gateway so Official
+ * (Cloud.app) uses the normal first-party Anthropic account again.
+ *
+ * Options:
+ * - forceFirstParty: when true, any deploymentMode "3p" is switched to "1p"
+ *   (used by restore-official-normal after the user asked for stock Official).
+ *   Without force, only managed DeepSeek-only libraries are eligible.
+ */
+export async function releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty = false } = {}) {
   if (!home) throw new Error("HOME is required");
   const support = join(home, "Library/Application Support/Claude-3p");
   const configPath = join(support, "claude_desktop_config.json");
@@ -52,13 +74,31 @@ export async function releaseDeepSeekOnlyOfficialAccount(home) {
     return { changed: false, reason: "already-first-party", configPath };
   }
   const configs = await readLibraryConfigs(join(support, "configLibrary"));
-  if (!isManagedDeepSeekOnlyLibrary(configs)) {
-    return { changed: false, reason: "unmanaged-3p", configPath };
+  const managedDeepSeekOnly = isManagedDeepSeekOnlyLibrary(configs);
+  const hasDeepSeekGateway = libraryHasDeepSeekGateway(configs);
+  if (!forceFirstParty && !managedDeepSeekOnly) {
+    return {
+      changed: false,
+      reason: hasDeepSeekGateway ? "mixed-or-partial-deepseek-3p" : "unmanaged-3p",
+      configPath,
+      hasDeepSeekGateway,
+    };
+  }
+  if (forceFirstParty && !managedDeepSeekOnly && !hasDeepSeekGateway && configs.length > 0) {
+    // force still applies: user asked for normal Official; keep a clear reason.
   }
   const next = firstPartyDesktopConfig(desktopConfig);
   const timestamp = new Date().toISOString().replaceAll(":", "-").replace(/\.\d{3}Z$/, "Z");
   const backupPath = `${configPath}.before-first-party-${timestamp}`;
   await writeFile(backupPath, raw.endsWith("\n") ? raw : `${raw}\n`, { mode: 0o600 });
   await writeFile(configPath, `${JSON.stringify(next, null, 2)}\n`, { mode: 0o600 });
-  return { changed: true, configPath, backupPath, deploymentMode: "1p" };
+  return {
+    changed: true,
+    configPath,
+    backupPath,
+    deploymentMode: "1p",
+    forced: forceFirstParty,
+    managedDeepSeekOnly,
+    hasDeepSeekGateway,
+  };
 }

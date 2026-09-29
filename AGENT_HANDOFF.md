@@ -125,6 +125,7 @@ UPDATE CONTRACT
 - Daily app: `/Applications/Claude.app` (= Hybrid, display name Claude)
 - Pristine source: `~/Applications/Cloud.app` (Apple-signed, never ASAR-patched)
 - Open `Cloud.app` for normal Official Claude. Legacy `~/Applications/Claude Official.app` is renamed to `Cloud.app` on install/update.
+- If Cloud.app shows only DeepSeek under an unfamiliar account, it is stuck in `Claude-3p`. Run `restore-official-normal`, fully quit Claude/Cloud.app, then reopen Cloud.app. That forces first-party (`deploymentMode: 1p`) without ASAR-patching Official.
 - Do not use in-app updater on Hybrid
 - Update = download official zip from RELEASES.json → replace Official source → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
 - `--apply` は Hybrid アプリが現行でも managed ルーターと `nativeFallback` を再配置する（Fable 5 を `/v1/models` に足す修正など）。アプリ再構築が不要なら Claude を終了しなくてよい。新しい Code セッションでピッカーを取り直す。

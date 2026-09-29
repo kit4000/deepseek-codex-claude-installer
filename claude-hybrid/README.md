@@ -16,6 +16,8 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
 - 純正ソースは `~/Applications/Cloud.app` に未パッチ・Apple署名のまま保持します。
   Finder から `Cloud.app` を開けばノーマル（純正）Claude が起動します。
   旧名 `Claude Official.app` がある場合、導入／更新時に `Cloud.app` へ自動リネームします。
+  DeepSeek しか出ない見慣れないアカウントになる場合は `Claude-3p` 残留です。
+  `restore-official-normal` を実行し、Claude / Cloud.app を完全終了してから開き直してください。
 
 ## 構成
 

@@ -163,7 +163,7 @@ try {
       runManagedScript("install.mjs");
     }
     runManagedScript("refresh-router.mjs");
-    const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
+    const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty: true });
     runManagedScript("verify.mjs");
     const launchServices = preferClaudeHybrid({
       officialApp: sourceApp,
