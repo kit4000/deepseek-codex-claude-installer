@@ -7,6 +7,7 @@
   "scripts/verify.mjs",
   "scripts/update.mjs",
   "scripts/refresh-router.mjs",
+  "scripts/setup-restore-official-on-quit.mjs",
   "scripts/smoke.mjs",
   "scripts/store-deepseek-key.mjs",
   "scripts/patch-app.mjs",
@@ -24,5 +25,6 @@
   "test/official-account.test.mjs",
   "test/openai-messages.test.mjs",
   "test/claude-agents.test.mjs",
-  "test/update-plan.test.mjs"
+  "test/update-plan.test.mjs",
+  "test/restore-official-on-quit.test.mjs"
 ]
