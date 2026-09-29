@@ -131,13 +131,13 @@ UPDATE CONTRACT
 - Claude 2.x packaged 起動は `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を削除し、既存 `Claude-3p` へ切り替える。Hybrid はこの削除を exact パッチで止め、公式 `~/Library/Application Support/Claude` を共有する
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
 
-#### 現行確認済み（Claude 2.7032.0 / patch 2026-09-23.1）
+#### 現行確認済み（Claude 2.9939.4 / patch 2026-09-29.1）
 
 純正ソースは `~/Applications/Claude Official.app`。日常アプリは `/Applications/Claude.app`（Hybrid）。
 Code 環境パッチ、Web ピッカー表示パッチ、`index.pre.js` の `CLAUDE_USER_DATA_DIR` 削除停止の
-3つの exact アンカーが必要。公式フィードの現行は `2.7032.0`（2026-09-22 公開）。
-chunk は `index.chunk-D3OyLXgG.js`、Web ピッカー関数は `wxe`、ユーザーデータ側の条件は `!o2`。
-直前の確認済みは Claude `2.2553.1` / patch `2026-09-18.3`。詳細は
+3つの exact アンカーが必要。公式フィードの現行は `2.9939.4`（2026-09-27 公開）。
+chunk は `index.chunk-uBus80zm.js`、Web ピッカー関数は `Pxe`、ユーザーデータ側の条件は `!Y2`。
+直前の確認済みは Claude `2.7032.0` / patch `2026-09-23.1`。詳細は
 `CHANGE_SPEC-claude-app-layout-and-updates.md` §5.3。
 
 #### 実証済み手順（Claude 1.28929.0 / patch 2026-08-18.3）
