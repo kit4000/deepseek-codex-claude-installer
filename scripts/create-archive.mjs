@@ -70,7 +70,7 @@ try {
       account: "api-key",
     },
     protected: [
-      "~/Applications/Claude Official.app contents and Apple signature",
+      "~/Applications/Cloud.app contents and Apple signature",
       "/Applications/Claude.app daily Hybrid identity and disabled updater",
       "Codex and Claude session stores",
       "Fable 5, Fable 5.1, Opus 5.5, Opus 4.8, and Opus 5 native model slots",

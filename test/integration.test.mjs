@@ -117,16 +117,16 @@ test("external-agent contract protects secrets, official apps, and billing", asy
   const smoke = await readFile(resolve(projectRoot, "scripts/smoke.mjs"), "utf8");
   const hybridSmoke = await readFile(resolve(claudeRoot, "scripts/smoke.mjs"), "utf8");
   assert.match(handoff, /APIキーを推測・抽出・コピーしない/);
-  assert.match(handoff, /純正実体は `~\/Applications\/Claude Official\.app`/);
+  assert.match(handoff, /純正実体は `~\/Applications\/Cloud\.app`/);
   assert.match(handoff, /Do not use in-app updater on Hybrid/);
   assert.match(handoff, /RELEASES\.json/);
   assert.match(handoff, /replace Official source.*update-claude-hybrid --check.*update-claude-hybrid --apply.*prefer-claude-hybrid/s);
   assert.match(handoff, /1\.28929\.0/);
   assert.match(handoff, /2026-08-18\.3/);
-  assert.match(handoff, /2\.2553\.1/);
-  assert.match(handoff, /2026-09-18\.3/);
   assert.match(handoff, /2\.7032\.0/);
   assert.match(handoff, /2026-09-23\.1/);
+  assert.match(handoff, /2\.9939\.4/);
+  assert.match(handoff, /2026-09-29\.1/);
   assert.match(handoff, /CLAUDE_USER_DATA_DIR/);
   assert.match(handoff, /厳密な3つのアンカー/);
   assert.match(handoff, /ANTHROPIC_UNIX_SOCKET/);
@@ -146,35 +146,35 @@ test("installer records the Claude official-to-hybrid update pattern", async () 
   const skill = await readFile(resolve(projectRoot, "skills/claude-hybrid-update/SKILL.md"), "utf8");
   const hybridReadme = await readFile(resolve(claudeRoot, "README.md"), "utf8");
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
-  assert.equal(config.app.patchVersion, "2026-09-23.1");
-  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-D3OyLXgG.js");
-  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-D3OyLXgG.js");
+  assert.equal(config.app.patchVersion, "2026-09-29.1");
+  assert.equal(config.app.patchFile, "/.vite/build/index.chunk-uBus80zm.js");
+  assert.equal(config.app.modelLabelPatchFile, "/.vite/build/index.chunk-uBus80zm.js");
   assert.equal(config.app.userDataDirPatchFile, "/.vite/build/index.pre.js");
   assert.equal(
     config.app.modelLabelPatchFrom,
-    "function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{Ao=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}",
+    "function Pxe(e){return B=new a.WebContentsView(e),Ni(B.webContents,Mi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on(\"enter-html-full-screen\",(()=>{Ao=!0})),B.webContents.on(\"leave-html-full-screen\",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}",
   );
   assert.equal(
     config.app.userDataDirPatchFrom,
-    "T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
+    "T.app.isPackaged&&!Y2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)",
   );
-  assert.match(readme, /2\.7032\.0/);
-  assert.match(readme, /2026-09-23\.1/);
-  assert.match(changeSpec, /2\.7032\.0/);
-  assert.match(changeSpec, /2026-09-23\.1/);
-  assert.match(changeSpec, /f616a119258c78406d6c576cf98851108a59754c766bdb73bb2e37759b71aacd/);
-  assert.match(skill, /2\.7032\.0/);
-  assert.match(skill, /2026-09-23\.1/);
-  assert.match(hybridReadme, /2\.7032\.0/);
-  assert.match(hybridReadme, /2026-09-23\.1/);
+  assert.match(readme, /2\.9939\.4/);
+  assert.match(readme, /2026-09-29\.1/);
+  assert.match(changeSpec, /2\.9939\.4/);
+  assert.match(changeSpec, /2026-09-29\.1/);
+  assert.match(changeSpec, /93cc637cc2b38bb78c57ae072dd817b9b17fa8cb01aaedfe2454e6c60498c28f/);
+  assert.match(skill, /2\.9939\.4/);
+  assert.match(skill, /2026-09-29\.1/);
+  assert.match(hybridReadme, /2\.9939\.4/);
+  assert.match(hybridReadme, /2026-09-29\.1/);
   assert.match(readme, /downloads\.claude\.ai\/releases\/darwin\/universal\/RELEASES\.json/);
   assert.match(changeSpec, /実証済みアップデートパターン/);
   assert.match(changeSpec, /1\.28929\.0/);
   assert.match(skill, /Proven update pattern/);
   assert.match(skill, /RELEASES\.json/);
   assert.match(hybridReadme, /RELEASES\.json/);
-  assert.match(hybridReadme, /2\.7032\.0/);
-  assert.match(hybridReadme, /2026-09-23\.1/);
+  assert.match(hybridReadme, /2\.9939\.4/);
+  assert.match(hybridReadme, /2026-09-29\.1/);
   assert.match(hybridReadme, /--allow-billing/);
   assert.match(skill, /userDataDirPatchFile/);
   const handoff = await readFile(resolve(projectRoot, "AGENT_HANDOFF.md"), "utf8");
@@ -196,7 +196,7 @@ test("installer exposes safe updater and optional DeepSeek delegation without re
   assert.match(verifier, /scripts\/verify-extensions\.mjs/);
   assert.match(verifier, /ChatGPT Codex CLI wrapper/);
   assert.match(updaterSkill, /Daily app: `\/Applications\/Claude\.app`.*Hybrid/);
-  assert.match(updaterSkill, /Pristine source: `~\/Applications\/Claude Official\.app`/);
+  assert.match(updaterSkill, /Pristine source: `~\/Applications\/Cloud\.app`/);
   assert.match(updaterSkill, /Do not use the in-app updater on Hybrid/);
   assert.match(updaterSkill, /prefer-claude-hybrid/);
   assert.match(updaterSkill, /Never fuzzy-patch/);
@@ -267,7 +267,7 @@ test("installer defaults to the promoted Hybrid layout and verifies both roles",
   const config = JSON.parse(await readFile(resolve(claudeRoot, "config/claude-hybrid.json"), "utf8"));
   const verifier = await readFile(resolve(claudeRoot, "scripts/verify.mjs"), "utf8");
   const installer = await readFile(resolve(claudeRoot, "scripts/install.mjs"), "utf8");
-  assert.equal(config.app.source, "<home>/Applications/Claude Official.app");
+  assert.equal(config.app.source, "<home>/Applications/Cloud.app");
   assert.equal(config.app.target, "/Applications/Claude.app");
   assert.match(config.router.socketPath, /Claude Hybrid\/router\.sock/);
   assert.match(verifier, /sourceAppleSignature/);

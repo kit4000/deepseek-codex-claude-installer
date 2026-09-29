@@ -9,6 +9,7 @@ import {
   renderDeepSeekAgentProfile,
   renderQwenAgentProfile,
   renderUpdaterWrapper,
+  renderRestoreOfficialNormalWrapper,
 } from "../src/extensions.mjs";
 import {
   CURSOR_CLI_MODELS,
@@ -43,6 +44,7 @@ const profilePath = resolve(codexHome, "agent-profiles/deepseek-v4.toml");
 const qwenProfilePath = resolve(codexHome, "agent-profiles/qwen-3-8-2-7b.toml");
 const wrapperPath = resolve(home, ".local/bin/update-claude-hybrid");
 const preferPath = resolve(home, ".local/bin/prefer-claude-hybrid");
+const restoreOfficialPath = resolve(home, ".local/bin/restore-official-normal");
 const cursorDelegatePath = resolve(home, ".local/bin/cursor-cli-delegate");
 const codexDelegatePath = resolve(home, ".local/bin/codex-cli-delegate");
 const claudeAgentsDir = resolve(home, ".claude/agents");
@@ -54,6 +56,7 @@ const cursorCliCommands = renderCursorCliClaudeCommands();
 const codexCliAgents = renderCodexCliClaudeAgents();
 const codexCliCommands = renderCodexCliClaudeCommands();
 const updaterPath = resolve(projectRoot, "scripts/update-claude.mjs");
+const restoreOfficialScript = resolve(projectRoot, "claude-hybrid/scripts/restore-official-normal.mjs");
 const cursorCliDelegateScript = resolve(projectRoot, "scripts/cursor-cli-delegate.mjs");
 const codexCliDelegateScript = resolve(projectRoot, "scripts/codex-cli-delegate.mjs");
 const skillTargets = [
@@ -101,6 +104,7 @@ const profileContents = renderDeepSeekAgentProfile();
 const qwenProfileContents = renderQwenAgentProfile();
 const wrapperContents = renderUpdaterWrapper(process.execPath, updaterPath);
 const preferContents = renderPreferClaudeHybrid();
+const restoreOfficialContents = renderRestoreOfficialNormalWrapper(process.execPath, restoreOfficialScript);
 const cursorDelegateContents = renderCursorCliDelegateWrapper(process.execPath, cursorCliDelegateScript);
 const cursorModelWrappers = CURSOR_CLI_MODELS.map((entry) => ({
   path: resolve(home, ".local/bin", entry.commandName),
@@ -129,6 +133,7 @@ for (const [path, marker] of [
   [qwenProfilePath, EXTENSION_MARKER],
   [wrapperPath, EXTENSION_MARKER],
   [preferPath, PREFER_HELPER_MARKER],
+  [restoreOfficialPath, EXTENSION_MARKER],
   [cursorDelegatePath, EXTENSION_MARKER],
   [codexDelegatePath, EXTENSION_MARKER],
   ...cursorModelWrappers.map((wrapper) => [wrapper.path, EXTENSION_MARKER]),
@@ -168,6 +173,7 @@ await writeManaged(profilePath, profileContents, EXTENSION_MARKER, 0o600);
 await writeManaged(qwenProfilePath, qwenProfileContents, EXTENSION_MARKER, 0o600);
 await writeManaged(wrapperPath, wrapperContents, EXTENSION_MARKER, 0o700);
 await writeManaged(preferPath, preferContents, PREFER_HELPER_MARKER, 0o700);
+await writeManaged(restoreOfficialPath, restoreOfficialContents, EXTENSION_MARKER, 0o700);
 await writeManaged(cursorDelegatePath, cursorDelegateContents, EXTENSION_MARKER, 0o700);
 for (const wrapper of cursorModelWrappers) {
   await writeManaged(wrapper.path, wrapper.contents, EXTENSION_MARKER, 0o700);
@@ -220,7 +226,8 @@ console.log(JSON.stringify({
   next_actions: [
     "Restart Codex Desktop so the new skills and deepseek-v4 agent type are loaded.",
     "Use update-claude-hybrid --check before update-claude-hybrid --apply.",
-    "Use prefer-claude-hybrid if Launch Services ever selects Claude Official.app.",
+    "Use prefer-claude-hybrid if Launch Services ever selects Cloud.app (Official).",
+    "If Cloud.app shows only DeepSeek, run restore-official-normal, fully quit Claude/Cloud.app, then reopen Cloud.app.",
     "Invoke Claude Code agents deepseek-v4-flash, deepseek-v4-pro, or qwen-3-8-2-7b when that model is requested.",
     "Invoke agent_type deepseek-v4 only for explicitly requested or approved billable delegation.",
     "Invoke agent_type qwen-3-8-2-7b for the local Ollama Qwen 3.8 2.7B model.",
@@ -235,6 +242,7 @@ console.log(JSON.stringify({
     qwenProfilePath,
     wrapperPath,
     preferPath,
+    restoreOfficialPath,
     cursorDelegatePath,
     cursorModelWrappers: cursorModelWrappers.map((wrapper) => wrapper.path),
     codexDelegatePath,

@@ -35,7 +35,7 @@ try {
     teamIdentifier: sourceSignature.teamIdentifier,
   };
   report.checks.layoutPaths = {
-    ok: customLayout || (sourceApp === `${home}/Applications/Claude Official.app` && targetApp === "/Applications/Claude.app"),
+    ok: customLayout || (sourceApp === `${home}/Applications/Cloud.app` && targetApp === "/Applications/Claude.app"),
     sourceApp,
     targetApp,
   };

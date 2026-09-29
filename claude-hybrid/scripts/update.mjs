@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 import { readAsarFile } from "../src/asar-repack.mjs";
 import { migrateClaudeHybridPatchVersion } from "../src/app-patch.mjs";
 import { decideClaudeHybridUpdate } from "../src/update-plan.mjs";
-import { hasHybridMarker, inspectAppleSignature, preferClaudeHybrid } from "../src/app-layout.mjs";
-import { releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
+import { hasHybridMarker, inspectAppleSignature, legacyOfficialAppPath, migrateLegacyOfficialSource, preferClaudeHybrid } from "../src/app-layout.mjs";
+import { quarantineClaude3pSupport, releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const home = process.env.HOME;
@@ -21,6 +21,9 @@ const config = JSON.parse(await readFile(configPath, "utf8"));
 const expand = (value) => String(value).replaceAll("<home>", home);
 const sourceApp = process.env.CLAUDE_HYBRID_SOURCE ?? expand(config.app.source);
 const targetApp = process.env.CLAUDE_HYBRID_TARGET ?? expand(config.app.target);
+const legacyOfficialApp = legacyOfficialAppPath(home);
+
+await migrateLegacyOfficialSource({ sourceApp, home });
 
 function run(command, commandArgs, options = {}) {
   return spawnSync(command, commandArgs, { encoding: "utf8", ...options });
@@ -160,9 +163,14 @@ try {
       runManagedScript("install.mjs");
     }
     runManagedScript("refresh-router.mjs");
-    const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
+    const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty: true });
+    const quarantined3p = await quarantineClaude3pSupport(home);
     runManagedScript("verify.mjs");
-    const launchServices = preferClaudeHybrid({ officialApp: sourceApp, hybridApp: targetApp });
+    const launchServices = preferClaudeHybrid({
+      officialApp: sourceApp,
+      hybridApp: targetApp,
+      legacyOfficialApp,
+    });
     console.log(JSON.stringify({
       status: "success",
       summary: plan.status === "success"
@@ -172,11 +180,20 @@ try {
           : "Claude Hybrid was rebuilt from the signed official app and passed verification.",
       next_actions: [
         "Open Claude from /Applications and approve the Claude Safe Storage prompt if macOS shows it.",
+        "Open Official with: open -n \"$HOME/Applications/Cloud.app\" (fully quit first if DeepSeek-only appeared).",
         "Start a new Code session so the picker refetches /v1/models, then confirm Opus 5.5 and Fable 5.1 are listed and native.",
         "Confirm Opus 4.7 / Sonnet 4.6 show DeepSeek V4.1 Flash and Opus 4.6 shows DeepSeek Pro.",
         "Start a Code session and confirm it appears in claude.ai/code or the mobile app.",
       ],
-      artifacts: { sourceApp, targetApp, expectedPatchVersion: config.app.patchVersion, migration, launchServices, officialAccount },
+      artifacts: {
+        sourceApp,
+        targetApp,
+        expectedPatchVersion: config.app.patchVersion,
+        migration,
+        launchServices,
+        officialAccount,
+        quarantined3p,
+      },
     }, null, 2));
   }
 } catch (error) {
@@ -185,7 +202,7 @@ try {
     summary: "Claude Hybrid update failed.",
     root_cause_hint: error.message,
     next_actions: [
-      "Do not patch Claude Official.app or delete sessions.",
+      "Do not patch Cloud.app (Official) or delete sessions.",
       "Resolve the reported preflight or verification failure, then rerun --check before --apply.",
     ],
     artifacts: { sourceApp, targetApp, configPath },

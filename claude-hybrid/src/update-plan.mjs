@@ -28,7 +28,7 @@ export function decideClaudeHybridUpdate(state, mode = "check") {
       status: "error",
       summary: "Claude source signature verification failed.",
       root_cause_hint: "The configured source app is missing, damaged, or not an official signed build.",
-      next_actions: ["Install or replace ~/Applications/Claude Official.app with a pristine Apple-signed build, then run --check again."],
+      next_actions: ["Install or replace ~/Applications/Cloud.app with a pristine Apple-signed build, then run --check again."],
       artifacts,
     };
   }

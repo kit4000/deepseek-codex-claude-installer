@@ -41,7 +41,7 @@ console.log(JSON.stringify({
     "Fully quit and reopen Codex Desktop before checking its model menu.",
     ...(installClaude ? [
       "Open Claude from /Applications; this is the daily Hybrid app.",
-      "Keep ~/Applications/Claude Official.app pristine and use it only as the update source.",
+      "Keep ~/Applications/Cloud.app pristine (normal Official) and use it only as the update source.",
       "Approve the Claude Safe Storage Keychain prompt by choosing Always Allow.",
       "Confirm that Opus 4.7 / Sonnet 4.6 show DeepSeek V4.1 Flash, Opus 4.6 shows DeepSeek Pro, and Opus 4.8 remains native Claude.",
     ] : []),

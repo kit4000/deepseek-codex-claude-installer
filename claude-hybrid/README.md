@@ -13,7 +13,11 @@ ChatGPT サブスクリプションは Codex 側の認証として扱い、Claud
   Code セッションも Claude Hybrid から開けます。
 - 日常アプリは `/Applications/Claude.app`（表示名 `Claude`）です。これは純正ソースから
   構築した Hybrid で、ad-hoc 再署名のため hardened runtime は外れます。
-- 純正ソースは `~/Applications/Claude Official.app` に未パッチ・Apple署名のまま保持します。
+- 純正ソースは `~/Applications/Cloud.app` に未パッチ・Apple署名のまま保持します。
+  Finder から `Cloud.app` を開けばノーマル（純正）Claude が起動します。
+  旧名 `Claude Official.app` がある場合、導入／更新時に `Cloud.app` へ自動リネームします。
+  DeepSeek しか出ない見慣れないアカウントになる場合は `Claude-3p` 残留です。
+  `restore-official-normal` を実行し、Claude / Cloud.app を完全終了してから開き直してください。
 
 ## 構成
 
@@ -65,7 +69,7 @@ npm run smoke -- --allow-billing
 ## 公式Claude更新後のHybrid更新
 
 Hybrid自身のアプリ内更新は使いません。Apple署名を検証した純正アプリで
-`~/Applications/Claude Official.app` を更新し、次で互換性だけを読み取り確認します。
+`~/Applications/Cloud.app` を更新し、次で互換性だけを読み取り確認します。
 
 ```bash
 npm run update:check
@@ -78,9 +82,9 @@ Hybrid のアプリ内更新は使いません。公式が新しい版を出し�
 curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
 # zip 展開 → codesign --verify --deep --strict
 # 両アプリ終了後、Official をバックアップして置換
-mv "$HOME/Applications/Claude Official.app" \
-  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
-ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
+mv "$HOME/Applications/Cloud.app" \
+  "$HOME/Applications/Cloud.app.before-<version>-<timestamp>"
+ditto /path/to/staged/Claude.app "$HOME/Applications/Cloud.app"
 ```
 
 その後、どのディレクトリからでも再構築できます。
@@ -94,7 +98,7 @@ prefer-claude-hybrid
 公式署名、バージョン固有の3つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
-現行確認済みは Claude `2.7032.0` / patch `2026-09-23.1` です。直前は Claude `2.2553.1` / patch `2026-09-18.3` です。Opus 5.5 と Fable 5.1 は公式モデルのまま一覧に残し、DeepSeek は借り枠だけです。公式アプリが DeepSeek だけになるときは、`--apply` が `Claude-3p` の専用設定を公式アカウントへ戻します。
+現行確認済みは Claude `2.9939.4` / patch `2026-09-29.1` です。直前は Claude `2.7032.0` / patch `2026-09-23.1` です。Opus 5.5 と Fable 5.1 は公式モデルのまま一覧に残し、DeepSeek は借り枠だけです。公式アプリが DeepSeek だけになるときは、`--apply` が `Claude-3p` の専用設定を公式アカウントへ戻します。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを
@@ -151,5 +155,5 @@ DeepSeek ルートは `DEEPSEEK_HYBRID_OK` の完全応答を確認します。
 launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.local.claude-hybrid-router.plist
 ```
 
-純正ソースは `Claude Official.app.before-*` の対象バックアップから戻せます。
+純正ソースは `Cloud.app.before-*` の対象バックアップから戻せます。
 DeepSeek キー、セッション、Application Support は削除しません。

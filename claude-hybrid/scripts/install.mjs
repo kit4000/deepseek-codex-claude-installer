@@ -3,7 +3,10 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { patchClaudeApp } from "../src/app-patch.mjs";
-import { releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
+import {
+  quarantineClaude3pSupport,
+  releaseDeepSeekOnlyOfficialAccount,
+} from "../src/official-account.mjs";
 import { readAsarFile, readAsarHeader } from "../src/asar-repack.mjs";
 import { requestUnix } from "../src/router.mjs";
 import {
@@ -293,8 +296,13 @@ if (header.headerSha256 !== patchResult.headerSha256) {
   throw new Error("Patched app asar header hash verification failed");
 }
 
-const launchServices = preferClaudeHybrid({ officialApp: sourceApp, hybridApp: targetApp });
-const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home);
+const launchServices = preferClaudeHybrid({
+  officialApp: sourceApp,
+  hybridApp: targetApp,
+  legacyOfficialApp: `${home}/Applications/Claude Official.app`,
+});
+const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty: true });
+const quarantined3p = await quarantineClaude3pSupport(home);
 
 console.log(JSON.stringify({
   layout,
@@ -311,9 +319,10 @@ console.log(JSON.stringify({
   patch: patchResult,
   launchServices,
   officialAccount,
+  quarantined3p,
   keychain: {
     deepseek: config.deepseek.keychain,
     ...(config.openai?.keychain ? { openai: config.openai.keychain } : {}),
   },
-  note: "Open Claude from /Applications. It is the daily Hybrid app; keep Claude Official.app only as the pristine update source.",
+  note: "Open Claude from /Applications (Hybrid). Open Cloud.app with: open -n \"$HOME/Applications/Cloud.app\". Claude-3p DeepSeek gateway is quarantined.",
 }, null, 2));

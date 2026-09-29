@@ -24,6 +24,7 @@ const profilePath = resolve(codexHome, "agent-profiles/deepseek-v4.toml");
 const qwenProfilePath = resolve(codexHome, "agent-profiles/qwen-3-8-2-7b.toml");
 const wrapperPath = resolve(home, ".local/bin/update-claude-hybrid");
 const preferPath = resolve(home, ".local/bin/prefer-claude-hybrid");
+const restoreOfficialPath = resolve(home, ".local/bin/restore-official-normal");
 const cursorDelegatePath = resolve(home, ".local/bin/cursor-cli-delegate");
 const codexDelegatePath = resolve(home, ".local/bin/codex-cli-delegate");
 const skillPaths = [
@@ -101,9 +102,19 @@ await check("preferClaudeHybrid", async () => {
   await access(preferPath, constants.R_OK | constants.X_OK);
   const source = await readFile(preferPath, "utf8");
   if (!source.includes("# Managed by deepseek-codex-claude-installer.")) throw new Error("Launch Services helper is unmanaged");
-  if (!source.includes('OFFICIAL="${HOME}/Applications/Claude Official.app"')) throw new Error("Official source path is stale");
+  if (!source.includes('OFFICIAL="${HOME}/Applications/Cloud.app"')) throw new Error("Official source path is stale");
   if (!source.includes('HYBRID="/Applications/Claude.app"')) throw new Error("Hybrid path is stale");
   return preferPath;
+});
+
+await check("restoreOfficialNormal", async () => {
+  await access(restoreOfficialPath, constants.R_OK | constants.X_OK);
+  const source = await readFile(restoreOfficialPath, "utf8");
+  if (!source.includes(EXTENSION_MARKER)) throw new Error("Official restore wrapper is unmanaged");
+  if (!source.includes(resolve(projectRoot, "claude-hybrid/scripts/restore-official-normal.mjs"))) {
+    throw new Error("Official restore wrapper points to a stale bundle");
+  }
+  return restoreOfficialPath;
 });
 
 await check("managedSkills", async () => {

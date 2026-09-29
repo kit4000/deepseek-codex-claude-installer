@@ -122,3 +122,7 @@ export function renderUpdaterWrapper(nodePath, updaterPath) {
     "",
   ].join("\n");
 }
+
+export function renderRestoreOfficialNormalWrapper(nodePath, scriptPath) {
+  return renderUpdaterWrapper(nodePath, scriptPath);
+}

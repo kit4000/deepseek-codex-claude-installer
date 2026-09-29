@@ -28,5 +28,6 @@
   "test/cursor-cli.test.mjs",
   "test/codex-cli.test.mjs",
   "test/extensions.test.mjs",
-  "test/integration.test.mjs"
+  "test/integration.test.mjs",
+  "Restore-Official-Normal.command"
 ]

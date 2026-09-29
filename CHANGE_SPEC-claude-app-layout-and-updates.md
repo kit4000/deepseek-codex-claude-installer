@@ -42,7 +42,7 @@ Hybrid を `/Applications/Claude.app` に昇格した後も、次が重なると
 | 役割 | パス | 表示名 (`CFBundleDisplayName`) | 署名 | 自動更新 |
 |------|------|--------------------------------|------|----------|
 | **日常利用（Hybrid）** | `/Applications/Claude.app` | `Claude` | adhoc | **無効** (`DISABLE_AUTOUPDATER=1`) |
-| **純正ソース（未パッチ）** | `~/Applications/Claude Official.app` | `Claude`（純正のまま可） | Apple 署名を維持 | 使わない／パス指定でのみ開く |
+| **純正ソース（未パッチ）** | `~/Applications/Cloud.app` | `Claude`（純正のまま可） | Apple 署名を維持 | 使わない／パス指定でのみ開く |
 
 制約:
 
@@ -55,12 +55,12 @@ Hybrid を `/Applications/Claude.app` に昇格した後も、次が重なると
 ### 2.2 Launch Services
 
 - 日常起動の勝者は `/Applications/Claude.app`（Hybrid）。
-- 純正 `Claude Official.app` は **Launch Services に登録しない**（または明示 unregister）。
+- 純正 `Cloud.app` は **Launch Services に登録しない**（または明示 unregister）。
 - 理由: 同じ Bundle ID では Apple 署名の純正が勝ちやすく、ランチャー問題が再発する。
 - 純正を開くときはフルパスのみ:
 
 ```bash
-open "$HOME/Applications/Claude Official.app"
+open "$HOME/Applications/Cloud.app"
 ```
 
 - 純正を一度開いた後にランチャーがずれたら、再優先コマンドを用意する（後述 `prefer-claude-hybrid`）。
@@ -81,7 +81,7 @@ open "$HOME/Applications/Claude Official.app"
 
 ```json
 "app": {
-  "source": "<home>/Applications/Claude Official.app",
+  "source": "<home>/Applications/Cloud.app",
   "target": "/Applications/Claude.app",
   "userDataDir": "<home>/Library/Application Support/Claude",
   "routerBaseUrl": "http://127.0.0.1:10102"
@@ -108,7 +108,7 @@ Claude.app のピッカー枠に載せない。
 
 1. 公式 Claude と Hybrid 相当プロセスが起動中なら **停止して利用者に終了を依頼**（エージェントは原則 kill しない。利用者が承認した作業時のみ例外可）。
 2. 既存の純正 `/Applications/Claude.app` があり、かつ Hybrid マーカー（`ClaudeHybridPatchVersion`）が無い場合:
-   - `/Applications/Claude.app` → `~/Applications/Claude Official.app` へ退避  
+   - `/Applications/Claude.app` → `~/Applications/Cloud.app` へ退避  
    - 既に Official がある場合はタイムスタンプ付きバックアップへ rename（上書き禁止）。
 3. Hybrid を `target`（`/Applications/Claude.app`）として公式ソースから構築。
 4. `CFBundleDisplayName = "Claude"`。
@@ -134,7 +134,7 @@ Claude.app のピッカー枠に載せない。
 - target 許可リストを新デフォルト中心に更新:
   - 必須: `/Applications/Claude.app`
   - 移行互換で旧 `~/Applications/Claude Hybrid.app` を残すなら「非推奨」と明記
-- source は Apple 署名検証対象のまま（`Claude Official.app`）。
+- source は Apple 署名検証対象のまま（`Cloud.app`）。
 - テストの fixture パスを新配置に更新。
 - `npm run verify` で「Hybrid が `/Applications/Claude.app` にあり、Official が source にある」ことを確認。
 
@@ -144,7 +144,7 @@ Claude.app のピッカー枠に載せない。
 
 | 文書 | 旧 | 新 |
 |------|----|----|
-| `AGENT_HANDOFF.md` | 公式 `/Applications/Claude.app` は変更しない。パッチ対象は `~/Applications/Claude Hybrid.app` | 公式**中身**は変更しない。純正実体は `~/Applications/Claude Official.app`。パッチ対象（日常アプリ）は `/Applications/Claude.app` |
+| `AGENT_HANDOFF.md` | 公式 `/Applications/Claude.app` は変更しない。パッチ対象は `~/Applications/Claude Hybrid.app` | 公式**中身**は変更しない。純正実体は `~/Applications/Cloud.app`。パッチ対象（日常アプリ）は `/Applications/Claude.app` |
 | `README.md` / `claude-hybrid/README.md` | Hybrid.app を開く | `/Applications/Claude.app` を開く。純正は Official パス |
 | `skills/claude-hybrid-update/SKILL.md` | Never modify `/Applications/Claude.app` | `/Applications/Claude.app` は Hybrid。純正は Official。純正の中身は改造しない。再構築は `update-claude-hybrid` のみ |
 | install 完了 `next` メッセージ | Claude Hybrid.app を開く | `/Applications/Claude.app` を開く。更新は公式アプリ内更新ではなく §4 の手順 |
@@ -157,7 +157,7 @@ Claude.app のピッカー枠に載せない。
 #!/bin/sh
 set -e
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-OFFICIAL="${HOME}/Applications/Claude Official.app"
+OFFICIAL="${HOME}/Applications/Cloud.app"
 HYBRID="/Applications/Claude.app"
 "$LSREGISTER" -u "$OFFICIAL" >/dev/null 2>&1 || true
 "$LSREGISTER" -f -R "$HYBRID"
@@ -231,10 +231,10 @@ codesign --verify --deep --strict "/path/to/staged/Claude.app"
 # 3) Claude を完全終了
 
 # 4) 純正ソースを置換（既存 Official はタイムスタンプ付きバックアップへ）
-mv "$HOME/Applications/Claude Official.app" \
-   "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
+mv "$HOME/Applications/Cloud.app" \
+   "$HOME/Applications/Cloud.app.before-<version>-<timestamp>"
 cp -R "/path/to/staged/Claude.app" \
-   "$HOME/Applications/Claude Official.app"
+   "$HOME/Applications/Cloud.app"
 
 # 5) Hybrid 再構築
 update-claude-hybrid --check
@@ -258,7 +258,7 @@ rm -rf "$HOME/Library/Caches/com.anthropic.claudefordesktop.ShipIt/update."*
 ```text
 UPDATE CONTRACT
 - Daily app: /Applications/Claude.app (= Hybrid, display name Claude)
-- Pristine source: ~/Applications/Claude Official.app (Apple-signed, never ASAR-patched)
+- Pristine source: ~/Applications/Cloud.app (Apple-signed, never ASAR-patched)
 - Do not use in-app updater on Hybrid
 - Update = replace Official source → update-claude-hybrid --apply → prefer-claude-hybrid
 - On exact-anchor failure: stop; do not fuzzy-patch
@@ -293,9 +293,9 @@ spctl -a -vv "/path/to/staged/Claude.app"   # Notarized Developer ID を確認
 # C. Claude を完全終了（pgrep -x Claude が空）
 
 # D. 純正ソースをタイムスタンプ付きバックアップ後に置換
-mv "$HOME/Applications/Claude Official.app" \
-  "$HOME/Applications/Claude Official.app.before-<oldVersion>-<timestamp>"
-ditto "/path/to/staged/Claude.app" "$HOME/Applications/Claude Official.app"
+mv "$HOME/Applications/Cloud.app" \
+  "$HOME/Applications/Cloud.app.before-<oldVersion>-<timestamp>"
+ditto "/path/to/staged/Claude.app" "$HOME/Applications/Cloud.app"
 
 # E. Hybrid 再構築（永続インストーラー上の update-claude-hybrid）
 update-claude-hybrid --check
@@ -347,22 +347,32 @@ prefer-claude-hybrid
 | 2.2553.1 | 2026-09-18.2 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
 | 2.2553.1 | 2026-09-18.3 | `index.chunk-ChZ67Jhw.js` | `index.chunk-ChZ67Jhw.js` | `B` |
 | 2.7032.0 | 2026-09-23.1 | `index.chunk-D3OyLXgG.js` | `index.chunk-D3OyLXgG.js` | `B` |
+| 2.9939.4 | 2026-09-29.1 | `index.chunk-uBus80zm.js` | `index.chunk-uBus80zm.js` | `B` |
 
-現行（2.7032.0 / 2026-09-23.1）:
+現行（2.9939.4 / 2026-09-29.1）:
 
 ```text
-patchFile: /.vite/build/index.chunk-D3OyLXgG.js
+patchFile: /.vite/build/index.chunk-uBus80zm.js
 patchFrom: ANTHROPIC_BASE_URL:e.apiHost
-modelLabelPatchFile: /.vite/build/index.chunk-D3OyLXgG.js
-modelLabelPatchFrom: function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}
+modelLabelPatchFile: /.vite/build/index.chunk-uBus80zm.js
+modelLabelPatchFrom: function Pxe(e){return B=new a.WebContentsView(e),Ni(B.webContents,Mi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}
 userDataDirPatchFile: /.vite/build/index.pre.js
-userDataDirPatchFrom: T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
-patchVersion: 2026-09-23.1
+userDataDirPatchFrom: T.app.isPackaged&&!Y2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)
+patchVersion: 2026-09-29.1
 ```
+
+2026-09-29.1 は公式フィード現行の Claude `2.9939.4`（pub_date 2026-09-27）の exact アンカー。
+zip は `https://downloads.claude.ai/releases/darwin/universal/2.9939.4/Claude-a166d8a7c640e65ad825ebfb99d74ccbb9c8940d.zip`、
+SHA-256 は `93cc637cc2b38bb78c57ae072dd817b9b17fa8cb01aaedfe2454e6c60498c28f`。
+`patchFrom` は `ANTHROPIC_BASE_URL:e.apiHost` のまま。Web ピッカー関数は `Pxe`、
+フルスクリーンフラグは `Ao`、表示ビュー変数は `B`、ヘルパーは `Ni` / `Mi`。
+`CLAUDE_USER_DATA_DIR` の削除停止は `index.pre.js` の `!Y2`。各アンカー文字列は展開した
+ASAR 内で 1 箇所。消すのは `CLAUDE_USER_DATA_DIR` だけで、`SSLKEYLOGFILE` の削除は残す。
+モデル契約（純正枠と DeepSeek 借り枠）は 2026-09-23.1 と同じ。
 
 2026-09-23.1 のモデル一覧は、公式の Opus 5.5（`claude-opus-5-5`）と Fable 5.1（`claude-fable-5-1`）を `nativeFallback` に足す。DeepSeek へは振り分けない。未パッチの Official が `Claude-3p` の DeepSeek 専用ゲートウェイへ入って DeepSeek しか出ない場合、`--apply` はその `deploymentMode` を `1p` に戻す。セッションと Keychain は残し、DeepSeek の借り枠は Hybrid に残す。これで両方のアプリが公式アカウントで共存し、Opus 5.5 を使える。
 
-2026-09-23.1 は公式フィード現行の Claude `2.7032.0`（pub_date 2026-09-22）の exact アンカー。
+2026-09-23.1 は Claude `2.7032.0`（pub_date 2026-09-22）の exact アンカー。
 zip は `https://downloads.claude.ai/releases/darwin/universal/2.7032.0/Claude-6c468ab6ed862a68c9555cce34f11186c35f526d.zip`、
 SHA-256 は `f616a119258c78406d6c576cf98851108a59754c766bdb73bb2e37759b71aacd`。
 `patchFrom` は `ANTHROPIC_BASE_URL:e.apiHost` のまま。Web ピッカー関数は `wxe`、
@@ -398,7 +408,7 @@ Opus 4.5 / Sonnet 4.5 は純正。
 
 - [ ] 新規 install 後、日常アプリが `/Applications/Claude.app` であり `ClaudeHybridPatchVersion` を持つ
 - [ ] `CFBundleDisplayName` が `Claude`
-- [ ] 純正が `~/Applications/Claude Official.app` にあり、ASAR 未パッチ・Apple 署名
+- [ ] 純正が `~/Applications/Cloud.app` にあり、ASAR 未パッチ・Apple 署名
 - [ ] `open -b com.anthropic.claudefordesktop` が Hybrid を開く（Official を開かない）
 - [ ] Hybrid に `DISABLE_AUTOUPDATER=1`
 - [ ] `update-claude-hybrid --check` / `--apply` / `npm run verify` が新パスで通る
@@ -415,7 +425,7 @@ Opus 4.5 / Sonnet 4.5 は純正。
 ## 7. ロールバック境界
 
 - Hybrid のロールバック: `Claude.app.before-deepseek-*`（または同等バックアップ）を `/Applications/Claude.app` へ戻す
-- 純正のロールバック: `Claude Official.app.before-*` を Official パスへ戻す
+- 純正のロールバック: `Cloud.app.before-*` を Official パスへ戻す
 - 公式の中身を「修復のために書き換える」ことはしない
 - セッション・Keychain はロールバック対象外（削除しない）
 

@@ -11,14 +11,14 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 ## Safety contract
 
 - Daily app: `/Applications/Claude.app` is the Hybrid, displayed as Claude.
-- Pristine source: `~/Applications/Claude Official.app` is Apple-signed and must never be ASAR-patched.
+- Pristine source: `~/Applications/Cloud.app` is Apple-signed and must never be ASAR-patched.
 - Do not use the in-app updater on Hybrid. Replace the pristine Official source first, then rebuild.
 - Never copy or display API keys, Claude credentials, or session data.
 - Never kill Claude processes. Ask the user to fully quit official Claude and Claude Hybrid when required.
 - Never fuzzy-patch a new Claude build. An exact-anchor failure is a stop condition.
 - Do not run the billable smoke test as part of an update unless the user separately approves billing.
 - Preserve Fable 5, Fable 5.1, Opus 5.5, Opus 4.8, Opus 5, Sonnet 5, and Haiku 4.5 as native models.
-- If Claude Official.app shows only DeepSeek, it has entered the managed `Claude-3p` gateway. `--apply` sets that gateway's `deploymentMode` back to `1p` without deleting sessions, so Official and Hybrid can both use the first-party account. DeepSeek borrowed slots stay on Hybrid.
+- If Cloud.app shows only DeepSeek, it has entered the managed `Claude-3p` gateway. Run `restore-official-normal` (or `--apply`, which force-switches to first-party). Fully quit Cloud.app/Claude, then reopen Cloud.app. Sessions and Keychain stay; DeepSeek borrowed slots stay on Hybrid only.
 - Relabel/route Opus 4.7, Opus 4.6, and Sonnet 4.6 to DeepSeek (Flash in 4.7/4.6 Sonnet slots; Pro in 4.6 Opus).
 - Do not treat ChatGPT subscription as an OpenAI API picker slot.
   GPT-5.6 Sol / Luna are `/gpt-5-6-sol` and `/gpt-5-6-luna` via the logged-in Codex CLI.
@@ -26,7 +26,7 @@ Use this skill when the user asks to update, refresh, repair, or check compatibi
 
 ## Proven update pattern
 
-This is the formal end-to-end pattern. Current feed verified on Claude `2.7032.0` / patch `2026-09-23.1`. The same steps were used for Claude `2.2553.1` / patch `2026-09-18.3`.
+This is the formal end-to-end pattern. Current feed verified on Claude `2.9939.4` / patch `2026-09-29.1`. The same steps were used for Claude `2.7032.0` / patch `2026-09-23.1`.
 
 1. Read the public feed:
    `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json`
@@ -35,7 +35,7 @@ This is the formal end-to-end pattern. Current feed verified on Claude `2.7032.0
    - `codesign --verify --deep --strict`
    - notarized Developer ID via `spctl -a -vv`
 4. Ask the user to fully quit both Claude apps (`pgrep -x Claude` must be empty).
-5. Timestamp-backup and replace `~/Applications/Claude Official.app` with the staged app (`ditto` or equivalent). Do not ASAR-patch Official.
+5. Timestamp-backup and replace `~/Applications/Cloud.app` with the staged app (`ditto` or equivalent). Do not ASAR-patch Official.
 6. Run `update-claude-hybrid --check`.
 7. If anchors fail (`status=error`), update installer config from the pristine Official ASAR (§ Anchor maintenance), sync the persistent installer copy, then `--check` again. Never fuzzy-patch.
 8. When `--check` reports a rebuild and apps are closed, run `update-claude-hybrid --apply`.
@@ -77,19 +77,19 @@ When a Claude release changes any exact anchor:
    The function name, object, helper, constant, and listener count vary per build.
 4. Find exactly one packaged-startup `delete process.env.CLAUDE_USER_DATA_DIR` hit →
    `app.userDataDirPatchFile` / `app.userDataDirPatchFrom`.
-5. Bump `app.patchVersion` (example: `2026-09-23.1`).
+5. Bump `app.patchVersion` (example: `2026-09-29.1`).
 6. Update `CHANGE_SPEC-claude-app-layout-and-updates.md` history table, tests, and `INSTALLER_MANIFEST.json`.
 7. Rebuild Hybrid with `--check` / `--apply`. Never fuzzy-patch.
 
-Current verified anchors for Claude `2.7032.0`:
+Current verified anchors for Claude `2.9939.4`:
 
-- `patchFile`: `/.vite/build/index.chunk-D3OyLXgG.js`
+- `patchFile`: `/.vite/build/index.chunk-uBus80zm.js`
 - `patchFrom`: `ANTHROPIC_BASE_URL:e.apiHost`
-- `modelLabelPatchFile`: `/.vite/build/index.chunk-D3OyLXgG.js`
-- `modelLabelPatchFrom`: `function wxe(e){return B=new a.WebContentsView(e),Ii(B.webContents,Fi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}`
+- `modelLabelPatchFile`: `/.vite/build/index.chunk-uBus80zm.js`
+- `modelLabelPatchFrom`: `function Pxe(e){return B=new a.WebContentsView(e),Ni(B.webContents,Mi.CLAUDE_AI_WEB),Ao=!1,B.webContents.on("enter-html-full-screen",(()=>{Ao=!0})),B.webContents.on("leave-html-full-screen",(()=>{Ao=!1})),B.webContents.setMaxListeners(30),B}`
 - `userDataDirPatchFile`: `/.vite/build/index.pre.js`
-- `userDataDirPatchFrom`: `T.app.isPackaged&&!o2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)`
-- `patchVersion`: `2026-09-23.1`
+- `userDataDirPatchFrom`: `T.app.isPackaged&&!Y2&&(delete process.env.CLAUDE_USER_DATA_DIR,delete process.env.SSLKEYLOGFILE,delete process.env.sslkeylogfile)`
+- `patchVersion`: `2026-09-29.1`
 
 ## Recovery
 

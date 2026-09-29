@@ -12,7 +12,7 @@ tar.gz や別端末のキー、会話から推測した秘密は使いません�
 
 1. APIキーを推測・抽出・コピーしない。MacBook Airや別ユーザーのKeychain、設定、ログ、
    会話から取得してはいけません。`npm run store-key` で導入先ユーザー本人に非表示入力を求めます。
-2. 公式の中身は変更しない。純正実体は `~/Applications/Claude Official.app` で、
+2. 公式の中身は変更しない。純正実体は `~/Applications/Cloud.app` で、
    Apple署名・未パッチのまま保持します。パッチ対象の日常アプリは `/Applications/Claude.app` です。
 3. `~/.codex/auth.json`、CodexのタスクDB／セッション、`~/.claude`、Claudeのユーザーデータ、
    Keychain項目を移送、削除、全面置換しません。
@@ -123,7 +123,9 @@ native GPT（`gpt-5.6-sol` など）の remote compact / 親ターンも同じ�
 UPDATE CONTRACT
 
 - Daily app: `/Applications/Claude.app` (= Hybrid, display name Claude)
-- Pristine source: `~/Applications/Claude Official.app` (Apple-signed, never ASAR-patched)
+- Pristine source: `~/Applications/Cloud.app` (Apple-signed, never ASAR-patched)
+- Open `Cloud.app` for normal Official Claude. Legacy `~/Applications/Claude Official.app` is renamed to `Cloud.app` on install/update.
+- If Cloud.app shows only DeepSeek under an unfamiliar account, it is stuck in `Claude-3p`. Run `restore-official-normal`, fully quit Claude/Cloud.app, then reopen Cloud.app. That forces first-party (`deploymentMode: 1p`) without ASAR-patching Official.
 - Do not use in-app updater on Hybrid
 - Update = download official zip from RELEASES.json → replace Official source → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
 - `--apply` は Hybrid アプリが現行でも managed ルーターと `nativeFallback` を再配置する（Fable 5 を `/v1/models` に足す修正など）。アプリ再構築が不要なら Claude を終了しなくてよい。新しい Code セッションでピッカーを取り直す。
@@ -131,13 +133,14 @@ UPDATE CONTRACT
 - Claude 2.x packaged 起動は `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を削除し、既存 `Claude-3p` へ切り替える。Hybrid はこの削除を exact パッチで止め、公式 `~/Library/Application Support/Claude` を共有する
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
 
-#### 現行確認済み（Claude 2.7032.0 / patch 2026-09-23.1）
+#### 現行確認済み（Claude 2.9939.4 / patch 2026-09-29.1）
 
-純正ソースは `~/Applications/Claude Official.app`。日常アプリは `/Applications/Claude.app`（Hybrid）。
+純正ソースは `~/Applications/Cloud.app`。日常アプリは `/Applications/Claude.app`（Hybrid）。
+Finder から `Cloud.app` を開けばノーマル Official。旧 `Claude Official.app` は導入／更新時に自動リネーム。
 Code 環境パッチ、Web ピッカー表示パッチ、`index.pre.js` の `CLAUDE_USER_DATA_DIR` 削除停止の
-3つの exact アンカーが必要。公式フィードの現行は `2.7032.0`（2026-09-22 公開）。
-chunk は `index.chunk-D3OyLXgG.js`、Web ピッカー関数は `wxe`、ユーザーデータ側の条件は `!o2`。
-直前の確認済みは Claude `2.2553.1` / patch `2026-09-18.3`。詳細は
+3つの exact アンカーが必要。公式フィードの現行は `2.9939.4`（2026-09-27 公開）。
+chunk は `index.chunk-uBus80zm.js`、Web ピッカー関数は `Pxe`、ユーザーデータ側の条件は `!Y2`。
+直前の確認済みは Claude `2.7032.0` / patch `2026-09-23.1`。詳細は
 `CHANGE_SPEC-claude-app-layout-and-updates.md` §5.3。
 
 #### 実証済み手順（Claude 1.28929.0 / patch 2026-08-18.3）
@@ -145,8 +148,8 @@ chunk は `index.chunk-D3OyLXgG.js`、Web ピッカー関数は `wxe`、ユー�
 1. `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json` から最新 zip URL を取得する。
 2. 展開した `Claude.app` を `codesign --verify --deep --strict` と公証（Developer ID）で確認する。
 3. 両アプリを完全終了する（`pgrep -x Claude` が空）。
-4. 既存の `~/Applications/Claude Official.app` を
-   `Claude Official.app.before-<version>-<timestamp>` へ退避し、新公式で置換する。
+4. 既存の `~/Applications/Cloud.app` を
+   `Cloud.app.before-<version>-<timestamp>` へ退避し、新公式で置換する。
 5. `update-claude-hybrid --check` を実行する。
 6. アンカー不一致なら Official ASAR から
    `ANTHROPIC_BASE_URL:e.apiHost`、`WebContentsView` / `CLAUDE_AI_WEB`、
@@ -342,7 +345,7 @@ Codexは `deepseek/deepseek-flash` を `max` で呼び `ROUTER_OK` を、Claude 
 - GPT復帰時に暗号化コンパクションエラーが再発しない。
 - GPT-6 Astra の remote compact が JSON で成功し、`expected value at line 1 column 1` にならない。
 - ClaudeでFable 5とOpus 4.8とOpus 5を失わず、4.6枠のPro／Flashを選択可能。
-- `~/Applications/Claude Official.app` の署名対象ファイルを一切変更していない。
+- `~/Applications/Cloud.app` の署名対象ファイルを一切変更していない。
 - `/Applications/Claude.app` が Hybrid マーカー、表示名 `Claude`、自動更新無効を持つ。
 - `prefer-claude-hybrid` が Official を unregister し Hybrid を登録する。
 - 認証情報、セッション、バックアップ、ログを配布物へ含めていない。
@@ -362,7 +365,7 @@ Codexは `deepseek/deepseek-flash` を `max` で呼び `ROUTER_OK` を、Claude 
 
 Codexはインストール出力の正確な `backupPath` を使い、10100 LaunchAgentを停止してから
 戻します。Claude Hybrid は `Claude.app.before-deepseek-*`、純正ソースは
-`Claude Official.app.before-*` の当該端末バックアップだけを使います。認証ファイル、
+`Cloud.app.before-*` の当該端末バックアップだけを使います。認証ファイル、
 セッションディレクトリ、Keychain項目を削除して
 ロールバックしません。バックアップ削除やKeychain削除は、この導入とは別の破壊的操作として
 利用者の明示承認が必要です。
