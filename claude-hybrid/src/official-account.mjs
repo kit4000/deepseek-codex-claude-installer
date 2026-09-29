@@ -1,7 +1,8 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const DEEPSEEK_ANTHROPIC_BASE_URL = "https://api.deepseek.com/anthropic";
+export const CLAUDE_3P_SUPPORT_RELATIVE = "Library/Application Support/Claude-3p";
 
 function gatewayLooksLikeDeepSeek(url) {
   return typeof url === "string" && url.toLowerCase().includes("deepseek");
@@ -60,7 +61,7 @@ async function readLibraryConfigs(libraryDir) {
  */
 export async function releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty = false } = {}) {
   if (!home) throw new Error("HOME is required");
-  const support = join(home, "Library/Application Support/Claude-3p");
+  const support = join(home, CLAUDE_3P_SUPPORT_RELATIVE);
   const configPath = join(support, "claude_desktop_config.json");
   let raw;
   try {
@@ -84,9 +85,6 @@ export async function releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty
       hasDeepSeekGateway,
     };
   }
-  if (forceFirstParty && !managedDeepSeekOnly && !hasDeepSeekGateway && configs.length > 0) {
-    // force still applies: user asked for normal Official; keep a clear reason.
-  }
   const next = firstPartyDesktopConfig(desktopConfig);
   const timestamp = new Date().toISOString().replaceAll(":", "-").replace(/\.\d{3}Z$/, "Z");
   const backupPath = `${configPath}.before-first-party-${timestamp}`;
@@ -101,4 +99,25 @@ export async function releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty
     managedDeepSeekOnly,
     hasDeepSeekGateway,
   };
+}
+
+/**
+ * Quarantine the entire Claude-3p support directory so packaged Official cannot
+ * enter the DeepSeek-only third-party gateway at all. Prefer this when the user
+ * asked to return Cloud.app to stock Official with no router / 3p path.
+ * Does not delete; renames aside with a timestamp backup.
+ */
+export async function quarantineClaude3pSupport(home, { renameFn = rename } = {}) {
+  if (!home) throw new Error("HOME is required");
+  const support = join(home, CLAUDE_3P_SUPPORT_RELATIVE);
+  try {
+    await readdir(support);
+  } catch (error) {
+    if (error.code === "ENOENT") return { changed: false, reason: "absent", support };
+    throw error;
+  }
+  const timestamp = new Date().toISOString().replaceAll(":", "-").replace(/\.\d{3}Z$/, "Z");
+  const backupPath = `${support}.before-official-normal-${timestamp}`;
+  await renameFn(support, backupPath);
+  return { changed: true, support, backupPath };
 }

@@ -7,7 +7,7 @@ import { readAsarFile } from "../src/asar-repack.mjs";
 import { migrateClaudeHybridPatchVersion } from "../src/app-patch.mjs";
 import { decideClaudeHybridUpdate } from "../src/update-plan.mjs";
 import { hasHybridMarker, inspectAppleSignature, legacyOfficialAppPath, migrateLegacyOfficialSource, preferClaudeHybrid } from "../src/app-layout.mjs";
-import { releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
+import { quarantineClaude3pSupport, releaseDeepSeekOnlyOfficialAccount } from "../src/official-account.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const home = process.env.HOME;
@@ -164,6 +164,7 @@ try {
     }
     runManagedScript("refresh-router.mjs");
     const officialAccount = await releaseDeepSeekOnlyOfficialAccount(home, { forceFirstParty: true });
+    const quarantined3p = await quarantineClaude3pSupport(home);
     runManagedScript("verify.mjs");
     const launchServices = preferClaudeHybrid({
       officialApp: sourceApp,
@@ -179,12 +180,20 @@ try {
           : "Claude Hybrid was rebuilt from the signed official app and passed verification.",
       next_actions: [
         "Open Claude from /Applications and approve the Claude Safe Storage prompt if macOS shows it.",
-        "Open Cloud.app for pristine Official Claude (no Hybrid routing).",
+        "Open Official with: open -n \"$HOME/Applications/Cloud.app\" (fully quit first if DeepSeek-only appeared).",
         "Start a new Code session so the picker refetches /v1/models, then confirm Opus 5.5 and Fable 5.1 are listed and native.",
         "Confirm Opus 4.7 / Sonnet 4.6 show DeepSeek V4.1 Flash and Opus 4.6 shows DeepSeek Pro.",
         "Start a Code session and confirm it appears in claude.ai/code or the mobile app.",
       ],
-      artifacts: { sourceApp, targetApp, expectedPatchVersion: config.app.patchVersion, migration, launchServices, officialAccount },
+      artifacts: {
+        sourceApp,
+        targetApp,
+        expectedPatchVersion: config.app.patchVersion,
+        migration,
+        launchServices,
+        officialAccount,
+        quarantined3p,
+      },
     }, null, 2));
   }
 } catch (error) {
