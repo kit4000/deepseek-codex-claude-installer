@@ -17,6 +17,7 @@
     "codex-cli": "node scripts/codex-cli-delegate.mjs",
     "update:claude": "node scripts/update-claude.mjs --apply",
     "update:claude:check": "node scripts/update-claude.mjs --check",
+    "update:claude:official": "node scripts/update-claude.mjs --replace-official",
     "verify": "node scripts/verify.mjs",
     "smoke": "node scripts/smoke.mjs",
     "archive": "node scripts/create-archive.mjs"

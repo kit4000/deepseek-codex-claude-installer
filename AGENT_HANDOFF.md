@@ -125,19 +125,22 @@ UPDATE CONTRACT
 - Daily app: `/Applications/Claude.app` (= Hybrid, display name Claude)
 - Pristine source: `~/Applications/Claude Official.app` (Apple-signed, never ASAR-patched)
 - Do not use in-app updater on Hybrid
-- Update = download official zip from RELEASES.json → replace Official source → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
-- `--apply` は Hybrid アプリが現行でも managed ルーターと `nativeFallback` を再配置する（Fable 5 を `/v1/models` に足す修正など）。アプリ再構築が不要なら Claude を終了しなくてよい。新しい Code セッションでピッカーを取り直す。
+- Update = download official zip from RELEASES.json → replace Official source → `update-claude-hybrid --replace-official` → `update-claude-hybrid --check` → `update-claude-hybrid --apply` → `prefer-claude-hybrid`
+- `--replace-official` は `officialVersion` の固定 zip だけを入れる。SHA-256、codesign、公証を確認し、既存 Official は `Claude Official.app.before-<version>-<timestamp>` へ退避する。公式 ASAR は書き換えない。フィードが固定版より新しいときはアンカー更新が先。
+- `--apply` は公式ソースが固定版と違うとき、両アプリの終了後に同じ置換をしてから Hybrid を再構築する。公式ソースが固定版で Hybrid も現行なら、managed ルーターと `nativeFallback` を再配置するだけで Claude を終了しなくてよい。新しい Code セッションでピッカーを取り直す。
 - On exact-anchor failure: stop; do not fuzzy-patch; update `claude-hybrid/config/claude-hybrid.json` anchors and `patchVersion` first
 - Claude 2.x packaged 起動は `LSEnvironment` の `CLAUDE_USER_DATA_DIR` を削除し、既存 `Claude-3p` へ切り替える。Hybrid はこの削除を exact パッチで止め、公式 `~/Library/Application Support/Claude` を共有する
 - Do not delete sessions, Keychain, or `before-*` backups without explicit user approval
 
-#### 現行確認済み（Claude 2.7032.0 / patch 2026-09-23.1）
+#### 現行確認済み（Claude 2.9939.2 / patch 2026-09-27.1）
 
 純正ソースは `~/Applications/Claude Official.app`。日常アプリは `/Applications/Claude.app`（Hybrid）。
 Code 環境パッチ、Web ピッカー表示パッチ、`index.pre.js` の `CLAUDE_USER_DATA_DIR` 削除停止の
-3つの exact アンカーが必要。公式フィードの現行は `2.7032.0`（2026-09-22 公開）。
-chunk は `index.chunk-D3OyLXgG.js`、Web ピッカー関数は `wxe`、ユーザーデータ側の条件は `!o2`。
-直前の確認済みは Claude `2.2553.1` / patch `2026-09-18.3`。詳細は
+3つの exact アンカーが必要。公式フィードの現行は `2.9939.2`（2026-09-24 公開）。
+chunk は `index.chunk-DzZc-q0x.js`、Web ピッカー関数は `Pxe`、ヘルパーは `Ni` / `Mi`、ユーザーデータ側の条件は `!Y2`。
+Mac mini では、この固定 zip で Official を置換したあとの `--apply` が成功している。
+直前の確認済みは Claude `2.7032.0` / patch `2026-09-23.1`（関数 `wxe`、条件 `!o2`）。
+その前は Claude `2.2553.1` / patch `2026-09-18.3`。詳細は
 `CHANGE_SPEC-claude-app-layout-and-updates.md` §5.3。
 
 #### 実証済み手順（Claude 1.28929.0 / patch 2026-08-18.3）
@@ -155,7 +158,7 @@ chunk は `index.chunk-D3OyLXgG.js`、Web ピッカー関数は `wxe`、ユー�
 7. `update-claude-hybrid --apply` → 無課金検証通過を確認する。
 8. `prefer-claude-hybrid` で Launch Services を Hybrid 優先へ戻す。
 9. `/Applications/Claude.app` を開き、Safe Storage「常に許可」、公式アカウント、
-   Fable 5 / Opus 4.8 / Opus 5 の純正維持、借り枠の DeepSeek V4.1 Flash / Pro を確認する。
+   Fable 5 / Fable 5.1 / Opus 5.5 / Opus 4.8 / Opus 5 の純正維持、借り枠の DeepSeek V4.1 Flash / Pro を確認する。
    ログイン名が違う、または DeepSeek の2行しか出ない場合は 3P（`Claude-3p`）へ落ちている。
 
 `prefer-claude-hybrid` は `# Managed by deepseek-codex-claude-installer.` マーカー必須。

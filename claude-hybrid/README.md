@@ -73,15 +73,13 @@ npm run update:check
 
 Hybrid のアプリ内更新は使いません。公式が新しい版を出したら、先に純正ソースを入れ替えます。
 
+公開フィードは `https://downloads.claude.ai/releases/darwin/universal/RELEASES.json` です。インストーラが固定した版へ入れるときは、両アプリを終了してから次を実行します。
+
 ```bash
-# 最新公式
-curl -fsSL https://downloads.claude.ai/releases/darwin/universal/RELEASES.json
-# zip 展開 → codesign --verify --deep --strict
-# 両アプリ終了後、Official をバックアップして置換
-mv "$HOME/Applications/Claude Official.app" \
-  "$HOME/Applications/Claude Official.app.before-<version>-<timestamp>"
-ditto /path/to/staged/Claude.app "$HOME/Applications/Claude Official.app"
+update-claude-hybrid --replace-official
 ```
+
+このコマンドは固定 zip の SHA-256、`codesign --verify --deep --strict`、公証を確認し、既存 Official を `Claude Official.app.before-<version>-<timestamp>` へ退避してから置換します。公式 ASAR は書き換えません。
 
 その後、どのディレクトリからでも再構築できます。
 
@@ -94,7 +92,7 @@ prefer-claude-hybrid
 公式署名、バージョン固有の3つのパッチ位置、Keychain、実行中プロセスを検査し、条件が
 揃わなければ変更せず停止します。更新済みの Official ソースから新しいHybridを作り、以前の
 Hybridは `Claude.app.before-deepseek-*` へ退避し、無課金の整合性検証まで自動実行します。
-現行確認済みは Claude `2.7032.0` / patch `2026-09-23.1` です。直前は Claude `2.2553.1` / patch `2026-09-18.3` です。Opus 5.5 と Fable 5.1 は公式モデルのまま一覧に残し、DeepSeek は借り枠だけです。公式アプリが DeepSeek だけになるときは、`--apply` が `Claude-3p` の専用設定を公式アカウントへ戻します。
+現行確認済みは Claude `2.9939.2` / patch `2026-09-27.1` です。直前は Claude `2.7032.0` / patch `2026-09-23.1`、その前は Claude `2.2553.1` / patch `2026-09-18.3` です。Opus 5.5 と Fable 5.1 は公式モデルのまま一覧に残し、DeepSeek は借り枠だけです。公式アプリが DeepSeek だけになるときは、`--apply` が `Claude-3p` の専用設定を公式アカウントへ戻します。
 
 同じ純正版から作られた既存Hybridが現行パッチ契約をすべて満たし、管理用の
 `ClaudeHybridPatchVersion` だけが不足している場合は、巨大なElectron Frameworkを

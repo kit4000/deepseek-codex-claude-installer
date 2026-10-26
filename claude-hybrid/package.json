@@ -10,6 +10,7 @@
     "verify": "node scripts/verify.mjs",
     "update": "node scripts/update.mjs --apply",
     "update:check": "node scripts/update.mjs --check",
+    "update:official": "node scripts/update.mjs --replace-official",
     "smoke": "node scripts/smoke.mjs",
     "archive": "node scripts/create-archive.mjs",
     "store-deepseek-key": "node scripts/store-deepseek-key.mjs"
