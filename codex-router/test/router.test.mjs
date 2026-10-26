@@ -953,3 +953,22 @@ test("adds the compression feature table when it is absent", () => {
   });
   assert.match(patched, /\[features\]\nenable_request_compression = false/);
 });
+
+test("native route preserves multimodal tool outputs and opaque agent messages", () => {
+  const outputs = [
+    [{ type: "input_text", text: "Screenshot" }, { type: "input_image", image_url: "data:image/png;base64,dGVzdA==" }],
+    [{ type: "input_file", file_id: "file-test" }],
+    [{ type: "encrypted_content", encrypted_content: "gAAAAA-function-output" }],
+  ];
+  for (const type of ["function_call_output", "custom_tool_call_output"]) {
+    for (const output of outputs) {
+      const body = { model: "gpt-6-astra", input: [{ type, call_id: "call_test", output }] };
+      assert.deepEqual(rewriteRequestBody(body, { kind: "native" }), body);
+    }
+  }
+  const body = { model: "gpt-6-astra", input: [{
+    type: "agent_message", author: "/root", recipient: "/root/child",
+    content: [{ type: "input_text", text: "Payload:" }, { type: "encrypted_content", encrypted_content: "gAAAAA-agent-message" }],
+  }] };
+  assert.deepEqual(rewriteRequestBody(body, { kind: "native" }), body);
+});
