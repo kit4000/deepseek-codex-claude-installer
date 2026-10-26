@@ -210,7 +210,8 @@ function repairNativeInputItem(item) {
   if (Array.isArray(repaired.output)) {
     repaired.output = repairMalformedEncryptedParts(repaired.output);
     if ((repaired.type === "function_call_output" || repaired.type === "custom_tool_call_output")
-      && repaired.output.every((part) => part?.type !== "encrypted_content")) {
+      && repaired.output.every((part) => (part?.type === "input_text" || part?.type === "output_text")
+        && typeof part.text === "string")) {
       repaired.output = repaired.output
         .map((part) => (typeof part?.text === "string" ? part.text : ""))
         .join("\n");
@@ -224,7 +225,9 @@ function repairNativeInputItem(item) {
 
   // agent_message with only repaired plaintext is safer as a normal message for
   // compact / non-collaboration turns that choke on malformed V2 payloads.
-  if (repaired.type === "agent_message") {
+  if (repaired.type === "agent_message" && Array.isArray(repaired.content)
+    && repaired.content.every((part) => (part?.type === "input_text" || part?.type === "output_text")
+      && typeof part.text === "string")) {
     return contentToUserMessage(repaired.content, "user");
   }
 
