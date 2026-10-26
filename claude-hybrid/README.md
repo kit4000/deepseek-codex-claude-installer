@@ -151,5 +151,15 @@ DeepSeek ルートは `DEEPSEEK_HYBRID_OK` の完全応答を確認します。
 launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.local.claude-hybrid-router.plist
 ```
 
+Claude が起動中でも、終了後に純正 `/Applications/Claude.app` へ戻す予約ができます。
+
+```bash
+node claude-hybrid/scripts/setup-restore-official-on-quit.mjs
+```
+
+Claude を完全終了すると、LaunchAgent が Official を日常アプリへコピーし、Hybrid を
+`Claude.app.before-deepseek-restore-*` へ退避し、Hybrid ルーターを止めます。
+Claude プロセスは強制終了しません。
+
 純正ソースは `Claude Official.app.before-*` の対象バックアップから戻せます。
 DeepSeek キー、セッション、Application Support は削除しません。
